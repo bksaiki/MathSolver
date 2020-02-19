@@ -1,0 +1,6 @@
+#ifndef _MATHSOLVER_TYPES_H_
+#define _MATHSOLVER_TYPES_H_
+
+#define MATHSOLVER_VERSION "a1"
+
+#endif
