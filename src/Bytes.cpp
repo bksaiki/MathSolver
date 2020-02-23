@@ -11,6 +11,8 @@ uint8_t addByte2(uint8_t* res, uint8_t a, uint8_t b)
     return (r >> 8);
 }
 
+// Adds a triple of single bytes, stores the resultant uint8_t at the location specified by
+// res, and returns the overflow. 
 uint8_t addByte3(uint8_t* res, uint8_t a, uint8_t b, uint8_t c)
 {
     uint16_t r = (uint16_t)a + (uint16_t)b + (uint16_t)c;
@@ -51,19 +53,15 @@ int cmpBytes(uint8_t* a, uint8_t* b, size_t alen, size_t blen)
 size_t highestNonZeroByte(uint8_t* x, size_t len)
 {
     for (size_t i = len - 1; i < len; --i)
-    {
-        if (x[i] == 0)
+        if (x[i])
             return i + 1;
-    }
-
     return 0;
 }
 
 bool rangeIsEmtpy(uint8_t* low, uint8_t* high)
 {
     assert(high >= low);
-    uint8_t* it = low;
-    for (; it != high; ++it)
+    for (uint8_t* it = low; it != high; ++it)
     {
         if (*it != 0)
             return false;

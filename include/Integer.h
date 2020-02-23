@@ -1,9 +1,11 @@
 #ifndef _MATHSOLVER_INTEGER_H_
 #define _MATHSOLVER_INTEGER_H_
 
+#include <string>
 #include "Bytes.h"
 
-#define MATHSOLVER_DEFAULT_INT_WIDTH  4
+#define MATHSOLVER_DEFAULT_INT_WIDTH    4
+#define MATHSOLVER_MAX_INT_WIDTH        65536
 
 namespace MathSolver
 {
@@ -15,20 +17,26 @@ public:
     // Constructs an Integer with a default length.
     Integer();
 
+    // Copy constructor from another Integer.
+    Integer(const Integer& other);
+
+    // Move constructor from another Integer.
+    Integer(Integer&& other);
+
     // Construts an Integer from a byte-array of a given length
     Integer(uint8_t* arr, size_t len, bool sign = false);
 
     // Constructs an Integer from a 32-bit unsigned integer.
     Integer(unsigned int x);
 
-    // Constructs an Integer from a 32-bit unsigned integer.
+    // Constructs an Integer from a 32-bit signed integer.
     Integer(signed int x);
 
-    // Copy constructor from another Integer.
-    Integer(const Integer& other);
+    // Constructs an Integer from a C-style string.
+    Integer(const char* str);
 
-    // Move constructor from another Integer.
-    Integer(Integer&& other);
+    // Constructs an Integer from a std::string.
+    Integer(const std::string& str);
 
     // Frees byte array.
     ~Integer();
@@ -39,11 +47,20 @@ public:
     // Move assignment
     Integer& operator=(Integer&& other);
 
+    // Assignement from C-style string.
+    Integer& operator=(const char* str);
+
+    // Assignement from std::string.
+    Integer& operator=(const std::string& str);
+
     // Addition operator
     Integer operator+(const Integer& other) const;
 
     // Subtraction operator
     Integer operator-(const Integer& other) const;
+
+    // Multiplication operator
+    Integer operator*(const Integer& other) const;
 
     // Addition assignment operator
     Integer& operator+=(const Integer& other);
@@ -51,8 +68,17 @@ public:
     // Subtraction assignment operator
     Integer& operator-=(const Integer& other);
 
+    // Mutliplication assignment operator
+    Integer& operator*=(const Integer& other);
+
     // Unary minus operator
     Integer operator-() const;
+
+    // Shift right assignment operator
+    Integer& operator>>=(size_t bits);
+
+    // Shift left assignment oeprator
+    Integer& operator<<=(size_t bits);
 
     // Returns a pointer to the byte array.
     inline uint8_t* data() const { return mData; }

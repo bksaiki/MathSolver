@@ -3,8 +3,10 @@ failed=0
 total=0
 for file in $@
 do
-    "$file"
-    failed+=$?
+    eval $file
+    if (( $? != 0 )); then
+        failed+=1
+    fi
     total+=1
 done
 
