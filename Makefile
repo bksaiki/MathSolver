@@ -13,8 +13,10 @@ TEST_DEPS	:= $(TEST_EXES:%=%.d)
 CFLAGS 		?= -MMD -MP -g -m64 -Wall
 LDFLAGS		?= 
 
-test: $(TEST_EXES)
+tests: build-tests
 	$(TEST_DIR)/test.sh $(TEST_EXES)
+
+build-tests: $(TEST_EXES);
 
 build: $(OBJS);
 

@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstring>
+#include <iostream>         // Testing only
 #include "../include/Integer.h"
 
 namespace MathSolver
@@ -18,7 +19,7 @@ Integer::Integer(const Integer& other)
     mData = new uint8_t[other.mSize];
     mSize = other.mSize;
     mSign = other.mSign;
-    memcpy(mData, other.mData, mSize);
+    memcpy(mData, other.mData, other.mSize);
 }
 
 Integer::Integer(Integer&& other)
@@ -63,39 +64,61 @@ Integer::Integer(signed int x)
 
 Integer::Integer(const char* str)
 {
+    Integer base = 10;
+    size_t i = 0;
+
     mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
     mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
-    mSign = false;
     memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
+    
+    if (str[0] == '-')
+    {
+        mSign = true;
+        ++i;
+    }
+    else
+    {
+        mSign = false;
+    }
 
-    size_t i = 0;
     while (str[i])
     {
         if (!isdigit(str[i]))
             return;
 
-        *this *= (int)(10);
-        *this += (int)(str[i] - '0');
+        *this *= base;
+        addAssign((int)(str[i] - '0'), mSign);
         ++i;
     }
 }
 
 Integer::Integer(const std::string& str)
-{
+{   
+    Integer base = 10;
+    size_t len = str.length();
+    size_t i = 0;
+
     mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
     mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
     mSign = false;
     memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
 
-    size_t i = 0;
-    while (str[i])
+    if (len == 0 || (len == 1 && str[0] == '-')) // digitless strings
+        return;
+    
+    if (str[0] == '-')
+    {
+        mSign = true;
+        ++i;
+    }
+
+    for (; i < len; ++i)
     {
         if (!isdigit(str[i]))
             return;
 
-        *this *= (int)(10);
-        *this += (int)(str[i] - '0');
-        ++i;
+        *this *= base;
+        addAssign((int)(str[i] - '0'), mSign);
     }
 }
 
@@ -108,25 +131,27 @@ Integer::~Integer()
 
 Integer& Integer::operator=(const Integer& other)
 {
-    if (mData != nullptr)
+    if (this != &other)
+    {
         delete[] mData;
-
-    mData = new uint8_t[other.mSign];
-    mSize = other.mSize;
-    mSign = other.mSign;
-    memcpy(mData, other.mData, mSize);
+        mData = new uint8_t[other.mSign];
+        mSize = other.mSize;
+        mSign = other.mSign;
+        memcpy(mData, other.mData, mSize);
+    }
     return *this;
 }
 
 Integer& Integer::operator=(Integer&& other)
 {
-    if (mData != nullptr)
-        delete[] mData;
-        
-    mData = other.mData;
-    mSize = other.mSize;
-    mSign = other.mSign;
-    other.mData = nullptr;
+    if (this != &other)
+    {
+        delete[] mData;   
+        mData = other.mData;
+        mSize = other.mSize;
+        mSign = other.mSign;
+        other.mData = nullptr;
+    }
     return *this;
 }
 
@@ -135,19 +160,31 @@ Integer& Integer::operator=(const char* str)
     if (mData != nullptr)
         delete[] mData;
 
+    Integer base = 10;
+    size_t i = 0;
+
     mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
     mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
-    mSign = false;
     memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
+     
+    if (str[0] == '-')
+    {
+        mSign = true;
+        ++i;
+    }
+    else
+    {
+        mSign = false;
+    }
 
-    size_t i = 0;
     while (str[i])
     {
         if (!isdigit(str[i]))
             return *this;
 
-        *this *= (int)(10);
-        *this += (int)(str[i] - '0');
+        Integer digit = (int)(str[i] - '0');
+        *this *= base;
+        addAssign((int)(str[i] - '0'), mSign);
         ++i;
     }
 
@@ -159,25 +196,42 @@ Integer& Integer::operator=(const std::string& str)
     if (mData != nullptr)
         delete[] mData;
 
+    Integer base = 10;
+    size_t len = str.length();
+    size_t i = 0;
+
     mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
     mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
     mSign = false;
     memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
 
-    size_t i = 0;
-    char c = str[i];
-    while (c)
+    if (len == 0 || (len == 1 && str[0] == '-')) // digitless strings
+        return *this;
+
+    if (str[0] == '-')
     {
-        if (!isdigit(c))
+        mSign = true;
+        ++i;
+    }
+
+    for (; i < len; ++i)
+    {
+        if (!isdigit(str[i]))
             return *this;
 
-        *this *= (int)(10);
-        *this += (int)(c - '0');
-        ++i;
-        c = str[i];
+        *this *= base;
+        addAssign((int)(str[i] - '0'), mSign);
     }
 
     return *this;
+}
+
+bool Integer::operator>=(const Integer& other) const
+{
+    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) <= 0);
+    else if (mSign && !other.mSign)     return true;
+    else if (!mSign && other.mSign)     return false;
+    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0);
 }
 
 Integer Integer::operator+(const Integer& other) const
@@ -188,7 +242,7 @@ Integer Integer::operator+(const Integer& other) const
     }
     else
     {
-        int cmp = cmpBytes(mData, other.mData, mSize, other.mSize);
+        int cmp = cmpBytes(mData, mSize, other.mData, other.mSize);
         if (cmp == 0) // Avoid computation: x + -x = 0
         {
             uint8_t* arr = new uint8_t[1];
@@ -204,7 +258,7 @@ Integer Integer::operator+(const Integer& other) const
 
 Integer Integer::operator-(const Integer& other) const
 {
-    int cmp = cmpBytes(mData, other.mData, mSize, other.mSize);
+    int cmp = cmpBytes(mData, mSize, other.mData, other.mSize);
     if (mSign == other.mSign)
     {
         return sub(other, (cmp > 0) ? (mSign) : (!mSign));
@@ -226,29 +280,15 @@ Integer Integer::operator-(const Integer& other) const
 
 Integer Integer::operator*(const Integer& other) const
 {
-    size_t thisSize = highestNonZeroByte(mData, mSize);
-    size_t otherSize = highestNonZeroByte(other.mData, other.mSize);
-    size_t maxSize = thisSize + otherSize;
+    return mul(other, mSign ^ other.mSign);
+}
 
-    Integer res(new uint8_t[maxSize], maxSize, mSign ^ other.mSign);
-    Integer acc(new uint8_t[maxSize], maxSize, false);
-
-    memset(res.mData, 0, maxSize);
-    memset(acc.mData, 0, maxSize);
-    for (size_t i = 0; i < maxSize; ++i)
-    {
-        for (size_t j = 0; j <= i && j < thisSize; ++j)
-        {
-            size_t k = i - j;
-            if (k <= otherSize)
-                acc += Integer((uint32_t)mData[j] * (uint32_t)other.mData[k]);
-        }
-
-        res.mData[i] = acc.mData[0];
-        acc >>= 8;
-    }
-
-    return res;
+Integer Integer::operator/(const Integer& other) const
+{
+    Integer quo(new uint8_t[mSize], mSize, mSign ^ other.mSign);
+    Integer rem(new uint8_t[mSize], mSize, false);
+    divAndRem(other, quo, rem);
+    return quo;
 }
 
 Integer& Integer::operator+=(const Integer& other)
@@ -259,7 +299,7 @@ Integer& Integer::operator+=(const Integer& other)
     }
     else
     {
-        int cmp = cmpBytes(mData, other.mData, mSize, other.mSize);
+        int cmp = cmpBytes(mData, mSize, other.mData, other.mSize);
         if (cmp == 0) // Avoid computation: x + -x = 0
         {
             uint8_t* arr = new uint8_t[1];
@@ -278,7 +318,7 @@ Integer& Integer::operator+=(const Integer& other)
 
 Integer& Integer::operator-=(const Integer& other)
 {
-    int cmp = cmpBytes(mData, other.mData, mSize, other.mSize); 
+    int cmp = cmpBytes(mData, mSize, other.mData, other.mSize); 
     if(mSign == other.mSign)
     {
         if (cmp == 0) // Avoid computation: x - x = 0
@@ -302,30 +342,15 @@ Integer& Integer::operator-=(const Integer& other)
 
 Integer& Integer::operator*=(const Integer& other)
 {
-    size_t thisSize = highestNonZeroByte(mData, mSize);
-    size_t otherSize = highestNonZeroByte(other.mData, other.mSize);
-    size_t maxResSize = thisSize + otherSize;
-    size_t maxSize = (maxResSize > mSize) ? maxResSize : mSize;
+    Integer res = mul(other, mSign ^ other.mSign);
+    moveAssign(res);
+    return *this;
+}
 
-    Integer res(new uint8_t[maxSize], maxSize, mSign ^ other.mSign);
-    Integer acc(new uint8_t[maxSize], maxSize, false);
-
-    memset(res.mData, 0, maxSize);
-    memset(acc.mData, 0, maxSize);
-    for (size_t i = 0; i < maxResSize; ++i)
-    {
-        for (size_t j = 0; j <= i && j < thisSize; ++j)
-        {
-            size_t k = i - j;
-            if (k <= otherSize)
-                acc += Integer((uint32_t)mData[j] * (uint32_t)other.mData[k]);
-        }
-
-        res.mData[i] = acc.mData[0];
-        acc >>= 8;
-    }
-
-    *this = res;
+Integer& Integer::operator/=(const Integer& other)
+{
+    Integer rem(new uint8_t[mSize], mSize, false);
+    divAssignAndRem(other, rem);
     return *this;
 }
 
@@ -388,13 +413,13 @@ Integer& Integer::operator<<=(size_t bits)
     if (bitShift > 0)
     {
         size_t invBitShift = 8 - bitShift; 
-        uint8_t highMask = 0xFF << bitShift;
-        uint8_t lowMask = 0xFF >> invBitShift;
+        uint8_t highMask = 0xFF << invBitShift;
+        uint8_t lowMask = 0xFF >> bitShift;
 
-        mData[i] = (mData[i - byteShift - 1] & highMask) >> bitShift;
-        for (--i; i > byteShift && i > 0; --i)
-            mData[i] = ((mData[i - byteShift] & lowMask) << invBitShift) | ((mData[i - byteShift - 1] & highMask) >> bitShift);   
-        mData[i] = (mData[i - byteShift] & lowMask) << invBitShift;
+        mData[i] = (mData[i - byteShift - 1] & highMask) >> invBitShift;
+        for (--i; i < maxSize - 1 && i > byteShift; --i)
+            mData[i] = ((mData[i - byteShift] & lowMask) << bitShift) | ((mData[i - byteShift - 1] & highMask) >> invBitShift);   
+        mData[i] = (mData[i - byteShift] & lowMask) << bitShift;
         --i;
     }
     else
@@ -404,7 +429,7 @@ Integer& Integer::operator<<=(size_t bits)
     }
 
     for (; i < byteShift; --i)
-            mData[i] = 0;
+        mData[i] = 0;
     return *this;
 }
 
@@ -417,6 +442,23 @@ void Integer::set(uint8_t* arr, size_t len, bool sign)
     mSign = sign;
 }
 
+std::string Integer::toString() const
+{
+    std::string str = "";
+    Integer tmp = *this;
+    Integer base = 10;
+    Integer rem = 0;
+    while (cmpBytes(tmp.mData, tmp.mSize, base.mData, 1) >= 0)
+    {
+        tmp.divAssignAndRem(base, rem);
+        str = (char)((char)rem.mData[0] + '0') + str;
+        memset(rem.mData, 0, rem.mSize);
+    }
+
+    str = (char)((char)tmp.mData[0] + '0') + str;
+    return  ((mSign) ? "-" : "") + str;
+}
+
 // 
 // Helper functions
 //
@@ -426,7 +468,7 @@ Integer Integer::add(const Integer& other, bool sign) const
     uint8_t* l;
     size_t low, high;
 
-    if (cmpBytes(mData, other.mData, mSize, other.mSize) > 0)
+    if (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0)
     {
         l = mData;
         high = mSize;
@@ -468,7 +510,7 @@ void Integer::addAssign(const Integer& other, bool sign)
     size_t low, high;
     mSign = sign;
 
-    if (cmpBytes(mData, other.mData, mSize, other.mSize) > 0)
+    if(mSize >= other.mSize)
     {
         l = mData;
         high = mSize;
@@ -479,7 +521,7 @@ void Integer::addAssign(const Integer& other, bool sign)
         l = other.mData;
         high = other.mSize;
         low = mSize;
-        resizeNoCheck(high); // must resize to store result
+        resizeNoCheck(other.mSize); // resize to fit result
     }
 
     size_t i = 0;
@@ -495,6 +537,98 @@ void Integer::addAssign(const Integer& other, bool sign)
         resizeNoCheck(high + 1); // resize to fit carry byte
         mData[high] = c;
     }
+}
+
+void Integer::divAndRem(const Integer& other, Integer& quo, Integer& rem) const
+{
+    // TODO: assert(other != 0)
+    size_t maxSize = highestNonZeroByte(mData, mSize);
+    size_t maxBits = maxSize * 8;
+
+    if (quo.mSize < maxSize)    quo.resizeNoCheck(maxSize);
+    if (rem.mSize < maxSize)    rem.resizeNoCheck(maxSize);
+
+    memset(quo.mData, 0, quo.mSize);
+    memset(rem.mData, 0, rem.mSize);
+    rem.mSign = false;
+
+    for (size_t i = maxBits - 1; i < maxBits; --i)
+    {
+        rem <<= 1;
+        setBit(rem.mData, rem.mSize, 0, getBit(mData, mSize, i));
+        if (cmpBytes(rem.mData, rem.mSize, other.mData, other.mSize) >= 0)
+        {
+            rem.subAssign(other, false);
+            setBit(quo.mData, quo.mSize, i, 1);
+        }
+    }
+}
+
+void Integer::divAssignAndRem(const Integer& other, Integer& rem)
+{
+    // TODO: assert(other != 0
+    size_t maxBits = mSize * 8;
+
+    if (rem.mSize < mSize)
+        rem.resizeNoCheck(mSize);
+
+    memset(rem.mData, 0, rem.mSize);
+    rem.mSign = false;
+
+    for (size_t i = maxBits - 1; i < maxBits; --i)
+    {
+        rem <<= 1;
+        setBit(rem.mData, rem.mSize, 0, getBit(mData, mSize, i));
+        if (cmpBytes(rem.mData, rem.mSize, other.mData, other.mSize) >= 0)
+        {
+            rem.subAssign(other, false);
+            setBit(mData, mSize, i, 1);
+        }
+        else
+        {
+            setBit(mData, mSize, i, 0);
+        }
+    }
+}
+
+void Integer::moveAssign(Integer& other)
+{
+    if (this != &other)
+    {
+        delete[] mData;
+        mData = other.mData;
+        mSize = other.mSize;
+        mSign = other.mSign;
+        other.mData = nullptr;
+    }
+}
+
+Integer Integer::mul(const Integer& other, bool sign) const
+{
+    size_t thisSize = highestNonZeroByte(mData, mSize);
+    size_t otherSize = highestNonZeroByte(other.mData, other.mSize);
+    size_t maxResSize = thisSize + otherSize;
+    size_t maxSize = (maxResSize >= mSize) ? maxResSize : mSize;
+
+    Integer res(new uint8_t[maxSize], maxSize, sign);
+    Integer acc(new uint8_t[maxResSize], maxResSize, false);
+
+    memset(acc.mData, 0, maxResSize);
+    memset(&res.mData[maxResSize], 0, maxSize - maxResSize);
+    for (size_t i = 0; i < maxResSize; ++i)
+    {
+        for (size_t j = 0; j <= i && j < thisSize; ++j)
+        {
+            size_t k = i - j;
+            if (k <= otherSize)
+                acc += Integer((uint32_t)mData[j] * (uint32_t)other.mData[k]);
+        }
+
+        res.mData[i] = acc.mData[0];
+        acc >>= 8;
+    }
+
+    return res;
 }
 
 void Integer::resizeNoCheck(size_t size)
@@ -524,7 +658,7 @@ Integer Integer::sub(const Integer& other, bool sign) const
     uint8_t *l, *s;
     size_t low, high;
 
-    if (cmpBytes(mData, other.mData, mSize, other.mSize) > 0)
+    if (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0)
     {
         l = mData;
         s = other.mData;
@@ -557,7 +691,7 @@ void Integer::subAssign(const Integer& other, bool sign)
     size_t low, high;
     mSign = sign;
 
-    if (cmpBytes(mData, other.mData, mSize, other.mSize) > 0)
+    if (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0)
     {
         l = mData;
         s = other.mData;

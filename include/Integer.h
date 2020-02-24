@@ -53,6 +53,9 @@ public:
     // Assignement from std::string.
     Integer& operator=(const std::string& str);
 
+    // Greater than operator
+    bool operator>=(const Integer& other) const;
+
     // Addition operator
     Integer operator+(const Integer& other) const;
 
@@ -62,6 +65,9 @@ public:
     // Multiplication operator
     Integer operator*(const Integer& other) const;
 
+    // Division operator
+    Integer operator/(const Integer& other) const;
+
     // Addition assignment operator
     Integer& operator+=(const Integer& other);
 
@@ -70,6 +76,9 @@ public:
 
     // Mutliplication assignment operator
     Integer& operator*=(const Integer& other);
+
+    // Division assignment operator
+    Integer& operator/=(const Integer& other);
 
     // Unary minus operator
     Integer operator-() const;
@@ -93,6 +102,9 @@ public:
     // Returns the width of this Integer.
     inline size_t size() const { return mSize; } 
 
+    // Returns this Integer as a string.
+    std::string toString() const;
+
 private:
 
     // Helper function. Adds this Integer and another and returns the result. The sign
@@ -102,6 +114,22 @@ private:
     // Helper function. Adds another Integer to this one. The sign of the result must
     // be specified.
     void addAssign(const Integer& other, bool sign);
+
+    // Helper function. Divides this Integer by another and stores the quotient at quo and
+    // the remainder at rem.
+    void divAndRem(const Integer& other, Integer& quo, Integer& rem) const;
+
+    // Helper function. Divides this Integer by another and stores the quotient at *this and
+    // the remainder at rem.
+    void divAssignAndRem(const Integer& other, Integer& rem);
+
+    // Helper function. Moves the contents of one Integer to this one (Move assignment). The
+    // argument is unusable after this function is called.
+    void moveAssign(Integer& other);
+
+    // Helper function. Multiplies this Integer by another and returns the result. The resultant
+    // sign must be specified.
+    Integer mul(const Integer& other, bool sign) const;
 
     // Helper function. Resizes the underlying byte array. Assertion: size > 0. Does not check
     // if data will be lost.

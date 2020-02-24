@@ -6,10 +6,18 @@ using namespace MathSolver;
 
 int main()
 {
-	std::string str = "123456789123456789";
-	Integer i1(str);
+	while (true)
+	{
+		std::string input;
+		std::cout << " > ";
+		std::cin >> input;
 
-	std::cout << i1.size() << " bytes : " << (i1.sign() ? "-" : "") << *(unsigned long*)i1.data() << std::endl;
+		if(input == "exit")
+			break;
+
+		Integer i(input);
+		std::cout << i.toString() << std::endl;
+	}
 
 	return 0;
 }
