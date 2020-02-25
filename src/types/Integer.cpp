@@ -1,7 +1,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>         // Testing only
-#include "../include/Integer.h"
+#include "Integer.h"
 
 namespace MathSolver
 {
@@ -381,7 +381,7 @@ Integer& Integer::operator>>=(size_t bits)
 
         for (; i < bytesToShift; ++i)
             mData[i] = ((mData[i + byteShift + 1] & lowMask) << invBitShift) | ((mData[i + byteShift] & highMask) >> bitShift); 
-        mData[i] = (mData[i + byteShift] & lowMask);
+        mData[i] = ((mData[i + byteShift] & highMask) >> bitShift); 
         ++i;
     }
     else
@@ -547,10 +547,17 @@ void Integer::divAndRem(const Integer& other, Integer& quo, Integer& rem) const
 
     if (quo.mSize < maxSize)    quo.resizeNoCheck(maxSize);
     if (rem.mSize < maxSize)    rem.resizeNoCheck(maxSize);
-
+    
     memset(quo.mData, 0, quo.mSize);
     memset(rem.mData, 0, rem.mSize);
     rem.mSign = false;
+
+    if (cmpBytes (mData, mSize, other.mData, other.mSize) < 0) // if a < b, avoid computation: a/b = 0
+    {
+        rem = *this;
+        quo.mSign = false;
+        return;
+    }
 
     for (size_t i = maxBits - 1; i < maxBits; --i)
     {
@@ -573,7 +580,17 @@ void Integer::divAssignAndRem(const Integer& other, Integer& rem)
         rem.resizeNoCheck(mSize);
 
     memset(rem.mData, 0, rem.mSize);
+
+    if (cmpBytes (mData, mSize, other.mData, other.mSize) < 0) // if a < b, avoid computation: a/b = 0
+    {
+        rem = *this;
+        mSign = false;
+        memset(mData, 0, mSize);
+        return;
+    }
+
     rem.mSign = false;
+    mSign ^= other.mSign;
 
     for (size_t i = maxBits - 1; i < maxBits; --i)
     {

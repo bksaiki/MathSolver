@@ -83,10 +83,12 @@ public:
     // Unary minus operator
     Integer operator-() const;
 
-    // Shift right assignment operator
+    // Arithmetic shift right assignment operator. Preserves the sign. Does not perform two's
+    // complement. Thus, x >> bits = -(-x >> bits)
     Integer& operator>>=(size_t bits);
 
-    // Shift left assignment oeprator
+    // Arithmetic shift left assignment oeprator. Preserves the sign. Does not perform two's
+    // complement. Thus x << bits = -(-x << bits)
     Integer& operator<<=(size_t bits);
 
     // Returns a pointer to the byte array.
@@ -96,7 +98,7 @@ public:
     // The default sign is false (positive).
     void set(uint8_t* arr, size_t len, bool sign = false);
 
-    // Returns true if this integer is unsigned.
+    // Returns true if this integer is negative.
     inline bool sign() const { return mSign; }
 
     // Returns the width of this Integer.
