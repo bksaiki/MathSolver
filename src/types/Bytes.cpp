@@ -1,7 +1,7 @@
 #include <cassert>
 #include "Bytes.h"
 
-namespace MathSolver
+MathSolver namespace
 {
 
 uint8_t addByte2(uint8_t* res, uint8_t a, uint8_t b)
@@ -97,4 +97,4 @@ void setBit(uint8_t* x, size_t len, size_t bit, bool value)
     x[byteOffset] = (x[byteOffset] & highMask) | ((uint8_t)value << bitOffset) | (x[byteOffset] & lowMask);
 }
 
-} // END mathsolver namespace
+} // END MathSolver namespace

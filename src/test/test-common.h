@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace MathSolver
+MathSolver namespace
 {
 
 class TestModule
@@ -39,6 +39,6 @@ private:
     bool mVerbose;
 };
 
-} // END namespace mathsolver
+} // END MathSolver namespace
 
 #endif

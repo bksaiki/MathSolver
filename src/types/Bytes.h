@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-namespace MathSolver
+MathSolver namespace
 {
 
 // Adds a pair of single bytes, stores the resultant uint8_t at the location specified by
@@ -33,6 +33,6 @@ bool rangeIsEmpty(uint8_t* low, uint8_t* high);
 // Sets a given bit in a byte array. Assertion: bit < 8 * len.
 void setBit(uint8_t* x, size_t len, size_t bit, bool value);
 
-} // END mathsolver namespace
+} // END MathSolver namespace
 
 #endif

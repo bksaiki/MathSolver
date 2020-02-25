@@ -1,13 +1,14 @@
 #ifndef _MATHSOLVER_INTEGER_H_
 #define _MATHSOLVER_INTEGER_H_
 
+#include <iostream>
 #include <string>
 #include "Bytes.h"
 
 #define MATHSOLVER_DEFAULT_INT_WIDTH    4
 #define MATHSOLVER_MAX_INT_WIDTH        65536
 
-namespace MathSolver
+MathSolver namespace
 {
 
 class Integer
@@ -91,6 +92,12 @@ public:
     // complement. Thus x << bits = -(-x << bits)
     Integer& operator<<=(size_t bits);
 
+    // Stream extraction operator.
+    friend std::ostream& operator<<(std::ostream& out, const Integer& integer);
+
+    // Stream insertion operator.
+    friend std::istream& operator>>(std::istream& in, Integer& integer);
+
     // Returns a pointer to the byte array.
     inline uint8_t* data() const { return mData; }
 
@@ -118,16 +125,19 @@ private:
     void addAssign(const Integer& other, bool sign);
 
     // Helper function. Divides this Integer by another and stores the quotient at quo and
-    // the remainder at rem.
+    // the remainder at rem. The size of the result and the remainder is this size.
     void divAndRem(const Integer& other, Integer& quo, Integer& rem) const;
 
     // Helper function. Divides this Integer by another and stores the quotient at *this and
-    // the remainder at rem.
+    // the remainder at rem. The size of the remainder is this size.
     void divAssignAndRem(const Integer& other, Integer& rem);
 
-    // Helper function. Moves the contents of one Integer to this one (Move assignment). The
-    // argument is unusable after this function is called.
-    void moveAssign(Integer& other);
+    // Helper function. Clears the data and sets this Integer based on a C-style string. 
+    void fromString(const char* str);
+
+    // Helper function. Moves the contents of one Integer to this one. The argument is unusable
+    // after this function is called. Does not free the existing byte array.
+    void move(Integer& other);
 
     // Helper function. Multiplies this Integer by another and returns the result. The resultant
     // sign must be specified.
@@ -136,6 +146,10 @@ private:
     // Helper function. Resizes the underlying byte array. Assertion: size > 0. Does not check
     // if data will be lost.
     void resizeNoCheck(size_t size);
+
+    // Helper function. Sets this Integer with a given length and a positive zero value. Does not 
+    // free the existing byte array.
+    void setZero(size_t len);
 
     // Helper function. Adds this Integer and another and returns the result. The sign
     // of the result must be specified.
@@ -152,6 +166,8 @@ private:
     bool        mSign;
 };
 
-} // END mathsolver namespace
+
+
+} // END MathSolver namespace
 
 #endif

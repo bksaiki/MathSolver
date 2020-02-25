@@ -1,17 +1,13 @@
 #include <cassert>
 #include <cstring>
-#include <iostream>         // Testing only
 #include "Integer.h"
 
-namespace MathSolver
+MathSolver namespace
 {
 
 Integer::Integer()
 {
-    mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
-    mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
-    mSign = false;
-    memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
+    setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
 }
 
 Integer::Integer(const Integer& other)
@@ -24,10 +20,7 @@ Integer::Integer(const Integer& other)
 
 Integer::Integer(Integer&& other)
 {
-    mData = other.mData;
-    mSize = other.mSize;
-    mSign = other.mSign;
-    other.mData = nullptr;
+    move(other);
 }
 
 Integer::Integer(uint8_t* arr, size_t len, bool sign)
@@ -64,62 +57,12 @@ Integer::Integer(signed int x)
 
 Integer::Integer(const char* str)
 {
-    Integer base = 10;
-    size_t i = 0;
-
-    mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
-    mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
-    memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
-    
-    if (str[0] == '-')
-    {
-        mSign = true;
-        ++i;
-    }
-    else
-    {
-        mSign = false;
-    }
-
-    while (str[i])
-    {
-        if (!isdigit(str[i]))
-            return;
-
-        *this *= base;
-        addAssign((int)(str[i] - '0'), mSign);
-        ++i;
-    }
+    fromString(str);
 }
 
 Integer::Integer(const std::string& str)
 {   
-    Integer base = 10;
-    size_t len = str.length();
-    size_t i = 0;
-
-    mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
-    mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
-    mSign = false;
-    memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
-
-    if (len == 0 || (len == 1 && str[0] == '-')) // digitless strings
-        return;
-    
-    if (str[0] == '-')
-    {
-        mSign = true;
-        ++i;
-    }
-
-    for (; i < len; ++i)
-    {
-        if (!isdigit(str[i]))
-            return;
-
-        *this *= base;
-        addAssign((int)(str[i] - '0'), mSign);
-    }
+    fromString(str.c_str());
 }
 
 Integer::~Integer()
@@ -139,6 +82,7 @@ Integer& Integer::operator=(const Integer& other)
         mSign = other.mSign;
         memcpy(mData, other.mData, mSize);
     }
+
     return *this;
 }
 
@@ -146,82 +90,27 @@ Integer& Integer::operator=(Integer&& other)
 {
     if (this != &other)
     {
-        delete[] mData;   
-        mData = other.mData;
-        mSize = other.mSize;
-        mSign = other.mSign;
-        other.mData = nullptr;
+        delete[] mData;
+        move(other);
     }
+
     return *this;
 }
 
 Integer& Integer::operator=(const char* str)
 {
-    if (mData != nullptr)
-        delete[] mData;
-
-    Integer base = 10;
-    size_t i = 0;
-
-    mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
-    mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
-    memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
-     
-    if (str[0] == '-')
-    {
-        mSign = true;
-        ++i;
-    }
-    else
-    {
-        mSign = false;
-    }
-
-    while (str[i])
-    {
-        if (!isdigit(str[i]))
-            return *this;
-
-        Integer digit = (int)(str[i] - '0');
-        *this *= base;
-        addAssign((int)(str[i] - '0'), mSign);
-        ++i;
-    }
+    delete[] mData;
+    setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
+    fromString(str);
 
     return *this;
 }
 
 Integer& Integer::operator=(const std::string& str)
 {
-    if (mData != nullptr)
-        delete[] mData;
-
-    Integer base = 10;
-    size_t len = str.length();
-    size_t i = 0;
-
-    mData = new uint8_t[MATHSOLVER_DEFAULT_INT_WIDTH];
-    mSize = MATHSOLVER_DEFAULT_INT_WIDTH;
-    mSign = false;
-    memset(mData, 0, MATHSOLVER_DEFAULT_INT_WIDTH);
-
-    if (len == 0 || (len == 1 && str[0] == '-')) // digitless strings
-        return *this;
-
-    if (str[0] == '-')
-    {
-        mSign = true;
-        ++i;
-    }
-
-    for (; i < len; ++i)
-    {
-        if (!isdigit(str[i]))
-            return *this;
-
-        *this *= base;
-        addAssign((int)(str[i] - '0'), mSign);
-    }
+    delete[] mData;
+    setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
+    fromString(str.c_str());
 
     return *this;
 }
@@ -285,8 +174,8 @@ Integer Integer::operator*(const Integer& other) const
 
 Integer Integer::operator/(const Integer& other) const
 {
-    Integer quo(new uint8_t[mSize], mSize, mSign ^ other.mSign);
-    Integer rem(new uint8_t[mSize], mSize, false);
+    Integer quo;
+    Integer rem;
     divAndRem(other, quo, rem);
     return quo;
 }
@@ -342,14 +231,16 @@ Integer& Integer::operator-=(const Integer& other)
 
 Integer& Integer::operator*=(const Integer& other)
 {
-    Integer res = mul(other, mSign ^ other.mSign);
-    moveAssign(res);
+    Integer res = mul(other, mSign ^ other.mSign);   
+    if (this != &res)
+        delete[] mData;
+    move(res);
     return *this;
 }
 
 Integer& Integer::operator/=(const Integer& other)
 {
-    Integer rem(new uint8_t[mSize], mSize, false);
+    Integer rem;
     divAssignAndRem(other, rem);
     return *this;
 }
@@ -433,10 +324,44 @@ Integer& Integer::operator<<=(size_t bits)
     return *this;
 }
 
+std::ostream& operator<<(std::ostream& out, const Integer& integer)
+{
+    std::string str = integer.toString();
+    out << str;
+    return out;
+}
+
+std::istream& operator>>(std::istream& in, Integer& integer)
+{
+    if (integer.mData != nullptr)
+        delete[] integer.mData;
+
+    integer.setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
+    if (in.peek() == '-')
+    {
+        integer.mSign = true;
+        in.get();
+    }
+
+    if (!isdigit(in.peek()))    // digitless stream
+    {
+        integer.mSign = false;
+        return in;
+    }
+
+    Integer base = 10;
+    while (in.peek() != EOF && isdigit(in.peek()))
+    {
+        integer *= base;
+        integer.addAssign((int)(in.get() - '0'), integer.mSign);
+    }
+
+    return in;
+}
+
 void Integer::set(uint8_t* arr, size_t len, bool sign)
 {
-    if (mData != nullptr)
-        delete[] mData;
+    delete[] mData;
     mData = arr;
     mSize = len;
     mSign = sign;
@@ -545,14 +470,12 @@ void Integer::divAndRem(const Integer& other, Integer& quo, Integer& rem) const
     size_t maxSize = highestNonZeroByte(mData, mSize);
     size_t maxBits = maxSize * 8;
 
-    if (quo.mSize < maxSize)    quo.resizeNoCheck(maxSize);
-    if (rem.mSize < maxSize)    rem.resizeNoCheck(maxSize);
-    
-    memset(quo.mData, 0, quo.mSize);
-    memset(rem.mData, 0, rem.mSize);
+    quo.setZero(maxSize); // set quotient size to this size
+    rem.setZero(maxSize); // set remainder size to this size
+    quo.mSign = mSign ^ other.mSign;
     rem.mSign = false;
 
-    if (cmpBytes (mData, mSize, other.mData, other.mSize) < 0) // if a < b, avoid computation: a/b = 0
+    if (cmpBytes (mData, maxSize, other.mData, other.mSize) < 0) // if a < b, avoid computation: a/b = 0
     {
         rem = *this;
         quo.mSign = false;
@@ -573,14 +496,11 @@ void Integer::divAndRem(const Integer& other, Integer& quo, Integer& rem) const
 
 void Integer::divAssignAndRem(const Integer& other, Integer& rem)
 {
-    // TODO: assert(other != 0
+    // TODO: assert(other != 0)
+    size_t maxSize = highestNonZeroByte(mData, mSize);
     size_t maxBits = mSize * 8;
 
-    if (rem.mSize < mSize)
-        rem.resizeNoCheck(mSize);
-
-    memset(rem.mData, 0, rem.mSize);
-
+    rem.setZero(maxSize); // set remainder size to this size
     if (cmpBytes (mData, mSize, other.mData, other.mSize) < 0) // if a < b, avoid computation: a/b = 0
     {
         rem = *this;
@@ -608,16 +528,38 @@ void Integer::divAssignAndRem(const Integer& other, Integer& rem)
     }
 }
 
-void Integer::moveAssign(Integer& other)
+void Integer::fromString(const char* str)
 {
-    if (this != &other)
+    Integer base = 10;
+    size_t i = 0;
+
+    setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
+    if (str[0] == '\0' || (str[0] == '-' && str[1] == '\0')) // digitless strings
+        return;
+    
+    if (str[0] == '-')
     {
-        delete[] mData;
-        mData = other.mData;
-        mSize = other.mSize;
-        mSign = other.mSign;
-        other.mData = nullptr;
+        mSign = true;
+        ++i;
     }
+
+    while (str[i])
+    {
+        if (!isdigit(str[i]))
+            return;
+
+        *this *= base;
+        addAssign((int)(str[i] - '0'), mSign);
+        ++i;
+    }
+}
+
+void Integer::move(Integer& other)
+{
+    mData = other.mData;
+    mSize = other.mSize;
+    mSign = other.mSign;
+    other.mData = nullptr;
 }
 
 Integer Integer::mul(const Integer& other, bool sign) const
@@ -668,6 +610,14 @@ void Integer::resizeNoCheck(size_t size)
         mData = t;
         mSize = size;
     }
+}
+
+void Integer::setZero(size_t len)
+{
+    mData = new uint8_t[len];
+    mSize = len;
+    mSign = false;
+    memset(mData, 0, len);
 }
 
 Integer Integer::sub(const Integer& other, bool sign) const
@@ -733,4 +683,4 @@ void Integer::subAssign(const Integer& other, bool sign)
         c = addByte3(&mData[i], l[i], 0xFF, c);
 }
 
-} // END mathsolver namespace
+} // END MathSolver namespace

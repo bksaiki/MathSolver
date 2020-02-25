@@ -1,6 +1,6 @@
 #include "test-common.h"
 
-namespace MathSolver
+MathSolver namespace
 {
 
 std::string TestModule::result() const
@@ -44,4 +44,4 @@ void TestModule::reset(const std::string& name, bool verbose)
     mResults.clear();
 }
 
-} // END namespace MathSolver
+} // END MathSolver namespace

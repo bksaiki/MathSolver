@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include "../src/test/test-common.h"
 #include "../src/types/Integer.h"
 
@@ -465,6 +466,29 @@ int main()
 		14
 		-120504
 	*/	
+
+	tests.reset("Extraction operator >>");
+	for (size_t i = 0; i < TEST_COUNT; ++i)
+	{	
+		Integer tmp(strs[i]);
+		std::stringstream s;
+		s << tmp;
+		tests.runTest(s.str(), strs[i]);
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("Insertion operator >>");
+	for (size_t i = 0; i < TEST_COUNT; ++i)
+	{	
+		Integer tmp;
+		std::stringstream s;
+		s << strs[i];
+		s >> tmp;
+		tests.runTest(tmp.toString(), strs[i]);
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
 	
 	return (int)(!status);
 }
