@@ -7,11 +7,11 @@ do
     eval $file
     if (( $? != 0 )); then
         echo "Module failed"
-        failed+=1
+        ((failed++))
     else
         echo "Module passed"
     fi
-    total+=1
+    ((total++))
 done
 
 printf "%i/%i modules passed\n" $(expr $total - $failed) $total

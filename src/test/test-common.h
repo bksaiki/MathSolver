@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-MathSolver namespace
+namespace Mathsolver
 {
 
 class TestModule
@@ -26,7 +26,7 @@ public:
     void runTest(const std::string& test, const std::string& expected);
 
     // Sets the name and verbosity of the module and resets the statistics.
-    void reset(const std::string& name, bool verbose = false);
+    void reset(const std::string& name);
 
     // Returns true if all tests have passed.
     inline bool status() const { return (mPassed == mResults.size()); }

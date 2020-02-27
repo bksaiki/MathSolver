@@ -3,9 +3,14 @@
 #include "../src/test/test-common.h"
 #include "../src/types/Integer.h"
 
-using namespace MathSolver;
+using namespace Mathsolver;
 
 #define TEST_COUNT 10
+
+std::string bool_to_string(bool x)
+{
+	return std::string((x ? "true" : "false"));
+}
 
 int main()
 {
@@ -38,12 +43,13 @@ int main()
 	};
 
 	bool status = true;
+	bool verbosity = false;
 
 	//
 	//	Tests
 	//
 
-	TestModule tests("Constructor (int)");
+	TestModule tests("Constructor (int)", verbosity);
 	for (size_t i = 0; i < TEST_COUNT; ++i)
 	{
 		Integer tmp(nums[i]);
@@ -94,6 +100,90 @@ int main()
 		cints[i] = strs[i].c_str();
 		tests.runTest(cints[i].toString(), strs[i]);
 	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("a==b");
+	tests.runTest(bool_to_string(cints[0] == cints[0]), "true");
+	tests.runTest(bool_to_string(cints[1] == cints[2]), "false");
+	tests.runTest(bool_to_string(cints[2] == cints[4]), "false");
+	tests.runTest(bool_to_string(cints[3] == cints[3]), "true");
+	tests.runTest(bool_to_string(cints[4] == cints[1]), "false");
+	tests.runTest(bool_to_string(cints[5] == cints[8]), "false");
+	tests.runTest(bool_to_string(cints[6] == cints[5]), "false");
+	tests.runTest(bool_to_string(cints[7] == cints[7]), "true");
+	tests.runTest(bool_to_string(cints[8] == cints[9]), "false");
+	tests.runTest(bool_to_string(cints[9] == cints[6]), "false");
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("a!=b");
+	tests.runTest(bool_to_string(cints[0] != cints[0]), "false");
+	tests.runTest(bool_to_string(cints[1] != cints[2]), "true");
+	tests.runTest(bool_to_string(cints[2] != cints[4]), "true");
+	tests.runTest(bool_to_string(cints[3] != cints[3]), "false");
+	tests.runTest(bool_to_string(cints[4] != cints[1]), "true");
+	tests.runTest(bool_to_string(cints[5] != cints[8]), "true");
+	tests.runTest(bool_to_string(cints[6] != cints[5]), "true");
+	tests.runTest(bool_to_string(cints[7] != cints[7]), "false");
+	tests.runTest(bool_to_string(cints[8] != cints[9]), "true");
+	tests.runTest(bool_to_string(cints[9] != cints[6]), "true");
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("a>b");
+	tests.runTest(bool_to_string(cints[0] > cints[0]), "false");
+	tests.runTest(bool_to_string(cints[1] > cints[2]), "false");
+	tests.runTest(bool_to_string(cints[2] > cints[4]), "true");
+	tests.runTest(bool_to_string(cints[3] > cints[3]), "false");
+	tests.runTest(bool_to_string(cints[4] > cints[1]), "true");
+	tests.runTest(bool_to_string(cints[5] > cints[8]), "false");
+	tests.runTest(bool_to_string(cints[6] > cints[5]), "true");
+	tests.runTest(bool_to_string(cints[7] > cints[7]), "false");
+	tests.runTest(bool_to_string(cints[8] > cints[9]), "true");
+	tests.runTest(bool_to_string(cints[9] > cints[6]), "false");
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("a<b");
+	tests.runTest(bool_to_string(cints[0] < cints[0]), "false");
+	tests.runTest(bool_to_string(cints[1] < cints[2]), "true");
+	tests.runTest(bool_to_string(cints[2] < cints[4]), "false");
+	tests.runTest(bool_to_string(cints[3] < cints[3]), "false");
+	tests.runTest(bool_to_string(cints[4] < cints[1]), "false");
+	tests.runTest(bool_to_string(cints[5] < cints[8]), "true");
+	tests.runTest(bool_to_string(cints[6] < cints[5]), "false");
+	tests.runTest(bool_to_string(cints[7] < cints[7]), "false");
+	tests.runTest(bool_to_string(cints[8] < cints[9]), "false");
+	tests.runTest(bool_to_string(cints[9] < cints[6]), "true");
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("a>=b");
+	tests.runTest(bool_to_string(cints[0] >= cints[0]), "true");
+	tests.runTest(bool_to_string(cints[1] >= cints[2]), "false");
+	tests.runTest(bool_to_string(cints[2] >= cints[4]), "true");
+	tests.runTest(bool_to_string(cints[3] >= cints[3]), "true");
+	tests.runTest(bool_to_string(cints[4] >= cints[1]), "true");
+	tests.runTest(bool_to_string(cints[5] >= cints[8]), "false");
+	tests.runTest(bool_to_string(cints[6] >= cints[5]), "true");
+	tests.runTest(bool_to_string(cints[7] >= cints[7]), "true");
+	tests.runTest(bool_to_string(cints[8] >= cints[9]), "true");
+	tests.runTest(bool_to_string(cints[9] >= cints[6]), "false");
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("a<=b");
+	tests.runTest(bool_to_string(cints[0] <= cints[0]), "true");
+	tests.runTest(bool_to_string(cints[1] <= cints[2]), "true");
+	tests.runTest(bool_to_string(cints[2] <= cints[4]), "false");
+	tests.runTest(bool_to_string(cints[3] <= cints[3]), "true");
+	tests.runTest(bool_to_string(cints[4] <= cints[1]), "false");
+	tests.runTest(bool_to_string(cints[5] <= cints[8]), "true");
+	tests.runTest(bool_to_string(cints[6] <= cints[5]), "false");
+	tests.runTest(bool_to_string(cints[7] <= cints[7]), "true");
+	tests.runTest(bool_to_string(cints[8] <= cints[9]), "false");
+	tests.runTest(bool_to_string(cints[9] <= cints[6]), "true");
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
 
@@ -414,7 +504,7 @@ int main()
 	}
 
 	{		
-		tests.reset("a>>=b");
+		tests.reset("a<<=b");
 
 		Integer r20 = cints[2];
 		Integer r21 = cints[2];

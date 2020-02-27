@@ -1,7 +1,7 @@
 #include <cassert>
 #include "Bytes.h"
 
-MathSolver namespace
+namespace Mathsolver
 {
 
 uint8_t addByte2(uint8_t* res, uint8_t a, uint8_t b)

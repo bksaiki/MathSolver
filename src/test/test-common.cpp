@@ -1,6 +1,6 @@
 #include "test-common.h"
 
-MathSolver namespace
+namespace Mathsolver
 {
 
 std::string TestModule::result() const
@@ -12,7 +12,7 @@ std::string TestModule::result() const
     {
         if (mVerbose || s.find("FAIL") != std::string::npos)
         {
-            results += ("\n (" + std::to_string(i) + "/" + totalStr  + ") " + s);
+            results += ("\n  " + std::to_string(i) + + "\t" + s);
         }
         ++i;
     }
@@ -36,10 +36,9 @@ void TestModule::runTest(const std::string& test, const std::string& expected)
     mResults.push_back(result + "\tExpected: " + expected + "\tActual: " + test);
 }
 
-void TestModule::reset(const std::string& name, bool verbose)
+void TestModule::reset(const std::string& name)
 {
     mName = name;
-    mVerbose = verbose;
     mPassed = 0;
     mResults.clear();
 }

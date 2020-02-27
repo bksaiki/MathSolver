@@ -8,7 +8,7 @@
 #define MATHSOLVER_DEFAULT_INT_WIDTH    4
 #define MATHSOLVER_MAX_INT_WIDTH        65536
 
-MathSolver namespace
+namespace Mathsolver
 {
 
 class Integer
@@ -54,8 +54,23 @@ public:
     // Assignement from std::string.
     Integer& operator=(const std::string& str);
 
+    // Equality operator
+    bool operator==(const Integer& other) const;
+
+    // Inequality operator
+    bool operator!=(const Integer& other) const;
+
     // Greater than operator
+    bool operator>(const Integer& other) const;
+
+    // Less than operator
+    bool operator<(const Integer& other) const;
+
+    // Greater than or equal operator
     bool operator>=(const Integer& other) const;
+
+    // Less than or equal operator
+    bool operator<=(const Integer& other) const;
 
     // Addition operator
     Integer operator+(const Integer& other) const;

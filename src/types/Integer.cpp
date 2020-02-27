@@ -2,7 +2,7 @@
 #include <cstring>
 #include "Integer.h"
 
-MathSolver namespace
+namespace Mathsolver
 {
 
 Integer::Integer()
@@ -77,10 +77,10 @@ Integer& Integer::operator=(const Integer& other)
     if (this != &other)
     {
         delete[] mData;
-        mData = new uint8_t[other.mSign];
+        mData = new uint8_t[other.mSize];
         mSize = other.mSize;
         mSign = other.mSign;
-        memcpy(mData, other.mData, mSize);
+        memcpy(mData, other.mData, other.mSize);
     }
 
     return *this;
@@ -100,7 +100,6 @@ Integer& Integer::operator=(Integer&& other)
 Integer& Integer::operator=(const char* str)
 {
     delete[] mData;
-    setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
     fromString(str);
 
     return *this;
@@ -109,18 +108,51 @@ Integer& Integer::operator=(const char* str)
 Integer& Integer::operator=(const std::string& str)
 {
     delete[] mData;
-    setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
     fromString(str.c_str());
 
     return *this;
 }
 
+bool Integer::operator==(const Integer& other) const
+{
+    return (mSign == other.mSign) && (cmpBytes(mData, mSize, other.mData, other.mSize) == 0);
+}
+
+bool Integer::operator!=(const Integer& other) const
+{
+    return (mSign != other.mSign) || (cmpBytes(mData, mSize, other.mData, other.mSize) != 0);
+}
+
+bool Integer::operator>(const Integer& other) const
+{
+    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) < 0);
+    else if (mSign && !other.mSign)     return false;
+    else if (!mSign && other.mSign)     return true;
+    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) > 0);
+}
+
+bool Integer::operator<(const Integer& other) const
+{
+    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) > 0);
+    else if (mSign && !other.mSign)     return true;
+    else if (!mSign && other.mSign)     return false;
+    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) < 0);
+}
+
 bool Integer::operator>=(const Integer& other) const
 {
     if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) <= 0);
+    else if (mSign && !other.mSign)     return false;
+    else if (!mSign && other.mSign)     return true;
+    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0);
+}
+
+bool Integer::operator<=(const Integer& other) const
+{
+    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0);
     else if (mSign && !other.mSign)     return true;
     else if (!mSign && other.mSign)     return false;
-    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0);
+    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) <= 0);
 }
 
 Integer Integer::operator+(const Integer& other) const
@@ -191,9 +223,8 @@ Integer& Integer::operator+=(const Integer& other)
         int cmp = cmpBytes(mData, mSize, other.mData, other.mSize);
         if (cmp == 0) // Avoid computation: x + -x = 0
         {
-            uint8_t* arr = new uint8_t[1];
-            arr[0] = 0;
-            set(arr, 1, false);
+            delete[] mData;
+            setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
         }
         else // result != 0
         {        
@@ -212,9 +243,8 @@ Integer& Integer::operator-=(const Integer& other)
     {
         if (cmp == 0) // Avoid computation: x - x = 0
         {
-            uint8_t* arr = new uint8_t[1];
-            arr[0] = 0;
-            set(arr, 1, false);
+            delete[] mData;
+            setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
         }
         else // result != 0
         {
@@ -270,7 +300,7 @@ Integer& Integer::operator>>=(size_t bits)
         uint8_t highMask = 0xFF << bitShift;
         uint8_t lowMask = 0xFF >> invBitShift;
 
-        for (; i < bytesToShift; ++i)
+        for (; i < bytesToShift - 1; ++i)
             mData[i] = ((mData[i + byteShift + 1] & lowMask) << invBitShift) | ((mData[i + byteShift] & highMask) >> bitShift); 
         mData[i] = ((mData[i + byteShift] & highMask) >> bitShift); 
         ++i;
@@ -298,7 +328,7 @@ Integer& Integer::operator<<=(size_t bits)
     size_t maxSize = highestNonZeroByte(mData, mSize) + byteShift + ((bitShift > 0) ? 1 : 0);
     size_t i = maxSize - 1;
 
-    if (maxSize > mSize)        // resize Integer if need more space. Will resize one byte too large if no bit shift.
+    if (mSize < maxSize)        // resize Integer if need more space. Will resize one byte too large if no bit shift.
         resizeNoCheck(maxSize);
 
     if (bitShift > 0)
@@ -307,10 +337,14 @@ Integer& Integer::operator<<=(size_t bits)
         uint8_t highMask = 0xFF << invBitShift;
         uint8_t lowMask = 0xFF >> bitShift;
 
-        mData[i] = (mData[i - byteShift - 1] & highMask) >> invBitShift;
+        if (i > 0)
+            mData[i] = (mData[i - byteShift - 1] & highMask) >> invBitShift;
+
         for (--i; i < maxSize - 1 && i > byteShift; --i)
-            mData[i] = ((mData[i - byteShift] & lowMask) << bitShift) | ((mData[i - byteShift - 1] & highMask) >> invBitShift);   
-        mData[i] = (mData[i - byteShift] & lowMask) << bitShift;
+            mData[i] = ((mData[i - byteShift] & lowMask) << bitShift) | ((mData[i - byteShift - 1] & highMask) >> invBitShift);
+        
+        if (i < maxSize)
+            mData[i] = (mData[i - byteShift] & lowMask) << bitShift;
         --i;
     }
     else
@@ -332,10 +366,8 @@ std::ostream& operator<<(std::ostream& out, const Integer& integer)
 }
 
 std::istream& operator>>(std::istream& in, Integer& integer)
-{
-    if (integer.mData != nullptr)
-        delete[] integer.mData;
-
+{ 
+    delete[] integer.mData;
     integer.setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
     if (in.peek() == '-')
     {
@@ -470,8 +502,11 @@ void Integer::divAndRem(const Integer& other, Integer& quo, Integer& rem) const
     size_t maxSize = highestNonZeroByte(mData, mSize);
     size_t maxBits = maxSize * 8;
 
-    quo.setZero(maxSize); // set quotient size to this size
-    rem.setZero(maxSize); // set remainder size to this size
+    // reset quo and rem data
+    delete[] quo.mData;
+    delete[] rem.mData;
+    quo.setZero(maxSize);
+    rem.setZero(maxSize);
     quo.mSign = mSign ^ other.mSign;
     rem.mSign = false;
 
@@ -500,6 +535,7 @@ void Integer::divAssignAndRem(const Integer& other, Integer& rem)
     size_t maxSize = highestNonZeroByte(mData, mSize);
     size_t maxBits = mSize * 8;
 
+    delete[] rem.mData;
     rem.setZero(maxSize); // set remainder size to this size
     if (cmpBytes (mData, mSize, other.mData, other.mSize) < 0) // if a < b, avoid computation: a/b = 0
     {
@@ -593,20 +629,20 @@ Integer Integer::mul(const Integer& other, bool sign) const
 void Integer::resizeNoCheck(size_t size)
 {
     assert(size > 0);
-    if (size != mSize) // larger requested size
+    if (size != mSize)
     {
         uint8_t* t = new uint8_t[size];
         if (size > mSize)
         {
-            memcpy(t, mData, size);
-            memset(&t[mSize], 0, size - mSize);
+            memset(&t[mSize], 0, size - mSize); 
+            memcpy(t, mData, mSize);
         }
         else
         {
             memcpy(t, mData, size);
         }
         
-        delete[] mData;
+        delete[] mData; 
         mData = t;
         mSize = size;
     }
@@ -654,25 +690,29 @@ Integer Integer::sub(const Integer& other, bool sign) const
 
 void Integer::subAssign(const Integer& other, bool sign)
 {
+    size_t thisSize = highestNonZeroByte(mData, mSize);
+    size_t otherSize = highestNonZeroByte(other.mData, other.mSize);
     uint8_t *l, *s;
     size_t low, high;
     mSign = sign;
 
-    if (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0)
+    if (cmpBytes(mData, thisSize, other.mData, otherSize) >= 0)
     {
         l = mData;
         s = other.mData;
-        high = mSize;
-        low = other.mSize;
+        high = thisSize;
+        low = otherSize;
     }
     else
     {
         l = other.mData;
         s = mData;
-        high = other.mSize;
-        low = mSize;
-        resizeNoCheck(high); // must resize to store result
+        high = otherSize;
+        low = thisSize;
     }
+
+    if (mSize < high)
+        resizeNoCheck(high);
 
     size_t i = 0;
     uint8_t c = 1;
