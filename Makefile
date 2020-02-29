@@ -13,18 +13,30 @@ TEST_DEPS	:= $(TEST_EXES:%=%.d)
 CFLAGS 		?= -MMD -MP -g -m64 -Wall -std=c++17
 LDFLAGS		?= 
 
+test-all: tests memcheck;
+
 tests: build-tests
 	$(TEST_DIR)/test.sh $(TEST_EXES)
 
+memcheck: build-tests
+	$(TEST_DIR)/memcheck.sh $(TEST_EXES)
+
 build-tests: $(TEST_EXES);
 
-build: $(OBJS);
+build: setup $(OBJS);
+
+setup:
+	mkdir -p build/test
+	mkdir -p build/types
 
 clean:
 	$(RM) $(OBJS) $(TEST_EXES)
 
 clean-deps:
 	$(RM) -r $(DEPS) $(TEST_DEPS)
+
+clean-all:
+	rm -r build
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CFLAGS) -c -o $@ $<
@@ -33,4 +45,4 @@ $(BUILD_DIR)/%: $(TEST_DIR)/%.cpp $(OBJS)
 	$(CXX) $(CFLAGS) -o $@ $< $(OBJS)
 
 -include $(DEPS) $(TEST_DEPS)
-.PHONY: test build clean clean-deps
+.PHONY: test memcheck build clean clean-deps clean-all setup

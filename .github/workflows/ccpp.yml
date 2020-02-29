@@ -11,8 +11,9 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build
       run: |
-        mkdir build/test
-        mkdir build/types
+        sudo apt install -y valgrind
+        mkdir -p build/test
+        mkdir -p build/types
         make build build-tests
     - name: Testing
-      run: make tests
+      run: make tests memcheck
