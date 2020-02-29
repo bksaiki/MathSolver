@@ -38,7 +38,7 @@ Integer::Integer(unsigned int x)
     memcpy(mData, &x, 4);
 }
 
-Integer::Integer(signed int x)
+Integer::Integer(signed x)
 {  
     if (x < 0)
     {
@@ -212,6 +212,17 @@ Integer Integer::operator/(const Integer& other) const
     return quo;
 }
 
+Integer Integer::operator%(const Integer& other) const
+{
+    Integer quo;
+    Integer rem;
+    
+    divAndRem(other, quo, rem);
+    if (mSign == other.mSign)   rem.mSign = other.mSign;
+    else                        rem.subAssign(other, other.mSign);
+    return rem;
+}
+
 Integer& Integer::operator+=(const Integer& other)
 {
     if(mSign == other.mSign)
@@ -261,9 +272,8 @@ Integer& Integer::operator-=(const Integer& other)
 
 Integer& Integer::operator*=(const Integer& other)
 {
-    Integer res = mul(other, mSign ^ other.mSign);   
-    if (this != &res)
-        delete[] mData;
+    Integer res = mul(other, mSign ^ other.mSign);  
+    delete[] mData;
     move(res);
     return *this;
 }
@@ -275,6 +285,26 @@ Integer& Integer::operator/=(const Integer& other)
     return *this;
 }
 
+Integer& Integer::operator%=(const Integer& other)
+{
+    Integer quo;
+    Integer rem;
+
+    divAndRem(other, quo, rem);
+    if (mSign == other.mSign)   rem.mSign = other.mSign;
+    else                        rem.subAssign(other, other.mSign);
+
+    delete[] mData;
+    move(rem);
+    return *this;
+}
+
+Integer Integer::operator+() const
+{
+    Integer res = *this;
+    return res;
+}
+
 Integer Integer::operator-() const
 {
     Integer res = *this;
@@ -282,80 +312,62 @@ Integer Integer::operator-() const
     return res;
 }
 
-Integer& Integer::operator>>=(size_t bits)
+
+Integer& Integer::operator++()
 {
-    assert(8 * mSize >= bits);
-    if (bits == 0)  // no computation 
-        return *this;
-
-    size_t byteShift = bits / 8;
-    size_t bitShift = bits % 8;  
-    size_t size = highestNonZeroByte(mData, mSize);
-    size_t bytesToShift = (size < byteShift) ? 0 : (size - byteShift);
-    size_t i = 0;
-
-    if (bitShift > 0)
-    {
-        size_t invBitShift = 8 - bitShift;
-        uint8_t highMask = 0xFF << bitShift;
-        uint8_t lowMask = 0xFF >> invBitShift;
-
-        for (; i < bytesToShift - 1; ++i)
-            mData[i] = ((mData[i + byteShift + 1] & lowMask) << invBitShift) | ((mData[i + byteShift] & highMask) >> bitShift); 
-        mData[i] = ((mData[i + byteShift] & highMask) >> bitShift); 
-        ++i;
-    }
-    else
-    {
-        for (; i < bytesToShift; ++i)
-            mData[i] = mData[i + byteShift];
-    }
-    
-    for(; i < mSize; ++i)
-        mData[i] = 0;
-
+    *this += 1;
     return *this;
 }
 
-Integer& Integer::operator<<=(size_t bits)
+Integer& Integer::operator--()
 {
-    assert(mSize + (bits * 8) <= MATHSOLVER_MAX_INT_WIDTH); // ensure that Integer stays below limit
-    if (bits == 0)  // no computation 
-        return *this;
-
-    size_t byteShift = bits / 8;
-    size_t bitShift = bits % 8;
-    size_t maxSize = highestNonZeroByte(mData, mSize) + byteShift + ((bitShift > 0) ? 1 : 0);
-    size_t i = maxSize - 1;
-
-    if (mSize < maxSize)        // resize Integer if need more space. Will resize one byte too large if no bit shift.
-        resizeNoCheck(maxSize);
-
-    if (bitShift > 0)
-    {
-        size_t invBitShift = 8 - bitShift; 
-        uint8_t highMask = 0xFF << invBitShift;
-        uint8_t lowMask = 0xFF >> bitShift;
-
-        if (i > 0)
-            mData[i] = (mData[i - byteShift - 1] & highMask) >> invBitShift;
-
-        for (--i; i < maxSize - 1 && i > byteShift; --i)
-            mData[i] = ((mData[i - byteShift] & lowMask) << bitShift) | ((mData[i - byteShift - 1] & highMask) >> invBitShift);
-        
-        if (i < maxSize)
-            mData[i] = (mData[i - byteShift] & lowMask) << bitShift;
-        --i;
-    }
-    else
-    {
-        for (; i >= byteShift && i > 0; --i)
-            mData[i] = mData[i - byteShift];
-    }
-
-    for (; i < byteShift; --i)
-        mData[i] = 0;
+    *this -= 1;
     return *this;
+}
+
+Integer Integer::operator++(int)
+{
+    Integer ret = *this;
+    *this += 1;
+    return ret;
+}
+
+Integer Integer::operator--(int)
+{
+    Integer ret = *this;
+    *this -= 1;
+    return ret;
+}
+
+Integer Integer::operator>>(int bits) const
+{
+    Integer res = *this;
+    res.shrAssign(bits);
+    return res;
+}
+
+Integer Integer::operator<<(int bits) const
+{
+    Integer res = *this;   
+    res.shlAssign(bits);
+    return res;
+}
+
+Integer& Integer::operator>>=(int bits)
+{
+    shrAssign(bits);
+    return *this;
+}
+
+Integer& Integer::operator<<=(int bits)
+{
+    shlAssign(bits);
+    return *this;
+}
+
+Integer::operator bool() const
+{
+    return !(rangeIsEmpty(mData, &mData[mSize]));
 }
 
 std::ostream& operator<<(std::ostream& out, const Integer& integer)
@@ -500,7 +512,7 @@ void Integer::divAndRem(const Integer& other, Integer& quo, Integer& rem) const
 {
     // TODO: assert(other != 0)
     size_t maxSize = highestNonZeroByte(mData, mSize);
-    size_t maxBits = maxSize * 8;
+    size_t maxBits = highestNonZeroBit(mData, mSize);
 
     // reset quo and rem data
     delete[] quo.mData;
@@ -508,7 +520,6 @@ void Integer::divAndRem(const Integer& other, Integer& quo, Integer& rem) const
     quo.setZero(maxSize);
     rem.setZero(maxSize);
     quo.mSign = mSign ^ other.mSign;
-    rem.mSign = false;
 
     if (cmpBytes (mData, maxSize, other.mData, other.mSize) < 0) // if a < b, avoid computation: a/b = 0
     {
@@ -533,7 +544,7 @@ void Integer::divAssignAndRem(const Integer& other, Integer& rem)
 {
     // TODO: assert(other != 0)
     size_t maxSize = highestNonZeroByte(mData, mSize);
-    size_t maxBits = mSize * 8;
+    size_t maxBits = highestNonZeroBit(mData, mSize);
 
     delete[] rem.mData;
     rem.setZero(maxSize); // set remainder size to this size
@@ -654,6 +665,78 @@ void Integer::setZero(size_t len)
     mSize = len;
     mSign = false;
     memset(mData, 0, len);
+}
+
+void Integer::shlAssign(int bits)
+{
+    assert(mSize + (bits * 8) <= MATHSOLVER_MAX_INT_WIDTH); // ensure that Integer stays below limit
+    if (bits < 0)  // no computation 
+        return;
+
+    size_t byteShift = bits / 8;
+    size_t bitShift = bits % 8;
+    size_t maxSize = highestNonZeroByte(mData, mSize) + byteShift + ((bitShift > 0) ? 1 : 0);
+    size_t i = maxSize - 1;
+
+    if (mSize < maxSize)        // resize Integer if need more space. Will resize one byte too large if no bit shift.
+        resizeNoCheck(maxSize);
+
+    if (bitShift > 0)
+    {
+        size_t invBitShift = 8 - bitShift; 
+        uint8_t highMask = 0xFF << invBitShift;
+        uint8_t lowMask = 0xFF >> bitShift;
+
+        if (i > 0)
+            mData[i] = (mData[i - byteShift - 1] & highMask) >> invBitShift;
+
+        for (--i; i < maxSize - 1 && i > byteShift; --i)
+            mData[i] = ((mData[i - byteShift] & lowMask) << bitShift) | ((mData[i - byteShift - 1] & highMask) >> invBitShift);
+        
+        if (i < maxSize)
+            mData[i] = (mData[i - byteShift] & lowMask) << bitShift;
+        --i;
+    }
+    else
+    {
+        for (; i >= byteShift && i > 0; --i)
+            mData[i] = mData[i - byteShift];
+    }
+
+    for (; i < byteShift; --i)
+        mData[i] = 0;
+}
+
+void Integer::shrAssign(int bits)
+{
+    if (bits < 0)  // no computation 
+        return;
+
+    size_t byteShift = bits / 8;
+    size_t bitShift = bits % 8;  
+    size_t size = highestNonZeroByte(mData, mSize);
+    size_t bytesToShift = (size < byteShift) ? 0 : (size - byteShift);
+    size_t i = 0;
+
+    if (bitShift > 0)
+    {
+        size_t invBitShift = 8 - bitShift;
+        uint8_t highMask = 0xFF << bitShift;
+        uint8_t lowMask = 0xFF >> invBitShift;
+
+        for (; i < bytesToShift - 1; ++i)
+            mData[i] = ((mData[i + byteShift + 1] & lowMask) << invBitShift) | ((mData[i + byteShift] & highMask) >> bitShift); 
+        mData[i] = ((mData[i + byteShift] & highMask) >> bitShift); 
+        ++i;
+    }
+    else
+    {
+        for (; i < bytesToShift; ++i)
+            mData[i] = mData[i + byteShift];
+    }
+    
+    for(; i < mSize; ++i)
+        mData[i] = 0;
 }
 
 Integer Integer::sub(const Integer& other, bool sign) const

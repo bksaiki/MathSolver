@@ -39,7 +39,7 @@ int main()
 		43214,
 		-353451,
 		25,
-		-149
+		0
 	};
 
 	bool status = true;
@@ -99,6 +99,34 @@ int main()
 	{
 		cints[i] = strs[i].c_str();
 		tests.runTest(cints[i].toString(), strs[i]);
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("Unary plus (+)");
+	for (size_t i = 0; i < TEST_COUNT; ++i)
+	{
+		Integer tmp = +cints[i];
+		tests.runTest(tmp.toString(), strs[i]);
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("Negation (-)");
+	for (size_t i = 0; i < TEST_COUNT; ++i)
+	{
+		Integer tmp = -cints[i];
+		std::string cmp = (strs[i][0] == '-') ? (strs[i].substr(1, strs[i].length())) : ("-" + strs[i]);
+		tests.runTest(tmp.toString(), cmp);
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	tests.reset("operator bool");
+	for (size_t i = 0; i < TEST_COUNT; ++i)
+	{
+		bool res = nums[i];
+		tests.runTest(bool_to_string(res), bool_to_string(i != 9));
 	}
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
@@ -461,6 +489,133 @@ int main()
 
 		std::cout << tests.result() << std::endl;
 		status &= tests.status();
+	}	
+
+	{		
+		tests.reset("a%=b");
+
+		Integer r01 = cints[0];
+		Integer r23 = cints[2];
+		Integer r45 = cints[4];
+		Integer r67 = cints[6];
+		Integer r89 = cints[8];
+		Integer r13 = cints[1];
+		Integer r25 = cints[2];
+		Integer r49 = cints[4];
+		Integer r68 = cints[6];
+		Integer r07 = cints[0];
+
+		r01 %= cints[1];
+		r23 %= cints[3];
+		r45 %= cints[5];
+		r67 %= cints[7];
+		r89 %= cints[9];
+		r13 %= cints[3];
+		r25 %= cints[5];
+		r49 %= cints[9];
+		r68 %= cints[8];
+		r07 %= cints[7];
+
+		tests.runTest(r01.toString(), "-1773273743103461260925877823936");
+		tests.runTest(r23.toString(), "-1129409795571040706");
+		tests.runTest(r45.toString(), "-1693718277");
+		tests.runTest(r67.toString(), "-310237");
+		tests.runTest(r89.toString(), "-124");
+		tests.runTest(r13.toString(), "-1095703636533614875");
+		tests.runTest(r25.toString(), "-1008389444");
+		tests.runTest(r49.toString(), "-29");
+		tests.runTest(r68.toString(), "14");
+		tests.runTest(r07.toString(), "-120504");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}
+
+	{		
+		tests.reset("a%b");
+
+		Integer r01 = cints[0] % cints[1];
+		Integer r23 = cints[2] % cints[3];
+		Integer r45 = cints[4] % cints[5];
+		Integer r67 = cints[6] % cints[7];
+		Integer r89 = cints[8] % cints[9];
+		Integer r13 = cints[1] % cints[3];
+		Integer r25 = cints[2] % cints[5];
+		Integer r49 = cints[4] % cints[9];
+		Integer r68 = cints[6] % cints[8];
+		Integer r07 = cints[0] % cints[7];
+
+		tests.runTest(r01.toString(), "-1773273743103461260925877823936");
+		tests.runTest(r23.toString(), "-1129409795571040706");
+		tests.runTest(r45.toString(), "-1693718277");
+		tests.runTest(r67.toString(), "-310237");
+		tests.runTest(r89.toString(), "-124");
+		tests.runTest(r13.toString(), "-1095703636533614875");
+		tests.runTest(r25.toString(), "-1008389444");
+		tests.runTest(r49.toString(), "-29");
+		tests.runTest(r68.toString(), "14");
+		tests.runTest(r07.toString(), "-120504");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}
+
+	{		
+		tests.reset("a>>b");
+
+		Integer r20 = cints[2] >> 2;
+		Integer r21 = cints[2] >> 14;
+		Integer r22 = cints[2] >> 19;
+		Integer r23 = cints[2] >> 24;
+		Integer r24 = cints[2] >> 38;
+		Integer r50 = cints[5] >> 3;
+		Integer r51 = cints[5] >> 8;
+		Integer r52 = cints[5] >> 13;
+		Integer r53 = cints[5] >> 16;
+		Integer r54 = cints[5] >> 20;
+
+		tests.runTest(r20.toString(), "2310922309736578087058");
+		tests.runTest(r21.toString(), "564190017025531759");
+		tests.runTest(r22.toString(), "17630938032047867");
+		tests.runTest(r23.toString(), "550966813501495");
+		tests.runTest(r24.toString(), "33628345550");
+		tests.runTest(r50.toString(), "-292792665");
+		tests.runTest(r51.toString(), "-9149770");
+		tests.runTest(r52.toString(), "-285930");
+		tests.runTest(r53.toString(), "-35741");
+		tests.runTest(r54.toString(), "-2233");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}
+
+	{		
+		tests.reset("a<<b");
+
+		Integer r20 = cints[2] << 2;
+		Integer r21 = cints[2] << 14;
+		Integer r22 = cints[2] << 19;
+		Integer r23 = cints[2] << 27;
+		Integer r24 = cints[2] << 38;
+		Integer r50 = cints[5] << 3;
+		Integer r51 = cints[5] << 8;
+		Integer r52 = cints[5] << 13;
+		Integer r53 = cints[5] << 16;
+		Integer r54 = cints[5] << 20;
+
+		tests.runTest(r20.toString(), "36974756955785249392936");
+		tests.runTest(r21.toString(), "151448604490896381513465856");
+		tests.runTest(r22.toString(), "4846355343708684208430907392");
+		tests.runTest(r23.toString(), "1240666967989423157358312292352");
+		tests.runTest(r24.toString(), "2540885950442338626269823574736896");
+		tests.runTest(r50.toString(), "-18738730584");
+		tests.runTest(r51.toString(), "-599639378688");
+		tests.runTest(r52.toString(), "-19188460118016");
+		tests.runTest(r53.toString(), "-153507680944128");
+		tests.runTest(r54.toString(), "-2456122895106048");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
 	}
 
 	{		
@@ -543,21 +698,167 @@ int main()
 		status &= tests.status();
 	}
 
-	/*
-		Modulo:
-		-1773273743103461260925877823936
-		-1129409795571040706
-		-1693718277
-		-310237
-		-124
-		-1095703636533614875
-		1008389444
-		-29
-		14
-		-120504
-	*/	
+	{		
+		tests.reset("pre-increment (++)");
 
-	tests.reset("Extraction operator >>");
+		Integer c0 = cints[0];
+		Integer c1 = cints[1];
+		Integer c2 = cints[2];
+		Integer c3 = cints[3];
+		Integer c4 = cints[4];
+		Integer c5 = cints[5];
+		Integer c6 = cints[6];
+		Integer c7 = cints[7];
+		Integer c8 = cints[8];
+		Integer c9 = cints[9];
+
+		Integer r0 = ++c0;	
+		Integer r1 = ++c1;
+		Integer r2 = ++c2;
+		Integer r3 = ++c3;
+		Integer r4 = ++c4;
+		Integer r5 = ++c5;
+		Integer r6 = ++c6;
+		Integer r7 = ++c7;
+		Integer r8 = ++c8;
+		Integer r9 = ++c9;
+
+		tests.runTest(r0.toString(), "12351235213512351351235123512352345");
+		tests.runTest(r1.toString(), "-9590845098800818953801280582434");
+		tests.runTest(r2.toString(), "9243689238946312348235");
+		tests.runTest(r3.toString(), "-1234123434620462339");
+		tests.runTest(r4.toString(), "648623047");
+		tests.runTest(r5.toString(), "-2342341322");
+		tests.runTest(r6.toString(), "43215");
+		tests.runTest(r7.toString(), "-353450");
+		tests.runTest(r8.toString(), "26");
+		tests.runTest(r9.toString(), "-148");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}	
+
+	{		
+		tests.reset("post-increment (++)");
+
+		Integer c0 = cints[0];
+		Integer c1 = cints[1];
+		Integer c2 = cints[2];
+		Integer c3 = cints[3];
+		Integer c4 = cints[4];
+		Integer c5 = cints[5];
+		Integer c6 = cints[6];
+		Integer c7 = cints[7];
+		Integer c8 = cints[8];
+		Integer c9 = cints[9];
+
+		Integer r0 = ++c0;	
+		Integer r1 = ++c1;
+		Integer r2 = ++c2;
+		Integer r3 = ++c3;
+		Integer r4 = ++c4;
+		Integer r5 = ++c5;
+		Integer r6 = ++c6;
+		Integer r7 = ++c7;
+		Integer r8 = ++c8;
+		Integer r9 = ++c9;
+
+		tests.runTest(c0.toString(), "12351235213512351351235123512352345");
+		tests.runTest(c1.toString(), "-9590845098800818953801280582434");
+		tests.runTest(c2.toString(), "9243689238946312348235");
+		tests.runTest(c3.toString(), "-1234123434620462339");
+		tests.runTest(c4.toString(), "648623047");
+		tests.runTest(c5.toString(), "-2342341322");
+		tests.runTest(c6.toString(), "43215");
+		tests.runTest(c7.toString(), "-353450");
+		tests.runTest(c8.toString(), "26");
+		tests.runTest(c9.toString(), "-148");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}	
+
+	{		
+		tests.reset("pre-decrement (--)");
+
+		Integer c0 = cints[0];
+		Integer c1 = cints[1];
+		Integer c2 = cints[2];
+		Integer c3 = cints[3];
+		Integer c4 = cints[4];
+		Integer c5 = cints[5];
+		Integer c6 = cints[6];
+		Integer c7 = cints[7];
+		Integer c8 = cints[8];
+		Integer c9 = cints[9];
+
+		Integer r0 = --c0;	
+		Integer r1 = --c1;
+		Integer r2 = --c2;
+		Integer r3 = --c3;
+		Integer r4 = --c4;
+		Integer r5 = --c5;
+		Integer r6 = --c6;
+		Integer r7 = --c7;
+		Integer r8 = --c8;
+		Integer r9 = --c9;
+
+		tests.runTest(r0.toString(), "12351235213512351351235123512352343");
+		tests.runTest(r1.toString(), "-9590845098800818953801280582436");
+		tests.runTest(r2.toString(), "9243689238946312348233");
+		tests.runTest(r3.toString(), "-1234123434620462341");
+		tests.runTest(r4.toString(), "648623045");
+		tests.runTest(r5.toString(), "-2342341324");
+		tests.runTest(r6.toString(), "43213");
+		tests.runTest(r7.toString(), "-353452");
+		tests.runTest(r8.toString(), "24");
+		tests.runTest(r9.toString(), "-150");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}
+
+	{		
+		tests.reset("post-decrement (--)");
+
+		Integer c0 = cints[0];
+		Integer c1 = cints[1];
+		Integer c2 = cints[2];
+		Integer c3 = cints[3];
+		Integer c4 = cints[4];
+		Integer c5 = cints[5];
+		Integer c6 = cints[6];
+		Integer c7 = cints[7];
+		Integer c8 = cints[8];
+		Integer c9 = cints[9];
+
+		Integer r0 = --c0;	
+		Integer r1 = --c1;
+		Integer r2 = --c2;
+		Integer r3 = --c3;
+		Integer r4 = --c4;
+		Integer r5 = --c5;
+		Integer r6 = --c6;
+		Integer r7 = --c7;
+		Integer r8 = --c8;
+		Integer r9 = --c9;
+
+		tests.runTest(c0.toString(), "12351235213512351351235123512352343");
+		tests.runTest(c1.toString(), "-9590845098800818953801280582436");
+		tests.runTest(c2.toString(), "9243689238946312348233");
+		tests.runTest(c3.toString(), "-1234123434620462341");
+		tests.runTest(c4.toString(), "648623045");
+		tests.runTest(c5.toString(), "-2342341324");
+		tests.runTest(c6.toString(), "43213");
+		tests.runTest(c7.toString(), "-353452");
+		tests.runTest(c8.toString(), "24");
+		tests.runTest(c9.toString(), "-150");
+
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}
+
+	tests.reset("Extraction (<<)");
 	for (size_t i = 0; i < TEST_COUNT; ++i)
 	{	
 		Integer tmp(strs[i]);
@@ -568,7 +869,7 @@ int main()
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
 
-	tests.reset("Insertion operator >>");
+	tests.reset("Insertion (>>)");
 	for (size_t i = 0; i < TEST_COUNT; ++i)
 	{	
 		Integer tmp;

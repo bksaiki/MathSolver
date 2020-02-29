@@ -84,6 +84,9 @@ public:
     // Division operator
     Integer operator/(const Integer& other) const;
 
+    // Modulo operator (result is the sign of the dividend)
+    Integer operator%(const Integer& other) const;
+
     // Addition assignment operator
     Integer& operator+=(const Integer& other);
 
@@ -96,16 +99,55 @@ public:
     // Division assignment operator
     Integer& operator/=(const Integer& other);
 
+    // Modulo assignment operator
+    Integer& operator%=(const Integer& other);
+
+    // Unary plus operator
+    Integer operator+() const;
+
     // Unary minus operator
     Integer operator-() const;
 
-    // Arithmetic shift right assignment operator. Preserves the sign. Does not perform two's
-    // complement. Thus, x >> bits = -(-x >> bits)
-    Integer& operator>>=(size_t bits);
+    // Preincrement operator
+    Integer& operator++();
 
-    // Arithmetic shift left assignment oeprator. Preserves the sign. Does not perform two's
+    // Predecrement operator
+    Integer& operator--();
+
+    // Postincrement operator
+    Integer operator++(int);
+
+    // Postdecrement operator
+    Integer operator--(int);
+
+    // Right bitwise shift operator
+    Integer operator>>(int bits) const;
+
+    // Left bitwise shift operator
+    Integer operator<<(int bits) const;
+
+    // Right bitwise shift assignment operator. Preserves the sign. Does not perform two's
+    // complement. Thus, x >> bits = -(-x >> bits)
+    Integer& operator>>=(int bits);
+
+    // Left bitwise shift assignment oeprator. Preserves the sign. Does not perform two's
     // complement. Thus x << bits = -(-x << bits)
-    Integer& operator<<=(size_t bits);
+    Integer& operator<<=(int bits);
+
+    /*
+        Bitwise operations are non-sensical on a variable-width integer.   
+    
+        Integer operator~() const;
+        Integer operator&(const Integer&) const;
+        Integer operator|(const Integer&) const;
+        Integer operator^(const Integer&) const;
+        Integer& operator&=(const Integer&);
+        Integer& operator|=(const Integer&);
+        Integer& operator^=(const Integer&);
+    */
+
+    // Returns true if the Integer is non-zero.
+    operator bool() const;
 
     // Stream extraction operator.
     friend std::ostream& operator<<(std::ostream& out, const Integer& integer);
@@ -116,9 +158,10 @@ public:
     // Returns a pointer to the byte array.
     inline uint8_t* data() const { return mData; }
 
+    inline bool isZero() const { return rangeIsEmpty(mData, &mData[mSize]); }
+
     // Sets the data of this Integer using a byte array of a specified length.
-    // The default sign is false (positive).
-    void set(uint8_t* arr, size_t len, bool sign = false);
+    void set(uint8_t* arr, size_t len, bool sign);
 
     // Returns true if this integer is negative.
     inline bool sign() const { return mSign; }
@@ -140,11 +183,11 @@ private:
     void addAssign(const Integer& other, bool sign);
 
     // Helper function. Divides this Integer by another and stores the quotient at quo and
-    // the remainder at rem. The size of the result and the remainder is this size.
+    // the positive remainder at rem. The size of the result and the remainder is this size.
     void divAndRem(const Integer& other, Integer& quo, Integer& rem) const;
 
     // Helper function. Divides this Integer by another and stores the quotient at *this and
-    // the remainder at rem. The size of the remainder is this size.
+    // the positive remainder at rem. The size of the remainder is this size.
     void divAssignAndRem(const Integer& other, Integer& rem);
 
     // Helper function. Clears the data and sets this Integer based on a C-style string. 
@@ -165,6 +208,12 @@ private:
     // Helper function. Sets this Integer with a given length and a positive zero value. Does not 
     // free the existing byte array.
     void setZero(size_t len);
+
+    // Helper function. Performs a bitwise left shift on this Integer.
+    void shlAssign(int bits);
+
+    // Helper function. Performs a bitwise right shift on this Integer.
+    void shrAssign(int bits);
 
     // Helper function. Adds this Integer and another and returns the result. The sign
     // of the result must be specified.

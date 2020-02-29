@@ -10,7 +10,7 @@ TESTS 		:= $(shell find $(TEST_DIR) -name *.cpp)
 TEST_EXES 	:= $(TESTS:$(TEST_DIR)/%.cpp=$(BUILD_DIR)/%)
 TEST_DEPS	:= $(TEST_EXES:%=%.d)
 
-CFLAGS 		?= -MMD -MP -g -m64 -Wall
+CFLAGS 		?= -MMD -MP -g -m64 -Wall -std=c++17
 LDFLAGS		?= 
 
 tests: build-tests

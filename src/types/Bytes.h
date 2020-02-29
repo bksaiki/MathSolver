@@ -22,9 +22,13 @@ int cmpBytes(uint8_t* a, size_t alen, uint8_t* b, size_t blen);
 // Returns the value of a given bit in a byte array. Assertion: bit < 8 * len.
 uint8_t getBit(uint8_t* x, size_t len, size_t bit);
 
+// Returns the highest non-zero bit. Returns 0 if all bytes are zero.
+size_t highestNonZeroBit(uint8_t* x, size_t len);
+
 // Returns one higher than the index of the last non-zero byte in a given byte array.
 // (Returns 0 if all bytes are zero.)
 size_t highestNonZeroByte(uint8_t* x, size_t len);
+
 
 // Returns true if all bytes within the specified range are equal to 0. Returns false
 // otherwise. Assertion: high >= low.

@@ -11,8 +11,6 @@ uint8_t addByte2(uint8_t* res, uint8_t a, uint8_t b)
     return (r >> 8);
 }
 
-// Adds a triple of single bytes, stores the resultant uint8_t at the location specified by
-// res, and returns the overflow. 
 uint8_t addByte3(uint8_t* res, uint8_t a, uint8_t b, uint8_t c)
 {
     uint16_t r = (uint16_t)a + (uint16_t)b + (uint16_t)c;
@@ -66,11 +64,31 @@ uint8_t getBit(uint8_t* x, size_t len, size_t bit)
     else                        return (x[byteOffset] >> 7) & 0x01;
 }
 
+size_t highestNonZeroBit(uint8_t* x, size_t len)
+{
+    for (size_t i = len - 1; i < len; --i)
+    {
+        if (x[i] & 0x80)        return (8 * i) + 8;
+        else if (x[i] & 0x40)   return (8 * i) + 7;
+        else if (x[i] & 0x20)   return (8 * i) + 6;
+        else if (x[i] & 0x10)   return (8 * i) + 5;
+        else if (x[i] & 0x08)   return (8 * i) + 4;
+        else if (x[i] & 0x04)   return (8 * i) + 3;
+        else if (x[i] & 0x02)   return (8 * i) + 2;
+        else if (x[i] & 0x01)   return (8 * i) + 1;
+    }
+
+    return 0;
+}
+
 size_t highestNonZeroByte(uint8_t* x, size_t len)
 {
     for (size_t i = len - 1; i < len; --i)
+    {
         if (x[i])
             return i + 1;
+    }
+
     return 0;
 }
 
