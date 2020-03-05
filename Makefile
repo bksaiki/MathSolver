@@ -28,6 +28,7 @@ build: setup $(OBJS);
 setup:
 	mkdir -p build/test
 	mkdir -p build/types
+	mkdir -p build/expression
 
 clean:
 	$(RM) $(OBJS) $(TEST_EXES)

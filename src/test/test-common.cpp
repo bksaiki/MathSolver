@@ -1,6 +1,6 @@
 #include "test-common.h"
 
-namespace Mathsolver
+namespace MathSolver
 {
 
 std::string TestModule::result() const

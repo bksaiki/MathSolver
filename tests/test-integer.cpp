@@ -3,7 +3,7 @@
 #include "../src/test/test-common.h"
 #include "../src/types/Integer.h"
 
-using namespace Mathsolver;
+using namespace MathSolver;
 
 #define TEST_COUNT 10
 

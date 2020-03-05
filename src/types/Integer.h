@@ -8,7 +8,7 @@
 #define MATHSOLVER_DEFAULT_INT_WIDTH    4
 #define MATHSOLVER_MAX_INT_WIDTH        65536
 
-namespace Mathsolver
+namespace MathSolver
 {
 
 class Integer
