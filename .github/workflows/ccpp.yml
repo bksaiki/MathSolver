@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: C++ CI
 
 on: [push]
 
@@ -10,10 +10,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Build
-      run: |
-        sudo apt install -y valgrind
-        mkdir -p build/test
-        mkdir -p build/types
-        make build build-tests
+      run: make build build-tests
     - name: Testing
-      run: make tests memcheck
+      run: make tests
