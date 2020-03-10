@@ -9,14 +9,27 @@ namespace MathSolver
 
 // Stores unique identifiers
 struct ExpressionNode
-{
-    ExpressionNode* parent;
-    std::vector<ExpressionNode*> children;
-    int precedence;
+{   
+    enum Type
+    {
+        VARIABLE = 0,
+        OPERATOR,
+        FUNCTION,
+        CONSTANT,
+        NUMBER
+    };
 
-    std::string str;
-    Integer natural;
-    double inexact;
+    // Default constructor
+    ExpressionNode();
+
+    ExpressionNode* mParent;
+    std::vector<ExpressionNode*> mChildren;
+    Type mType;
+    int mPrecedence;
+
+    std::string mStr;
+    Integer mExact;
+    double mInexact;
 };
 
 //
@@ -25,14 +38,17 @@ struct ExpressionNode
 
 /*
     Operator precedence
-    1   functions       RL
-    2   (), {}, []      RL
-    3   ^               RL
-    4   !               LR
-    5   a(b)            LR
-    6   *,/,%           LR
-    7   +,-             LR
-    8   value           --
+    0   numbers, constants  --
+    1   functions           RL
+    2   ^                   RL
+    3   !                   LR
+    4   a(b)                LR
+    5   * / %               LR
+    6   +-                  LR
+    7   > < >= < == !=      --
+
+
+    N   , | () [] {}
 */
 
 // Returns true if the character is an operator.
@@ -40,6 +56,8 @@ bool isOperator(char c);
 
 // Returns true if the character is a bracket: (), {}, [].
 bool isBracket(char c);
+
+int operatorPrec(const std::string& op);
 
 }
 

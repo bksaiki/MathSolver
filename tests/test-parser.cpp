@@ -6,6 +6,23 @@
 
 using namespace MathSolver;
 
+
+void printExpressionTree(ExpressionNode* tree)
+{
+	
+	if (!tree->mChildren.empty())
+	{
+		std::cout << "(" << tree->mStr << " ";
+		for (auto e : tree->mChildren)
+			printExpressionTree(e);
+		std::cout << ") ";
+	}
+	else
+	{
+		std::cout << tree->mStr << " ";
+	}
+}
+
 int main()
 {
 	const size_t EXPR_COUNT = 5;
@@ -13,19 +30,18 @@ int main()
 	{
 		"-3.52 + 5.1",
 		"PI * 5 + 2",
-		"Integral[1, 5](x)",
-		"(2 * 5) + (9 ^ 6) * exp(5)",
-		"{x | x >= 0}",
+		"(2 * 5) + (9 ^ 6)",
+		"3/2 <= x < 9*6",
+		"3^2!5!"
 	};
 
 	TestModule tester("Parser");
 	for (size_t i = 0; i < EXPR_COUNT; ++i)
 	{
 		std::cout << "Expr: " << exprs[i] << " -> ";
-		std::list<std::string> tokens = tokenizeStr(exprs[i]);
-
-		for (auto t : tokens)
-			std::cout << "\"" << t << "\" ";
+		std::list<ExpressionNode*> tokens = tokenizeStr(exprs[i]);
+		ExpressionNode* node = buildExpression(tokens);
+		printExpressionTree(node);
 		std::cout << std::endl;
 	}
 
