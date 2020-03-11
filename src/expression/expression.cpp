@@ -34,6 +34,7 @@ int operatorPrec(const std::string& op)
 {
 	if (op == "^")										return 2;
 	else if (op == "!")									return 3;
+	else if (op == "**")								return 4;
 	else if (op == "*" || op == "/" || op == "%")		return 5;
 	else if (op == "+" || op == "-")					return 6;
 	else if (op == ">" || op == ">=" || op == "=" ||

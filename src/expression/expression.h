@@ -42,7 +42,7 @@ struct ExpressionNode
     1   functions           RL
     2   ^                   RL
     3   !                   LR
-    4   a(b)                LR
+    4   a(b) "**"           LR
     5   * / %               LR
     6   +-                  LR
     7   > < >= < == !=      --
