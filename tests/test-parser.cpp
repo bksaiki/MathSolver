@@ -17,7 +17,7 @@ void printExpressionTree(ExpressionNode* tree)
 	{
 		if (!tree->mChildren.empty())
 		{
-			std::cout << "(" << tree->mStr << " ";
+			std::cout << "( " << tree->mStr << " ";
 			for (auto e : tree->mChildren)
 				printExpressionTree(e);
 			std::cout << ") ";
@@ -38,15 +38,10 @@ void printTokenList(const std::list<ExpressionNode*>& list)
 
 int main()
 {
-	const size_t EXPR_COUNT = 7;
+	const size_t EXPR_COUNT = 2;
 	std::string exprs[EXPR_COUNT] =
 	{
-		"5(2)(2)(2)",
-		"PI * 5 + 2",
-		"(2 + 5) * (b ^ 6 - 2 * a)",
-		"3/2 <= x < 9*6",
-		"3^2!5!",
-		"3xy",
+		"y=a*x^2+b*x+c",
 		"y=m*x+b"
 	};
 

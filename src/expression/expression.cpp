@@ -5,6 +5,16 @@ namespace MathSolver
 
 const char* OPERATOR_CHARS = "+-*/%^!,=><|";
 
+const size_t PREDEF_FUNC_COUNT = 5;
+const char* PREDEF_FUNCTIONS[5] = 
+{
+	"exp",
+	"ln",
+	"sin",
+	"cos",
+	"tan"
+};
+
 ExpressionNode::ExpressionNode()
 {
 	mParent = nullptr;
@@ -13,7 +23,18 @@ ExpressionNode::ExpressionNode()
 	mInexact = 0.0;
 }
 
-bool isOperator(char c)
+bool isFunction(const std::string& func)
+{
+	for (size_t i = 0; i < PREDEF_FUNC_COUNT; ++i)
+	{
+		if (func == PREDEF_FUNCTIONS[i])
+			return true;
+	}
+
+	return false;
+}
+
+bool isOperatorChar(char c)
 {
 	for (size_t i = 0; OPERATOR_CHARS[i]; ++i)
 	{

@@ -1,6 +1,7 @@
 #ifndef _MATHSOLVER_EXPRESSION_H_
 #define _MATHSOLVER_EXPRESSION_H_
 
+#include <string>
 #include <vector>
 #include "../types/Integer.h"
 
@@ -51,12 +52,18 @@ struct ExpressionNode
     N   , | () [] {}
 */
 
+
+// Returns true if the string is a predefined or user-defined function.
+bool isFunction(const std::string& func);
+
 // Returns true if the character is an operator.
-bool isOperator(char c);
+bool isOperatorChar(char c);
 
 // Returns true if the character is a bracket: (), {}, [].
 bool isBracket(char c);
 
+// Returns the precedence of the operator. Returns 0 if the string is not
+// an operator.
 int operatorPrec(const std::string& op);
 
 }
