@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace Mathsolver
+namespace MathSolver
 {
 
 class TestModule

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-namespace Mathsolver
+namespace MathSolver
 {
 
 // Adds a pair of single bytes, stores the resultant uint8_t at the location specified by

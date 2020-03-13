@@ -2,7 +2,7 @@
 #include <cstring>
 #include "Integer.h"
 
-namespace Mathsolver
+namespace MathSolver
 {
 
 Integer::Integer()
