@@ -38,11 +38,13 @@ void printTokenList(const std::list<ExpressionNode*>& list)
 
 int main()
 {
-	const size_t EXPR_COUNT = 2;
+	const size_t EXPR_COUNT = 4;
 	std::string exprs[EXPR_COUNT] =
 	{
 		"y=a*x^2+b*x+c",
-		"y=m*x+b"
+		"y=m*x+b",
+		"a+b+c+d",
+		"2*x*y+5*z*w+2"
 	};
 
 	TestModule tester("Parser");
@@ -52,7 +54,8 @@ int main()
 		std::list<ExpressionNode*> tokens = tokenizeStr(exprs[i]);
 		expandTokens(tokens);
 		printTokenList(tokens);
-		ExpressionNode* node = buildExpression(tokens);
+		ExpressionNode* node = parseTokens(tokens);
+		flattenExpr(node);
 		std::cout << "Prefix: ";
 		printExpressionTree(node);
 		std::cout << std::endl << std::endl;

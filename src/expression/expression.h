@@ -2,7 +2,7 @@
 #define _MATHSOLVER_EXPRESSION_H_
 
 #include <string>
-#include <vector>
+#include <list>
 #include "../types/Integer.h"
 
 namespace MathSolver
@@ -24,7 +24,7 @@ struct ExpressionNode
     ExpressionNode();
 
     ExpressionNode* mParent;
-    std::vector<ExpressionNode*> mChildren;
+    std::list<ExpressionNode*> mChildren;
     Type mType;
     int mPrecedence;
 
@@ -65,6 +65,14 @@ bool isBracket(char c);
 // Returns the precedence of the operator. Returns 0 if the string is not
 // an operator.
 int operatorPrec(const std::string& op);
+
+//
+// Expression operations
+//
+
+// Takes an expression node and recursively simplifes certain operators with interior nodes of the
+// same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)
+void flattenExpr(ExpressionNode* node);
 
 }
 

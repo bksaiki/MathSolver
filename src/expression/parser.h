@@ -16,7 +16,7 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr);
 void expandTokens(std::list<ExpressionNode*>& tokens);
 
 // Builds an expression tree from a list of tokens.
-ExpressionNode* buildExpression(const std::list<ExpressionNode*>& tokens);
+ExpressionNode* parseTokens(const std::list<ExpressionNode*>& tokens);
 
 }
 

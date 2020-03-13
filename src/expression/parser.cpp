@@ -154,7 +154,7 @@ void expandTokens(std::list<ExpressionNode*>& tokens)
     }
 }
 
-// buildExpression(tokens) and related functions
+// parseTokens(tokens) and related functions
 
 bool notContained(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end, const std::string& str)
 {
@@ -167,13 +167,13 @@ bool notContained(std::list<ExpressionNode*>::const_iterator begin, std::list<Ex
     return true;
 }
 
-ExpressionNode* buildExpressionR(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end)
+ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end)
 {
     if (((*begin)->mStr == "(" && (*end)->mStr == ")" && notContained(std::next(begin), end, "(")) ||
         ((*begin)->mStr == "[" && (*end)->mStr == "]" && notContained(std::next(begin), end, "[")) ||
         ((*begin)->mStr == "{" && (*end)->mStr == "}" && notContained(std::next(begin), end, "{")))
     {
-        return buildExpressionR(++begin, --end);
+        return parseTokensR(++begin, --end);
     }
 
     std::list<ExpressionNode*>::const_iterator split = end; // loop through tokens from end to beginning
@@ -217,7 +217,7 @@ ExpressionNode* buildExpressionR(std::list<ExpressionNode*>::const_iterator begi
 
         if ((*next)->mStr != "(") // func <arg>"
         {
-            ExpressionNode* arg = buildExpressionR(next, end);
+            ExpressionNode* arg = parseTokensR(next, end);
             arg->mParent = node;
             node->mChildren.push_back(arg); 
         }
@@ -235,7 +235,7 @@ ExpressionNode* buildExpressionR(std::list<ExpressionNode*>::const_iterator begi
                     ++next; // split arg list
                 }
 
-                ExpressionNode* arg = buildExpressionR(std::next(it), std::prev(next));
+                ExpressionNode* arg = parseTokensR(std::next(it), std::prev(next));
                 arg->mParent = node;
                 node->mChildren.push_back(arg);
                 it = next; 
@@ -254,8 +254,8 @@ ExpressionNode* buildExpressionR(std::list<ExpressionNode*>::const_iterator begi
                 return nullptr;
             }
 
-            ExpressionNode* lhs = buildExpressionR(begin, prev);
-            ExpressionNode* rhs = buildExpressionR(next, end);
+            ExpressionNode* lhs = parseTokensR(begin, prev);
+            ExpressionNode* rhs = parseTokensR(next, end);
 
             lhs->mParent = node;
             rhs->mParent = node;
@@ -270,7 +270,7 @@ ExpressionNode* buildExpressionR(std::list<ExpressionNode*>::const_iterator begi
                 return nullptr;
             }
 
-            ExpressionNode* arg = buildExpressionR(begin, prev);
+            ExpressionNode* arg = parseTokensR(begin, prev);
             if (arg != nullptr)     node->mChildren.push_back(arg);
         }
     }
@@ -278,9 +278,9 @@ ExpressionNode* buildExpressionR(std::list<ExpressionNode*>::const_iterator begi
     return node;
 }
 
-ExpressionNode* buildExpression(const std::list<ExpressionNode*>& tokens)
+ExpressionNode* parseTokens(const std::list<ExpressionNode*>& tokens)
 {
-    return buildExpressionR(tokens.begin(), std::prev(tokens.end()));
+    return parseTokensR(tokens.begin(), std::prev(tokens.end()));
 }
 
 }
