@@ -8,6 +8,10 @@
 namespace MathSolver
 {
 
+//
+//  Expression operations
+//
+
 // Stores unique identifiers
 struct ExpressionNode
 {   
@@ -33,10 +37,22 @@ struct ExpressionNode
     double mInexact;
 };
 
+// Takes an expression node and recursively simplifes certain operators with interior nodes of the
+// same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)
+void flattenExpr(ExpressionNode* node);
+
+// Deletes an expression tree.
+void freeExpression(ExpressionNode* node);
+
+// Returns an expression tree as a string in infix notation. Assumes the tree is valid.
+std::string toInfixString(ExpressionNode* node);
+
+// Returns an expression tree as a string in prefix notation. Assumes the tree is valid.
+std::string toPrefixString(ExpressionNode* node);
+
+
 //
 // Language constructs
-//
-
 /*
     Operator precedence
     0   numbers, constants  --
@@ -48,10 +64,8 @@ struct ExpressionNode
     6   +-                  LR
     7   > < >= < == !=      --
 
-
     N   , | () [] {}
 */
-
 
 // Returns true if the string is a predefined or user-defined function.
 bool isFunction(const std::string& func);
@@ -65,14 +79,6 @@ bool isBracket(char c);
 // Returns the precedence of the operator. Returns 0 if the string is not
 // an operator.
 int operatorPrec(const std::string& op);
-
-//
-// Expression operations
-//
-
-// Takes an expression node and recursively simplifes certain operators with interior nodes of the
-// same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)
-void flattenExpr(ExpressionNode* node);
 
 }
 

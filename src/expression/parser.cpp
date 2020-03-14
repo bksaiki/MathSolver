@@ -156,12 +156,24 @@ void expandTokens(std::list<ExpressionNode*>& tokens)
 
 // parseTokens(tokens) and related functions
 
-bool notContained(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end, const std::string& str)
+bool bracketedExpr(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end)
 {
+    if (!((*begin)->mStr == "(" && (*end)->mStr == ")") && !((*begin)->mStr == "[" && (*end)->mStr == "]") &&
+        !((*begin)->mStr == "{" && (*end)->mStr == "}"))
+        return false;
+
+    size_t bracketLevel = 0;
     for (std::list<ExpressionNode*>::const_iterator it = begin; it != end; ++it)
     {
-        if ((*it)->mStr == str)
-            return false;
+        if ((*it)->mStr != "(" || (*it)->mStr != "[" || (*it)->mStr != "{")
+        {
+            ++bracketLevel;
+        }
+        else if ((*it)->mStr != ")" || (*it)->mStr != "]" || (*it)->mStr != "}")
+        {
+            if (--bracketLevel == 0 && it != end)
+                return false;
+        }
     }
 
     return true;
@@ -169,9 +181,7 @@ bool notContained(std::list<ExpressionNode*>::const_iterator begin, std::list<Ex
 
 ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end)
 {
-    if (((*begin)->mStr == "(" && (*end)->mStr == ")" && notContained(std::next(begin), end, "(")) ||
-        ((*begin)->mStr == "[" && (*end)->mStr == "]" && notContained(std::next(begin), end, "[")) ||
-        ((*begin)->mStr == "{" && (*end)->mStr == "}" && notContained(std::next(begin), end, "{")))
+    if (bracketedExpr(begin, end))
     {
         return parseTokensR(++begin, --end);
     }

@@ -6,29 +6,6 @@
 
 using namespace MathSolver;
 
-
-void printExpressionTree(ExpressionNode* tree)
-{
-	if (tree == nullptr)
-	{
-		std::cout << "<invalid expression>";
-	}
-	else
-	{
-		if (!tree->mChildren.empty())
-		{
-			std::cout << "( " << tree->mStr << " ";
-			for (auto e : tree->mChildren)
-				printExpressionTree(e);
-			std::cout << ") ";
-		}
-		else
-		{
-			std::cout << tree->mStr << " ";
-		}
-	}
-}
-
 void printTokenList(const std::list<ExpressionNode*>& list)
 {
 	for (auto e : list)
@@ -41,10 +18,10 @@ int main()
 	const size_t EXPR_COUNT = 4;
 	std::string exprs[EXPR_COUNT] =
 	{
-		"y=a*x^2+b*x+c",
-		"y=m*x+b",
-		"a+b+c+d",
-		"2*x*y+5*z*w+2"
+		"(3 + 2)(5 + 6)(8 + 9)",
+		"2^(3 + 2^(2 * 2))",
+		"(2!)!5!",
+		"tan(5, 3)"
 	};
 
 	TestModule tester("Parser");
@@ -56,9 +33,9 @@ int main()
 		printTokenList(tokens);
 		ExpressionNode* node = parseTokens(tokens);
 		flattenExpr(node);
-		std::cout << "Prefix: ";
-		printExpressionTree(node);
-		std::cout << std::endl << std::endl;
+		std::cout << "Prefix: " << toPrefixString(node) << std::endl;
+		std::cout << "Infix: " << toInfixString(node) << "\n" << std::endl;
+		freeExpression(node);
 	}
 
 	return 0;
