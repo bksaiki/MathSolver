@@ -21,7 +21,8 @@ struct ExpressionNode
         OPERATOR,
         FUNCTION,
         CONSTANT,
-        NUMBER
+        INTEGER,
+        FLOAT
     };
 
     // Default constructor
@@ -39,17 +40,25 @@ struct ExpressionNode
 
 // Takes an expression node and recursively simplifes certain operators with interior nodes of the
 // same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)
-void flattenExpr(ExpressionNode* node);
+void flattenExpr(ExpressionNode* expr);
 
 // Deletes an expression tree.
-void freeExpression(ExpressionNode* node);
+void freeExpression(ExpressionNode* expr);
+
+// Returns true if the expression only contains numerical operands (Non-symbolic expression).
+bool isNumerical(ExpressionNode* expr);
+
+// Returns true if the node is a number.
+bool isNumber(ExpressionNode* node);
+
+// Returns true if the node is a number, constant, or variable
+bool isValue(ExpressionNode* node);
 
 // Returns an expression tree as a string in infix notation. Assumes the tree is valid.
-std::string toInfixString(ExpressionNode* node);
+std::string toInfixString(ExpressionNode* expr);
 
 // Returns an expression tree as a string in prefix notation. Assumes the tree is valid.
-std::string toPrefixString(ExpressionNode* node);
-
+std::string toPrefixString(ExpressionNode* expr);
 
 //
 // Language constructs
@@ -57,12 +66,13 @@ std::string toPrefixString(ExpressionNode* node);
     Operator precedence
     0   numbers, constants  --
     1   functions           RL
-    2   ^                   RL
-    3   !                   LR
-    4   a(b) "**"           LR
-    5   * / %               LR
-    6   +-                  LR
-    7   > < >= < == !=      --
+    2   -*                  RL
+    3   ^                   RL
+    4   !                   LR
+    5   **                  LR
+    6   * / %               LR
+    7   +-                  LR
+    8   > < >= < == !=      --
 
     N   , | () [] {}
 */

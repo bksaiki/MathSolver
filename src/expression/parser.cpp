@@ -20,16 +20,25 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
         {
             ++itr;
         }
-        else if ((isdigit(expr[itr])) ||        // <digit> OR <neg><digit> OR <dot><digit> OR <neg><dot><digit>
-                (expr[itr] == '.' && itr < (len - 1) && isdigit(expr[itr + 1])) ||
-                (expr[itr] == '-' && ((itr < (len - 1) && isdigit(expr[itr + 1])) ||
-                                      (itr < (len - 2) && expr[itr + 1] == '.' && isdigit(expr[itr + 2])))))
+        else if (isdigit(expr[itr]) ||        // <digit> OR <dot><digit> 
+                (expr[itr] == '.' && itr < (len - 1) && isdigit(expr[itr + 1])))
         {
             ExpressionNode* num = new ExpressionNode();
             size_t i = itr + 1;
             for (; i != len && (isdigit(expr[i]) || expr[i] == '.'); ++i);
-            num->mStr = expr.substr(itr, i - itr);
-            num->mType = ExpressionNode::NUMBER;
+
+            std::string str = expr.substr(itr, i - itr);
+            if (str.find('.') == std::string::npos)
+            {
+                num->mExact = str;
+                num->mType = ExpressionNode::INTEGER;
+            }
+            else
+            {
+                num->mInexact = std::stod(str);
+                num->mType = ExpressionNode::FLOAT;
+            }
+
             tokens.push_back(num);
             itr = i;
         }
@@ -114,30 +123,47 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
     return tokens;
 }
 
-// Token expansion
+/* 
+  Token expansion
 
-// Implicit multiplication
-// <number><constant>           3pi
-// <number><function>           3sin(x)
-// <number><variable>           3x
-// <number><bracket>            3(...)
-// <constant><function>         bsin(x)
-// <constant><variable>         bx
-// <constant><bracket>          b(...)
-// <variable><function>          xsin(x)
-// <variable><bracket>          x(...)
-// <factorial><not operator>    5!x, 5!2, 5!sin(x), 5!2!
-// <bracket><bracket>           (2)(3)
+  Negative
+    <begin><negative><not operator>   -5 -pi -sin(x) -(x)
+    <operator><negative><not operator> (-5) x+-5
+    
+  Implicit multiplication
+   <number><constant>           3pi
+   <number><function>           3sin(x)
+   <number><variable>           3x
+   <number><bracket>            3(...)
+   <constant><function>         bsin(x)
+   <constant><variable>         bx
+   <constant><bracket>          b(...)
+   <variable><function>          xsin(x)
+   <variable><bracket>          x(...)
+   <factorial><not operator>    5!x, 5!2, 5!sin(x), 5!2!
+   <bracket><bracket>           (2)(3)
+*/
 
 void expandTokens(std::list<ExpressionNode*>& tokens)
 {
     for (std::list<ExpressionNode*>::iterator it = tokens.begin(); it != tokens.end(); ++it)
     {
         std::list<ExpressionNode*>::iterator next = std::next(it);
-        if (next != tokens.end() &&
-            (((*it)->mType == ExpressionNode::NUMBER && ((*next)->mType == ExpressionNode::VARIABLE || // number
-                (*next)->mType == ExpressionNode::FUNCTION || (*next)->mType == ExpressionNode::CONSTANT ||
-                (*next)->mStr == "(")) ||
+        if (it == tokens.begin() && next != tokens.end() && (*it)->mStr == "-" &&  // beginning negative
+            ((*next)->mType != ExpressionNode::OPERATOR || (*next)->mStr == "("))
+        {
+            (*it)->mStr = "-*";
+            (*it)->mPrecedence = operatorPrec((*it)->mStr);
+        }
+        else if (next != tokens.end() && (*it)->mType == ExpressionNode::OPERATOR && (*next)->mStr == "-")
+        {
+            (*next)->mStr = "-*";
+            (*next)->mPrecedence = operatorPrec((*next)->mStr);
+        }
+        else if (next != tokens.end() && // implicit multiplication
+            ((((*it)->mType == ExpressionNode::INTEGER || (*it)->mType == ExpressionNode::FLOAT) &&
+                ((*next)->mType == ExpressionNode::VARIABLE || (*next)->mType == ExpressionNode::FUNCTION ||
+                (*next)->mType == ExpressionNode::CONSTANT || (*next)->mStr == "(")) ||
             ((*it)->mType == ExpressionNode::CONSTANT && ((*next)->mType == ExpressionNode::VARIABLE || // constant
                 (*next)->mType == ExpressionNode::FUNCTION || (*next)->mStr == "(")) ||
             ((*it)->mType == ExpressionNode::VARIABLE && ((*next)->mType == ExpressionNode::FUNCTION || // variable
@@ -201,7 +227,7 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
         }
         else if (bracketLevel == 0) // find lowest precision when not within the bracket
         {
-            if ((*it)->mPrecedence > 2)
+            if ((*it)->mPrecedence > operatorPrec("^"))
             {
                 if((*it)->mPrecedence > (*split)->mPrecedence)
                     split = it;
@@ -272,11 +298,22 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
             node->mChildren.push_back(lhs);
             node->mChildren.push_back(rhs);  
         }
+        else if (node->mStr == "-*")
+        {
+            if (split == end) // TODO: arity match
+            {
+                std::cout << "Expected " << node->mStr << " <arg>.";
+                return nullptr;
+            }
+
+            ExpressionNode* arg = parseTokensR(next, end);
+            if (arg != nullptr)     node->mChildren.push_back(arg);
+        }
         else if (node->mStr == "!")
         {
             if (split == begin) // TODO: arity match
             {
-                std::cout << "Expected <lhs> " << node->mStr << " <rhs>.";
+                std::cout << "Expected <arg> " << node->mStr << ".";
                 return nullptr;
             }
 

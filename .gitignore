@@ -1,3 +1,4 @@
 *.d
 *.o
 build/*
+tests/test-parser.cpp
