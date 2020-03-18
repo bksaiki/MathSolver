@@ -28,11 +28,26 @@ bool isArithmetic(ExpressionNode* expr)
     }
 }
 
+ExpressionNode* containsLikeTerm(ExpressionNode* expr, ExpressionNode* term)
+{
+    if (expr->mStr == "+" || expr->mStr == "-")
+    {
+        for (ExpressionNode* child : expr->mChildren)
+        {
+            ExpressionNode* like = containsLikeTerm(child, term);
+            if (like != nullptr)
+                return like;
+        }
+    }
+
+    return nullptr;
+}
+
 //
 //  Numerical arithmetic evaluator
 //
 
-// Evalutes (-* <num>)
+// Evalutes "(-* <num>)"
 bool numericNeg(ExpressionNode* op)
 {
     if (op->mChildren.size() != 1)     return false; // TODO: arity mismatch
@@ -49,7 +64,7 @@ bool numericNeg(ExpressionNode* op)
     return true;
 }
 
-// Evaluates (+ <num>...)
+// Evaluates "(+ <num>...)"
 bool numericAdd(ExpressionNode* op)
 {
     if (op->mChildren.front()->mType == ExpressionNode::INTEGER)
@@ -77,7 +92,7 @@ bool numericAdd(ExpressionNode* op)
     return true;
 }
 
-// Evaluates (- <num>...)
+// Evaluates "(- <num>...)"
 bool numericSub(ExpressionNode* op)
 {
     if (op->mChildren.front()->mType == ExpressionNode::INTEGER)
@@ -105,7 +120,7 @@ bool numericSub(ExpressionNode* op)
     return true;
 }
 
-// Evaluates (* <num>...) or (** <num>...)
+// Evaluates "(* <num>...)" or "(** <num>...)"
 bool numericMul(ExpressionNode* op)
 {
     if (op->mChildren.front()->mType == ExpressionNode::INTEGER)
@@ -133,7 +148,7 @@ bool numericMul(ExpressionNode* op)
     return true;
 }
 
-// Evaluates <num> / <num>
+// Evaluates "<num> / <num>"
 bool numericDiv(ExpressionNode* op)
 {
     if (op->mChildren.size() != 2)     return false; // TODO: arity mismatch
@@ -150,42 +165,109 @@ bool numericDiv(ExpressionNode* op)
     op->mPrecedence = 0;
     delete lhs;
     delete rhs;
-    return false;
+    return true;
 }
+
+//
+//  Symbolic arithmetic evaluators
+//
+
+// Evaluates "(exp x)"
+bool symbolicExp(ExpressionNode* op)
+{
+    if (op->mChildren.size() != 1)      return false;  // TODO: arity mismatch
+
+    if (op->mChildren.front()->mStr == "log" && op->mChildren.front()->mChildren.size() == 1) // exp(log (x)) --> x
+    {
+        ExpressionNode* ln = op->mChildren.front();
+        assignExprNode(op, ln->mChildren.front());
+        delete ln->mChildren.front();
+        delete ln;
+    }
+
+    // TODO: more simplifications
+
+    return true;
+}
+
+// Evaluates "(log x) or (log b x)"
+bool symbolicLog(ExpressionNode* op)
+{
+    if (op->mChildren.size() != 1 && op->mChildren.size() != 2)      return false;  // TODO: arity mismatch
+
+    if (op->mChildren.front()->mStr == "exp" && op->mChildren.front()->mChildren.size() == 1) // (log (exp x)) --> x
+    {
+        ExpressionNode* ln = op->mChildren.front();
+        assignExprNode(op, ln->mChildren.front());
+        delete ln->mChildren.front();
+        delete ln;
+    }
+
+    // TODO: more simplifications
+
+    return true;
+}
+
+// Evaluates "(sin x)"
+bool symbolicSin(ExpressionNode* op)
+{
+    if (op->mChildren.size() != 1)      return false;  // TODO: arity mismatch
+
+    // TODO: more simplifications
+
+    return true;
+}
+
+// Evaluates "(cos x)"
+bool symbolicCos(ExpressionNode* op)
+{
+    if (op->mChildren.size() != 1)      return false;  // TODO: arity mismatch
+
+    // TODO: more simplifications
+
+    return true;
+}
+
+// Evaluates "(tan x)"
+bool symbolicTan(ExpressionNode* op)
+{
+    if (op->mChildren.size() != 1)      return false;  // TODO: arity mismatch
+
+    // TODO: more simplifications
+
+    return true;
+}
+
 
 bool evaluateArithmetic(ExpressionNode* expr)
 {
-    if (expr->mType == ExpressionNode::FUNCTION)
+    if (isNumerical(expr))
     {
+        if (expr->mStr == "-*")                             return numericNeg(expr);
+        else if (expr->mStr == "+")                         return numericAdd(expr);
+        else if (expr->mStr == "-")                         return numericSub(expr);
+        else if (expr->mStr == "*" || expr->mStr == "**")   return numericMul(expr);
+        else if (expr->mStr == "/")                         return true; // no evaluation
 
+        else if (expr->mStr == "exp")                       return false;   // Unsupported: numerical exp
+        else if (expr->mStr == "log")                       return false;   // Unsupported: numerical log
+        else if (expr->mStr == "sin")                       return false;   // Unsupported: numerical sin
+        else if (expr->mStr == "cos")                       return false;   // Unsupported: numerical cos
+        else if (expr->mStr == "tan")                       return false;   // Unsupported: numerical tan
     }
-    else if (expr->mType == ExpressionNode::OPERATOR)
+    else // symbolic
     {
-        if (expr->mStr == "+")
-        {
-            if (isNumerical(expr))  return numericAdd(expr);
-            // TODO: symbolic add
-        }
-        else if (expr->mStr == "-")
-        {
-            if (isNumerical(expr))  return numericSub(expr);
-            // TODO: symbolic sub
-        }
-        else if (expr->mStr == "-*")
-        {
-            if (isNumerical(expr))  return numericNeg(expr);
-            // TODO: symbolic sub
-        }
-        else if (expr->mStr == "*" || expr->mStr == "**")
-        {
-            if (isNumerical(expr))  return numericMul(expr);
-            // TODO: symbolic mul
-        }
-        else if (expr->mStr == "/")
-        {
-            if (isNumerical(expr))  return numericDiv(expr);
-            // TODO: symbolic mul
-        }
+        if (expr->mStr == "-*")                             return false;   // Unsupported: symbolic negation
+        else if (expr->mStr == "+")                         return false;   // Unsupported: symbolic +
+        else if (expr->mStr == "-")                         return false;   // Unsupported: symbolic -
+        else if (expr->mStr == "*" || expr->mStr == "**")   return false;   // Unsupported: symbolic *, **
+        else if (expr->mStr == "/")                         return false;   // Unsupported: symbolic /   
+
+        else if (expr->mStr == "exp")                       return symbolicExp(expr);
+        else if (expr->mStr == "log")                       return symbolicLog(expr);
+        else if (expr->mStr == "sin")                       return symbolicSin(expr);
+        else if (expr->mStr == "cos")                       return symbolicCos(expr);
+        else if (expr->mStr == "tan")                       return symbolicTan(expr);                                         
     }
 
     return false; // TODO: unsupported op

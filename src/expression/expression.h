@@ -28,6 +28,10 @@ struct ExpressionNode
     // Default constructor
     ExpressionNode();
 
+    // Direct copy unsupported
+    ExpressionNode(const ExpressionNode& other) = delete;
+    ExpressionNode& operator=(const ExpressionNode& other) = delete;
+
     ExpressionNode* mParent;
     std::list<ExpressionNode*> mChildren;
     Type mType;
@@ -37,6 +41,9 @@ struct ExpressionNode
     Integer mExact;
     double mInexact;
 };
+
+// Assigns the expression node at source to dest by copying every member except for parent.
+void assignExprNode(ExpressionNode* dest, ExpressionNode* src);
 
 // Takes an expression node and recursively simplifes certain operators with interior nodes of the
 // same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)

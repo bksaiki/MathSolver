@@ -43,6 +43,9 @@ clean-all:
 test-integer: build/test-integer
 	$(TEST_DIR)/test.sh build/test-integer
 
+test-integermath: build/test-integermath
+	$(TEST_DIR)/test.sh build/test-integermath
+
 test-parser: build/test-parser
 	$(TEST_DIR)/test.sh build/test-parser
 

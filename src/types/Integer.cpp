@@ -403,6 +403,13 @@ std::istream& operator>>(std::istream& in, Integer& integer)
     return in;
 }
 
+Integer Integer::divRem(const Integer& other, Integer& rem) const
+{
+    Integer quo;
+    divAndRem(other, quo, rem);
+    return quo;
+}
+
 void Integer::set(uint8_t* arr, size_t len, bool sign)
 {
     delete[] mData;

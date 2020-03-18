@@ -33,6 +33,19 @@ ExpressionNode::ExpressionNode()
 	mInexact = 0.0;
 }
 
+void assignExprNode(ExpressionNode* dest, ExpressionNode* src)
+{
+	if (dest != nullptr && src != nullptr)
+	{
+		dest->mChildren = src->mChildren;
+		dest->mType = src->mType;
+		dest->mPrecedence = src->mPrecedence;
+		dest->mStr = src->mStr;
+		dest->mExact = src->mExact;
+		dest->mInexact = src->mInexact;
+	}
+}
+
 void flattenExpr(ExpressionNode* expr)
 {
 	bool hasGrandChildren = false;
