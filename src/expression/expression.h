@@ -45,6 +45,12 @@ struct ExpressionNode
 // Assigns the expression node at source to dest by copying every member except for parent.
 void assignExprNode(ExpressionNode* dest, ExpressionNode* src);
 
+// Returns a copy of the given expression tree
+ExpressionNode* copyOf(ExpressionNode* expr);
+
+// Returns true if the value of two nodes is the same.
+bool equivExpression(ExpressionNode* a, ExpressionNode* b);
+
 // Takes an expression node and recursively simplifes certain operators with interior nodes of the
 // same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)
 void flattenExpr(ExpressionNode* expr);
@@ -60,6 +66,9 @@ bool isNumber(ExpressionNode* node);
 
 // Returns true if the node is a number, constant, or variable
 bool isValue(ExpressionNode* node);
+
+// Returns the number of nodes in the expression tree.
+size_t nodeCount(ExpressionNode* expr);
 
 // Returns an expression tree as a string in infix notation. Assumes the tree is valid.
 std::string toInfixString(ExpressionNode* expr);

@@ -209,7 +209,10 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
 {
     if (bracketedExpr(begin, end))
     {
-        return parseTokensR(++begin, --end);
+        ExpressionNode* ret = parseTokensR(++begin, --end);
+        delete *begin;
+        delete *end;
+        return ret;
     }
 
     std::list<ExpressionNode*>::const_iterator split = end; // loop through tokens from end to beginning
@@ -262,20 +265,23 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
             std::list<ExpressionNode*>::const_iterator it = next;
             while ((*it)->mStr != ")") // iterate forward now
             {
-                next = std::next(it); // repurpose variables
+                std::list<ExpressionNode*>::const_iterator it2 = std::next(it);
                 bracketLevel = 0;
-                while (next != end && (*next)->mStr != "," && ((*next)->mStr != ")" || bracketLevel > 0))
+                while (it2 != end && (*it2)->mStr != "," && ((*it2)->mStr != ")" || bracketLevel > 0))
                 {
-                    if ((*next)->mStr == "(")         ++bracketLevel;
-                    else if ((*next)->mStr == ")")    --bracketLevel;
-                    ++next; // split arg list
+                    if ((*it2)->mStr == "(")         ++bracketLevel;
+                    else if ((*it2)->mStr == ")")    --bracketLevel;
+                    ++it2; // split arg list
                 }
 
-                ExpressionNode* arg = parseTokensR(std::next(it), std::prev(next));
+                ExpressionNode* arg = parseTokensR(std::next(it), std::prev(it2));
                 arg->mParent = node;
                 node->mChildren.push_back(arg);
-                it = next; 
+                it = it2; 
             }
+
+            delete *next; // delete tokens w/ brackets
+            delete *it;
         }        
     }
     else if (node->mType == ExpressionNode::OPERATOR)

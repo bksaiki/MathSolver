@@ -1,3 +1,4 @@
+#include <list>
 #include "arithmetic.h"
 
 namespace MathSolver
@@ -18,7 +19,8 @@ bool isArithmetic(ExpressionNode* expr)
     }
     else if (expr->mType == ExpressionNode::OPERATOR)
     {
-        return (expr->mStr == "+" || expr->mStr == "-" || expr->mStr == "**" ||
+        return (expr->mStr == "-*" ||
+                expr->mStr == "+" || expr->mStr == "-" || expr->mStr == "**" ||
                 expr->mStr == "*" || expr->mStr == "/" || expr->mStr == "%" ||
                 expr->mStr == "^" || expr->mStr == "!");
     }
@@ -28,19 +30,48 @@ bool isArithmetic(ExpressionNode* expr)
     }
 }
 
-ExpressionNode* containsLikeTerm(ExpressionNode* expr, ExpressionNode* term)
+ExpressionNode* containsLikeTermR(ExpressionNode* expr, ExpressionNode* term)
 {
     if (expr->mStr == "+" || expr->mStr == "-")
     {
         for (ExpressionNode* child : expr->mChildren)
         {
-            ExpressionNode* like = containsLikeTerm(child, term);
+            ExpressionNode* like = containsLikeTermR(child, term);
             if (like != nullptr)
                 return like;
         }
     }
 
+    if (expr->mStr == "*" || expr->mStr == "**")
+    {
+        std::list<ExpressionNode*> notInc;
+        for (ExpressionNode* child : expr->mChildren)
+        {
+            if (equivExpression(child, term))
+                notInc.push_back(child);       
+        }
+
+        if (notInc.size() > 2)
+        {
+            ExpressionNode* mul = new ExpressionNode();
+            mul->mStr = "**";
+            mul->mPrecedence = operatorPrec(mul->mStr);
+            mul->mChildren.insert(notInc.begin(), notInc.begin(), notInc.end());
+            return mul;
+        }
+        else if (notInc.size() == 1)
+        {
+            return notInc.front();
+        }
+    }
+
     return nullptr;
+}
+
+ExpressionNode* containsLikeTerm(ExpressionNode* expr, ExpressionNode* term)
+{
+    if (nodeCount(expr) >= nodeCount(term))     return containsLikeTermR(expr, term);
+    else                                        return containsLikeTermR(term, expr);
 }
 
 //
@@ -238,6 +269,70 @@ bool symbolicTan(ExpressionNode* op)
     return true;
 }
 
+// Evalutes "(-* x)"
+bool symbolicNeg(ExpressionNode* op)
+{
+    if (op->mChildren.size() != 1)     return false; // TODO: arity mismatch
+
+    ExpressionNode* arg = op->mChildren.front();
+    if (arg->mStr == "-*") // (- (- x)) ==> x
+    {
+        assignExprNode(op, arg->mChildren.front());
+        delete arg->mChildren.front();
+        delete arg;
+    }
+    
+    return true;
+}
+
+// Evalutes "(+ <arg0> <arg1> ... )"
+bool symbolicAdd(ExpressionNode* op)
+{
+    if (op->mChildren.size() < 2)     return false; // TODO: arity mismatch
+
+    for (std::list<ExpressionNode*>::iterator i = op->mChildren.begin(); i != op->mChildren.end(); ++i)
+    {
+        for (std::list<ExpressionNode*>::iterator j = std::next(i); j != op->mChildren.end(); ++j)
+        {
+            ExpressionNode* coeff = containsLikeTerm(*i, *j);
+            if (coeff != nullptr)
+            {
+                // TODO: logic
+                freeExpression(coeff);
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Evalutes "(* <arg0> <arg1> ... )" or "(** <arg0> <arg1> ... )"
+bool symbolicMul(ExpressionNode* op)
+{
+    if (op->mChildren.size() < 2)     return false; // TODO: arity mismatch
+
+    std::list<ExpressionNode*>::iterator it = op->mChildren.begin();
+    while (it != op->mChildren.end()) // // (* a... (* b... ) c...) ==> (* a... b... c...)
+    {
+        ExpressionNode* child = *it;
+        if (child->mStr == "*" || child->mStr == "**")
+        {        
+            op->mChildren.insert(it, child->mChildren.begin(), child->mChildren.end());
+            op->mChildren.erase(it++);
+            delete child;
+        }
+        else
+        {
+            ++it;
+        }     
+    }
+    
+    return true;
+}
+
+//
+// Arithmetic evaluator
+//
 
 bool evaluateArithmetic(ExpressionNode* expr)
 {
@@ -257,10 +352,10 @@ bool evaluateArithmetic(ExpressionNode* expr)
     }
     else // symbolic
     {
-        if (expr->mStr == "-*")                             return false;   // Unsupported: symbolic negation
-        else if (expr->mStr == "+")                         return false;   // Unsupported: symbolic +
+        if (expr->mStr == "-*")                             return symbolicNeg(expr);
+        else if (expr->mStr == "+")                         return symbolicAdd(expr);
         else if (expr->mStr == "-")                         return false;   // Unsupported: symbolic -
-        else if (expr->mStr == "*" || expr->mStr == "**")   return false;   // Unsupported: symbolic *, **
+        else if (expr->mStr == "*" || expr->mStr == "**")   return symbolicMul(expr);
         else if (expr->mStr == "/")                         return false;   // Unsupported: symbolic /   
 
         else if (expr->mStr == "exp")                       return symbolicExp(expr);

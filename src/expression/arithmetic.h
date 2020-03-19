@@ -13,9 +13,10 @@ namespace MathSolver
 // Assumes the expression is valid.
 bool isArithmetic(ExpressionNode* expr);
 
-// Given an expression in the form "(+ <subexpr> <subexpr> ...)" and a search term, returns the coefficient
-// attatched to the search term in the expression or returns nullptr if the search term is not contained in
-// the expression.
+// Given an expression in the form "(+ <subexpr> <subexpr> ...)" and a search term, returns a copy of the 
+// coefficient attatched to the search term in the expression (in a expression tree) or returns nullptr if
+// the search term is not. contained in the expression. The tree must be deleted if not integerated into
+// another expressiont tree.
 ExpressionNode* containsLikeTerm(ExpressionNode* expr, ExpressionNode* term);
 
 // Evaluates an arithmetic expression. Returns true upon success.

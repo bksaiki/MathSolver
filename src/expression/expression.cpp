@@ -46,6 +46,48 @@ void assignExprNode(ExpressionNode* dest, ExpressionNode* src)
 	}
 }
 
+ExpressionNode* copyOf(ExpressionNode* expr)
+{
+	ExpressionNode* cp = new ExpressionNode();
+	cp->mType = expr->mType;
+	cp->mPrecedence = expr->mPrecedence;
+	cp->mExact = expr->mExact;
+	cp->mInexact = expr->mInexact;
+
+	for (ExpressionNode* child : expr->mChildren)
+		cp->mChildren.push_back(copyOf(child));
+	return cp;
+}
+
+bool equivExpression(ExpressionNode* a, ExpressionNode* b)
+{
+	if (a->mType == b->mType)
+	{
+		if (a->mType == ExpressionNode::INTEGER)
+			return (a->mExact == b->mExact);
+		else if (a->mType == ExpressionNode::FLOAT)
+			return (a->mInexact == b->mInexact);
+		else if (a->mType == ExpressionNode::CONSTANT ||
+				 a->mType == ExpressionNode::CONSTANT)	
+			return (a->mStr == b->mStr);
+		// Operator, function
+		if (a->mStr == b->mStr && a->mChildren.size() == b->mChildren.size())
+		{
+			std::list<ExpressionNode*>::iterator a_it = a->mChildren.begin();
+			std::list<ExpressionNode*>::iterator b_it = b->mChildren.begin();
+			for (; a_it != a->mChildren.end(); ++a_it, ++b_it)
+			{
+				if (!equivExpression(*a_it, *b_it))
+					return false;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void flattenExpr(ExpressionNode* expr)
 {
 	bool hasGrandChildren = false;
@@ -143,7 +185,7 @@ std::string toInfixString(ExpressionNode* expr)
 		else
 		{
 			std::string sub = toInfixString(expr->mChildren.front());
-			std::string op = (expr->mStr == "**") ? "" : expr->mStr;
+			std::string op = (expr->mStr == "**") ? "" : (expr->mStr == "-*"? "-" : expr->mStr) ;
 			for (std::list<ExpressionNode*>::iterator it = std::next(expr->mChildren.begin()); 
 				 it != expr->mChildren.end(); ++it)
 				sub += (op + toInfixString(*it));
@@ -222,6 +264,18 @@ bool isBracket(char c)
 {
 	return (c == '(' || c == '{' || c == '[' ||
 			c == ')' || c == '}' || c == ']');
+}
+
+size_t nodeCount(ExpressionNode* expr)
+{
+	size_t c = 1;
+	if (expr->mType == ExpressionNode::OPERATOR || expr->mType == ExpressionNode::FUNCTION)
+	{
+		for (ExpressionNode* child : expr->mChildren)
+			c += nodeCount(child);	
+	}
+
+	return c;
 }
 
 int operatorPrec(const std::string& op)

@@ -38,8 +38,8 @@ int main()
 		status &= tests.status();
     }
 
-    tests.reset("gcd");
     {
+        tests.reset("gcd");
         Integer r01 = gcd(cints[0], cints[1]);
         Integer r23 = gcd(cints[2], cints[3]);
         Integer r45 = gcd(cints[4], cints[5]);
