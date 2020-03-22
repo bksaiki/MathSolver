@@ -1,4 +1,3 @@
-#include <iterator>
 #include "expression.h"
 
 namespace MathSolver
@@ -51,6 +50,7 @@ ExpressionNode* copyOf(ExpressionNode* expr)
 	ExpressionNode* cp = new ExpressionNode();
 	cp->mType = expr->mType;
 	cp->mPrecedence = expr->mPrecedence;
+	cp->mStr = expr->mStr;
 	cp->mExact = expr->mExact;
 	cp->mInexact = expr->mInexact;
 
@@ -106,7 +106,7 @@ void flattenExpr(ExpressionNode* expr)
 		{
 			if (expr->mStr == FLATTENABLE_OPS[i])
 			{	
-				for (auto child = expr->mChildren.begin(); child != expr->mChildren.end(); ++child)
+				for (std::list<ExpressionNode*>::iterator child = expr->mChildren.begin(); child != expr->mChildren.end(); ++child)
 				{
 					if ((*child)->mStr == FLATTENABLE_OPS[i])
 					{

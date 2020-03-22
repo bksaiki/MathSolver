@@ -1,8 +1,8 @@
 #ifndef _MATHSOLVER_EXPRESSION_H_
 #define _MATHSOLVER_EXPRESSION_H_
 
-#include <string>
 #include <list>
+#include <string>
 #include "../types/Integer.h"
 
 namespace MathSolver

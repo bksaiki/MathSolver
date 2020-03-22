@@ -175,7 +175,7 @@ void expandTokens(std::list<ExpressionNode*>& tokens)
             mul->mStr = "**";
             mul->mType = ExpressionNode::OPERATOR;
             mul->mPrecedence = operatorPrec(mul->mStr);
-            tokens.insert(next, mul);
+            it = tokens.insert(next, mul);
         }
     }
 }
@@ -209,7 +209,7 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
 {
     if (bracketedExpr(begin, end))
     {
-        ExpressionNode* ret = parseTokensR(++begin, --end);
+        ExpressionNode* ret = parseTokensR(std::next(begin),std::prev(end));
         delete *begin;
         delete *end;
         return ret;
@@ -271,7 +271,7 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
                 {
                     if ((*it2)->mStr == "(")         ++bracketLevel;
                     else if ((*it2)->mStr == ")")    --bracketLevel;
-                    ++it2; // split arg list
+                    ++it2; // split arg vector
                 }
 
                 ExpressionNode* arg = parseTokensR(std::next(it), std::prev(it2));
@@ -313,7 +313,8 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
             }
 
             ExpressionNode* arg = parseTokensR(next, end);
-            if (arg != nullptr)     node->mChildren.push_back(arg);
+            arg->mParent = node;
+            node->mChildren.push_back(arg);
         }
         else if (node->mStr == "!")
         {
@@ -324,7 +325,8 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
             }
 
             ExpressionNode* arg = parseTokensR(begin, prev);
-            if (arg != nullptr)     node->mChildren.push_back(arg);
+            arg->mParent = node;
+            node->mChildren.push_back(arg);
         }
     }
   
