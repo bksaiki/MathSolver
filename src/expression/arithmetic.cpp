@@ -468,6 +468,8 @@ bool symbolicMul(ExpressionNode* op)
                     
                     delete *it2;
                     op->mChildren.erase(it2);
+                    evaluateArithmetic(num);
+                    evaluateArithmetic(den);
                     evaluateArithmetic(*it);
                 }
                 else if ((*it)->mStr == "/") // (* (/ a b) c ...) ==> (* (/ (* a c) b) ...)
@@ -487,6 +489,7 @@ bool symbolicMul(ExpressionNode* op)
                     (*it)->mChildren.push_front(mul);
                     mul->mParent = *it;
                     op->mChildren.erase(it2);
+                    evaluateArithmetic(num);
                     evaluateArithmetic(*it);
                 }
                 else if ((*it2)->mStr == "/") // (* ... a (/ b c)) ==> (* ... (/ (* a b) c))
@@ -506,6 +509,7 @@ bool symbolicMul(ExpressionNode* op)
                     (*it2)->mChildren.push_front(mul);
                     mul->mParent = *it2;
                     it = op->mChildren.erase(it);
+                    evaluateArithmetic(num);
                     evaluateArithmetic(*it2);
                     --it;
                 }       
@@ -543,6 +547,9 @@ bool symbolicDiv(ExpressionNode* op)
         den->mChildren.push_back(tmp);
         tmp->mParent = den;
         tmp2->mParent = num;
+
+        evaluateArithmetic(num);
+        evaluateArithmetic(den);
     }
     else if (num->mStr == "/") // (/ (/ a b) c) ==> (/ a (* b c))
     {
@@ -558,8 +565,10 @@ bool symbolicDiv(ExpressionNode* op)
         num->mChildren.push_back(tmp2);
         tmp->mParent = op;
         tmp2->mParent = num;
+        
         num = op->mChildren.front(); // reassign numerator and denominator
         den = op->mChildren.back();
+        evaluateArithmetic(den);
     }
     else if (den->mStr == "/") // (/ a (/ b c)) ==> (/ (* a c) b)
     {
@@ -577,6 +586,7 @@ bool symbolicDiv(ExpressionNode* op)
         op->mParent = num;
         num = op->mChildren.front(); // reassign numerator and denominator
         den = op->mChildren.back();
+        evaluateArithmetic(num);
     }
 
     if ((num->mStr == "*" || num->mStr == "**") && // (/ (* a b) (* b c)) ==> (/ a c)

@@ -6,22 +6,22 @@ namespace MathSolver
 const char* OPERATOR_CHARS = "+-*/%^!,=><|";
 
 const size_t FLATTENABLE_OP_COUNT = 4;
-const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] =
-{
-	"+",
-	"-",
-	"*",
-	"**"
-};
+const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**" };
 
 const size_t PREDEF_FUNC_COUNT = 5;
 const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] = 
 {
-	"exp",
-	"log",
-	"sin",
-	"cos",
-	"tan"
+	"exp", "log",
+	"sin", "cos", "tan"
+};
+
+const size_t OPERATOR_COUNT = 14;
+const std::string OPERATORS[OPERATOR_COUNT] = 
+{
+	"+", "-", "*", "/", "%",
+    "-*", "**"
+	"^", "!",
+	">", "<", ">=", "<=", "="
 };
 
 ExpressionNode::ExpressionNode()
@@ -250,6 +250,17 @@ bool isFunction(const std::string& func)
 	}
 
 	return false;
+}
+
+bool isOperator(const std::string& op)
+{
+    for (size_t i = 0; i < OPERATOR_COUNT; ++i)
+    {
+        if (op == OPERATORS[i])
+            return true;
+    }
+
+    return false;
 }
 
 bool isOperatorChar(char c)

@@ -38,7 +38,7 @@ clean-deps:
 clean-all:
 	rm -r -f build
 
-# Specific tests
+### Specific tests
 
 test-integer: build/test-integer
 	$(TEST_DIR)/test.sh build/test-integer
@@ -49,7 +49,11 @@ test-integermath: build/test-integermath
 test-parser: build/test-parser
 	$(TEST_DIR)/test.sh build/test-parser
 
-# General rules
+# not tracked
+test-sandbox: build/test-sandbox
+	$(TEST_DIR)/test.sh build/test-sandbox
+
+### General rules
 
 $(BUILD_DIR)/.:
 	mkdir -p $@

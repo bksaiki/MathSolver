@@ -1,4 +1,4 @@
 *.d
 *.o
 build/*
-tests/test-parser.cpp
+tests/test-sandbox.cpp

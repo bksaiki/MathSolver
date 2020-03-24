@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iterator>
 #include <stack>
 #include "parser.h"
 
@@ -97,10 +96,15 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
         }
         else if (isOperatorChar(expr[itr]))
         {
-            size_t i = itr + 1;
-            for (; i != len && isOperatorChar(expr[i]); ++i);
             ExpressionNode* op = new ExpressionNode();
-            op->mStr = expr.substr(itr, i - itr);
+            size_t i = itr;
+      
+            do
+            {
+                ++i;
+                op->mStr = expr.substr(itr, i - itr); 
+            } while (i != len && isOperator(op->mStr + expr[i]));
+
             op->mType = ExpressionNode::OPERATOR;
             op->mPrecedence = operatorPrec(op->mStr);
             tokens.push_back(op);
@@ -120,6 +124,7 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
         return tokens;
     }
 
+    expandTokens(tokens);
     return tokens;
 }
 
@@ -277,10 +282,9 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
                 ExpressionNode* arg = parseTokensR(std::next(it), std::prev(it2));
                 arg->mParent = node;
                 node->mChildren.push_back(arg);
+                delete *it;
                 it = it2; 
             }
-
-            delete *next; // delete tokens w/ brackets
             delete *it;
         }        
     }

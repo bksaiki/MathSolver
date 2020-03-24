@@ -175,7 +175,7 @@ public:
     inline size_t size() const { return mSize; } 
 
     // Sets this integer from a std::string.
-    inline void fromString(const std::string& str) { fromString(str.c_str()); }    
+    void fromString(const std::string& str);  
 
     // Returns this Integer as a std::string.
     std::string toString() const;

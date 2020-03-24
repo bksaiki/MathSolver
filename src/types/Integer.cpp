@@ -418,6 +418,12 @@ void Integer::set(uint8_t* arr, size_t len, bool sign)
     mSign = sign;
 }
 
+void Integer::fromString(const std::string& str)
+{
+    delete[] mData;
+    fromString(str.c_str());
+}
+
 std::string Integer::toString() const
 {
     std::string str = "";

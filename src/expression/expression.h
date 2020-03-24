@@ -96,6 +96,9 @@ std::string toPrefixString(ExpressionNode* expr);
 // Returns true if the string is a predefined or user-defined function.
 bool isFunction(const std::string& func);
 
+// Returns true if the string is an operator
+bool isOperator(const std::string& op);
+
 // Returns true if the character is an operator.
 bool isOperatorChar(char c);
 
