@@ -35,13 +35,16 @@ ExpressionNode::ExpressionNode()
 void assignExprNode(ExpressionNode* dest, ExpressionNode* src)
 {
 	if (dest != nullptr && src != nullptr)
-	{
+	{		
 		dest->mChildren = src->mChildren;
 		dest->mType = src->mType;
 		dest->mPrecedence = src->mPrecedence;
 		dest->mStr = src->mStr;
 		dest->mExact = src->mExact;
 		dest->mInexact = src->mInexact;
+
+		for (ExpressionNode* child : dest->mChildren)
+			child->mParent = dest;
 	}
 }
 
@@ -283,8 +286,8 @@ int operatorPrec(const std::string& op)
 	if (op == "-*")										return 2;
 	else if (op == "^")									return 3;
 	else if (op == "!")									return 4;
-	else if (op == "**")								return 5;
-	else if (op == "*" || op == "/" || op == "%")		return 6;
+	else if (op == "*" || op == "**")					return 5;
+	else if (op == "/" || op == "%")					return 6;
 	else if (op == "+" || op == "-")					return 7;
 	else if (op == ">" || op == ">=" || op == "=" ||
 			 op == "<" || op == "<=")					return 8;

@@ -160,6 +160,7 @@ bool numericMul(ExpressionNode* op)
         op->mInexact = op->mChildren.front()->mInexact;
     }
     
+    delete op->mChildren.front();
     for (std::list<ExpressionNode*>::iterator it = std::next(op->mChildren.begin()); it != op->mChildren.end(); ++it)
     {
         if (op->mType == ExpressionNode::INTEGER && (*it)->mType == ExpressionNode::INTEGER) // <exact> *= <exact>
@@ -417,25 +418,271 @@ bool symbolicAdd(ExpressionNode* op)
 // Evalutes "(* <arg0> <arg1> ... )" or "(** <arg0> <arg1> ... )"
 bool symbolicMul(ExpressionNode* op)
 {
-    if (op->mChildren.size() < 2)     return false; // TODO: arity mismatch
-
-    std::list<ExpressionNode*>::iterator it = op->mChildren.begin();
-    while (it != op->mChildren.end()) // // (* a... (* b... ) c...) ==> (* a... b... c...)
+    if (op->mChildren.size() == 0)     return false; // TODO: arity mismatch
+    else if (op->mChildren.size() == 1) // special case: (* x) ==> x, internal use only
     {
-        ExpressionNode* child = *it;
-        if (child->mStr == "*" || child->mStr == "**")
-        {        
-            op->mChildren.insert(it, child->mChildren.begin(), child->mChildren.end());
-            op->mChildren.erase(it++);
-            delete child;
-        }
-        else
+        ExpressionNode* arg = op->mChildren.front();
+        assignExprNode(op, arg);
+        delete arg;
+    }
+    else
+    {
+        for (auto it = op->mChildren.begin(); it != op->mChildren.end(); ++it)
         {
-            ++it;
-        }     
+            auto it2 = std::next(it);
+            if ((*it)->mStr == "*" || (*it)->mStr == "**") // (* a... (* b... ) c...) ==> (* a... b... c...)
+            {        
+                op->mChildren.insert(it, (*it)->mChildren.begin(), (*it)->mChildren.end());
+                op->mChildren.erase(it);
+                delete *it;
+                continue;
+            }   
+            else if (it2 != op->mChildren.end())
+            {
+                if ((*it)->mStr == "/" && (*it2)->mStr == "/") // (* (/ a b) (/ c d) ...) ==> (* (/ (* a c) (* b d)) ...)
+                {
+                    ExpressionNode* num = (*it)->mChildren.front();
+                    ExpressionNode* den = (*it)->mChildren.back();
+                    (*it)->mChildren.clear();
+
+                    ExpressionNode* mul1 = new ExpressionNode();
+                    mul1->mType = ExpressionNode::OPERATOR;
+                    mul1->mStr = "*";
+                    mul1->mPrecedence = operatorPrec(mul1->mStr);
+                    mul1->mChildren.push_back(num);
+                    mul1->mChildren.push_back((*it2)->mChildren.front());
+
+                    ExpressionNode* mul2 = new ExpressionNode();
+                    mul2->mType = ExpressionNode::OPERATOR;
+                    mul2->mStr = "*";
+                    mul2->mPrecedence = operatorPrec(mul2->mStr);
+                    mul2->mChildren.push_back(den);
+                    mul2->mChildren.push_back((*it2)->mChildren.back());
+
+                    (*it)->mChildren.push_front(mul1);
+                    (*it)->mChildren.push_back(mul2);
+                    num->mParent = mul1;
+                    (*it2)->mChildren.front()->mParent = mul1;
+                    den->mParent = mul2;
+                    (*it2)->mChildren.back()->mParent = mul2;
+                    
+                    delete *it2;
+                    op->mChildren.erase(it2);
+                    evaluateArithmetic(*it);
+                }
+                else if ((*it)->mStr == "/") // (* (/ a b) c ...) ==> (* (/ (* a c) b) ...)
+                {
+                    ExpressionNode* num = (*it)->mChildren.front();
+                    (*it)->mChildren.erase((*it)->mChildren.begin());
+
+                    ExpressionNode* mul = new ExpressionNode();
+                    mul->mType = ExpressionNode::OPERATOR;
+                    mul->mStr = "*";
+                    mul->mPrecedence = operatorPrec(mul->mStr);
+                    mul->mChildren.push_back(num);
+                    mul->mChildren.push_back(*it2);
+                    (*it2)->mParent = mul;
+                    num->mParent = mul;
+
+                    (*it)->mChildren.push_front(mul);
+                    mul->mParent = *it;
+                    op->mChildren.erase(it2);
+                    evaluateArithmetic(*it);
+                }
+                else if ((*it2)->mStr == "/") // (* ... a (/ b c)) ==> (* ... (/ (* a b) c))
+                {              
+                    ExpressionNode* num = (*it2)->mChildren.front();
+                    (*it2)->mChildren.erase((*it2)->mChildren.begin());
+
+                    ExpressionNode* mul = new ExpressionNode();
+                    mul->mType = ExpressionNode::OPERATOR;
+                    mul->mStr = "*";
+                    mul->mPrecedence = operatorPrec(mul->mStr);
+                    mul->mChildren.push_back(*it);
+                    mul->mChildren.push_back(num);
+                    (*it)->mParent = mul;
+                    num->mParent = mul;
+
+                    (*it2)->mChildren.push_front(mul);
+                    mul->mParent = *it2;
+                    it = op->mChildren.erase(it);
+                    evaluateArithmetic(*it2);
+                    --it;
+                }       
+            }
+        }
+
+        if (op->mChildren.size() == 1) // possibly need second pass
+            symbolicMul(op);
     }
     
     return true;
+}
+
+// Evalutes "(/ <arg0> <arg1>)"
+bool symbolicDiv(ExpressionNode* op)
+{
+    if (op->mChildren.size() != 2)  return false; // TODO: arity mismatch
+
+    ExpressionNode* num = op->mChildren.front();
+    ExpressionNode* den = op->mChildren.back();
+
+    if (num->mStr == "/" && den->mStr == "/") // (/ (/ a b) (/ c d)) ==> (/ (* a d) (* c b))
+    {
+        num->mStr = "*";
+        num->mPrecedence = operatorPrec(num->mStr);
+        den->mStr = "*";
+        den->mPrecedence = operatorPrec(den->mStr);
+
+        ExpressionNode* tmp = num->mChildren.back();
+        ExpressionNode* tmp2 = den->mChildren.back();
+
+        num->mChildren.erase(std::prev(num->mChildren.end()));
+        den->mChildren.erase(std::prev(den->mChildren.end()));
+        num->mChildren.push_back(tmp2);
+        den->mChildren.push_back(tmp);
+        tmp->mParent = den;
+        tmp2->mParent = num;
+    }
+    else if (num->mStr == "/") // (/ (/ a b) c) ==> (/ a (* b c))
+    {
+        num->mStr = "*";
+        num->mPrecedence = operatorPrec(num->mStr);
+
+        ExpressionNode* tmp = num->mChildren.front();
+        ExpressionNode* tmp2 = op->mChildren.back();
+
+        num->mChildren.erase(num->mChildren.begin());
+        op->mChildren.erase(std::prev(op->mChildren.end()));
+        op->mChildren.push_front(tmp);
+        num->mChildren.push_back(tmp2);
+        tmp->mParent = op;
+        tmp2->mParent = num;
+        num = op->mChildren.front(); // reassign numerator and denominator
+        den = op->mChildren.back();
+    }
+    else if (den->mStr == "/") // (/ a (/ b c)) ==> (/ (* a c) b)
+    {
+        den->mStr = "*";
+        den->mPrecedence = operatorPrec(num->mStr);
+
+        ExpressionNode* tmp = op->mChildren.front();
+        ExpressionNode* tmp2 = den->mChildren.front();
+
+        op->mChildren.erase(op->mChildren.begin());
+        den->mChildren.erase(den->mChildren.begin());
+        den->mChildren.push_front(tmp);
+        op->mChildren.push_back(tmp2);
+        den->mParent = op;
+        op->mParent = num;
+        num = op->mChildren.front(); // reassign numerator and denominator
+        den = op->mChildren.back();
+    }
+
+    if ((num->mStr == "*" || num->mStr == "**") && // (/ (* a b) (* b c)) ==> (/ a c)
+        (den->mStr == "*" || den->mStr == "**"))
+    {
+        bool changed = false;
+        for (auto it = num->mChildren.begin(); it != num->mChildren.end(); ++it)
+        {
+            for (auto it2 = den->mChildren.begin(); it2 != den->mChildren.end(); ++it2)
+            {
+                if (equivExpression(*it, *it2))
+                {
+                    freeExpression(*it);
+                    freeExpression(*it2);
+                    num->mChildren.erase(it--);
+                    den->mChildren.erase(it2);
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        if (changed)
+        {
+            if (num->mChildren.empty())
+            {
+                num->mType = ExpressionNode::INTEGER;
+                num->mExact = 1;
+                num->mPrecedence = 0;
+                num->mStr.clear();
+                num->mChildren.clear();
+            }     
+        
+            if (den->mChildren.empty())
+            {
+                den->mType = ExpressionNode::INTEGER;
+                den->mExact = 1;
+                den->mPrecedence = 0;
+                den->mStr.clear();
+                den->mChildren.clear();
+            }
+
+            evaluateArithmetic(num);
+            evaluateArithmetic(den);
+        }
+    }
+    else if (num->mStr == "*" || num->mStr == "**") // (/ (* a b c) b) ==> (* a c)
+    {
+        for (auto it = num->mChildren.begin(); it != num->mChildren.end(); ++it)
+        {
+            if (equivExpression(*it, den))
+            {
+                freeExpression(*it);
+                freeExpression(den);
+                num->mChildren.erase(it);
+                op->mChildren.erase(std::prev(op->mChildren.end()));
+                evaluateArithmetic(num); // simplify numerator
+                break;
+            }
+        }
+    }
+    else if (den->mStr == "*" || den->mStr == "**") // (/ a (* a b c)) ==> (/ 1 (* b c))
+    {
+        for (auto it = den->mChildren.begin(); it != den->mChildren.end(); ++it)
+        {
+            if (equivExpression(*it, num))
+            {
+                freeExpression(*it);
+                den->mChildren.erase(it);
+                num->mType = ExpressionNode::INTEGER;
+                num->mExact = 1;
+                num->mPrecedence = 0;
+                num->mStr.clear();
+                num->mChildren.clear();
+                evaluateArithmetic(den); // simplify denominator
+                break;
+            }
+        }
+    }
+    else if (equivExpression(num, den)) // (/ a a) ==> 1
+    {
+        op->mType = ExpressionNode::INTEGER;
+        op->mExact = 1;
+        op->mPrecedence = 0;
+        op->mStr.clear();
+        op->mChildren.clear();
+        freeExpression(num);
+        freeExpression(den);
+    } 
+    else if (op->mChildren.back()->mExact == Integer(1)) // (/ x 1) == x
+    {
+        ExpressionNode* arg = op->mChildren.front();
+        delete op->mChildren.back();
+        op->mChildren.clear();
+        assignExprNode(op, arg);
+        delete arg;
+    }  // else do nothing
+
+    if (op->mStr == "/" && op->mChildren.size() == 1)
+    {
+        ExpressionNode* arg = op->mChildren.front();
+        assignExprNode(op, arg);
+        delete arg;
+    }
+  
+    return true; // TODO: evaluate
 }
 
 //
@@ -464,7 +711,7 @@ bool evaluateArithmetic(ExpressionNode* expr)
         else if (expr->mStr == "+")                         return symbolicAdd(expr);
         else if (expr->mStr == "-")                         return false;   // Unsupported: symbolic -
         else if (expr->mStr == "*" || expr->mStr == "**")   return symbolicMul(expr);
-        else if (expr->mStr == "/")                         return false;   // Unsupported: symbolic /   
+        else if (expr->mStr == "/")                         return symbolicDiv(expr);  
 
         else if (expr->mStr == "exp")                       return symbolicExp(expr);
         else if (expr->mStr == "log")                       return symbolicLog(expr);

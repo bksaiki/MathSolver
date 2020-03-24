@@ -191,11 +191,11 @@ bool bracketedExpr(std::list<ExpressionNode*>::const_iterator begin, std::list<E
     size_t bracketLevel = 0;
     for (std::list<ExpressionNode*>::const_iterator it = begin; it != end; ++it)
     {
-        if ((*it)->mStr != "(" || (*it)->mStr != "[" || (*it)->mStr != "{")
+        if ((*it)->mStr == "(" || (*it)->mStr == "[" || (*it)->mStr == "{")
         {
             ++bracketLevel;
         }
-        else if ((*it)->mStr != ")" || (*it)->mStr != "]" || (*it)->mStr != "}")
+        else if ((*it)->mStr == ")" || (*it)->mStr == "]" || (*it)->mStr == "}")
         {
             if (--bracketLevel == 0 && it != end)
                 return false;
