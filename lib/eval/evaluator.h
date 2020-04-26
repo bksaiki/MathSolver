@@ -2,7 +2,7 @@
 #define _MATHSOLVER_EVALUATOR_H_
 
 #include "arithmetic.h"
-#include "expression.h"
+#include "../expr/expr.h"
 
 namespace MathSolver
 {

@@ -1,9 +1,9 @@
 #include <iostream>
 #include <list>
 #include <string>
-#include "../src/test/test-common.h"
-#include "../src/expression/evaluator.h"
-#include "../src/expression/parser.h"
+#include "../lib/test/test-common.h"
+#include "../lib/eval/evaluator.h"
+#include "../lib/expr/parser.h"
 
 using namespace MathSolver;
 

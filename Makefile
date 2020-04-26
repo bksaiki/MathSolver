@@ -1,5 +1,5 @@
 BUILD_DIR	:= ./build
-SRC_DIR 	:= ./src
+SRC_DIR 	:= ./lib
 TEST_DIR	:= ./tests
 
 SRCS 		:= $(shell find $(SRC_DIR) -name *.cpp)

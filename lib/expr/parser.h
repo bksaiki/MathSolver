@@ -3,7 +3,7 @@
 
 #include <list>
 #include <string>
-#include "expression.h"
+#include "../expr/expr.h"
 
 namespace MathSolver
 {

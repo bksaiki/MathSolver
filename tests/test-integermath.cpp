@@ -1,6 +1,6 @@
 #include <string>
-#include "../src/test/test-common.h"
-#include "../src/types/IntegerMath.h"
+#include "../lib/test/test-common.h"
+#include "../lib/types/IntegerMath.h"
 
 using namespace MathSolver;
 
