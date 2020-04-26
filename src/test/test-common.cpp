@@ -11,13 +11,11 @@ std::string TestModule::result() const
     for (const std::string& s : mResults)
     {
         if (mVerbose || s.find("FAIL") != std::string::npos)
-        {
-            results += ("\n  " + std::to_string(i) + + "\t" + s);
-        }
+            results += ("\n    " + std::to_string(i) + "\t" + s);
         ++i;
     }
 
-    return std::to_string(mPassed) + "/" + totalStr + " tests passed\t\"" + mName + "\"" + results;
+    return std::to_string(mPassed) + "/" + totalStr + " \"" + mName + "\"" + results;
 }
 
 void TestModule::runTest(const std::string& test, const std::string& expected)

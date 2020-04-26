@@ -403,12 +403,25 @@ std::istream& operator>>(std::istream& in, Integer& integer)
     return in;
 }
 
+Integer Integer::divRem(const Integer& other, Integer& rem) const
+{
+    Integer quo;
+    divAndRem(other, quo, rem);
+    return quo;
+}
+
 void Integer::set(uint8_t* arr, size_t len, bool sign)
 {
     delete[] mData;
     mData = arr;
     mSize = len;
     mSign = sign;
+}
+
+void Integer::fromString(const std::string& str)
+{
+    delete[] mData;
+    fromString(str.c_str());
 }
 
 std::string Integer::toString() const

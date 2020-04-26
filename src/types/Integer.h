@@ -158,6 +158,11 @@ public:
     // Returns a pointer to the byte array.
     inline uint8_t* data() const { return mData; }
 
+    // Returns the result of dividing this Integer by another and stores
+    // the remainder at rem.
+    Integer divRem(const Integer& other, Integer& rem) const;
+
+    // Returns true if the integer is zero
     inline bool isZero() const { return rangeIsEmpty(mData, &mData[mSize]); }
 
     // Sets the data of this Integer using a byte array of a specified length.
@@ -169,8 +174,14 @@ public:
     // Returns the width of this Integer.
     inline size_t size() const { return mSize; } 
 
-    // Returns this Integer as a string.
+    // Sets this integer from a std::string.
+    void fromString(const std::string& str);  
+
+    // Returns this Integer as a std::string.
     std::string toString() const;
+
+    // Returns this Integer as a double.
+    double toDouble() const;
 
 private:
 
@@ -180,7 +191,7 @@ private:
 
     // Helper function. Adds another Integer to this one. The sign of the result must
     // be specified.
-    void addAssign(const Integer& other, bool sign);
+    void addAssign(const Integer& other, bool sign); 
 
     // Helper function. Divides this Integer by another and stores the quotient at quo and
     // the positive remainder at rem. The size of the result and the remainder is this size.
