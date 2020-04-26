@@ -22,7 +22,13 @@ void printTokenList(const std::list<ExpressionNode*>& list)
 int main()
 {
 	bool status = true;
-	TestModule tests("Parser - (negate)");
+	bool verbose = false;
+
+	//
+	// Single operations
+	//
+
+	TestModule tests("Parser - (negate)", verbose);
 	{
 		const size_t COUNT = 4;
 		const std::string exprs[COUNT * 2] = 
@@ -368,6 +374,38 @@ int main()
 			"tan x",		"(tan x)",
 			"tan(x)",		"(tan x)",
 			"tan(x, y)",	"(tan x y)"
+		};
+
+		for (size_t i = 0; i < COUNT; ++i)
+		{
+			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			flattenExpr(expr);
+			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
+			freeExpression(expr);
+		}
+		std::cout << tests.result() << std::endl;
+		status &= tests.status();
+	}
+
+	//
+	//	Multiple operations
+	//
+
+	tests.reset("Parser +,-,*,/,^,!,exp,log,sin,cos,tan");
+	{
+		const size_t COUNT = 10;
+		const std::string exprs[COUNT * 2] = 
+		{ 
+			"m*x+b",					"(+ (* m x) b)",
+			"a*x^2+b*x+c",				"(+ (* a (^ x 2)) (* b x) c)",
+			"(a+b)*(x+y)",				"(* (+ a b) (+ x y))",
+			"(a/b)*(c/d)",				"(* (/ a b) (/ c d))",
+			"(a-b)!*c!",				"(* (! (- a b)) (! c))",
+			"-(a+b)^2*(c!/d-e)",		"(* (^ (-* (+ a b)) 2) (- (/ (! c) d) e))",
+			"sin(cos(tan x))",			"(sin (cos (tan x)))",
+			"exp(log(x + 1))",			"(exp (log (+ x 1)))",
+			"tan(x+1,y/2)",				"(tan (+ x 1) (/ y 2))",
+			"log(a%b,tan(x,exp y))", 	"(log (% a b) (tan x (exp y)))"
 		};
 
 		for (size_t i = 0; i < COUNT; ++i)

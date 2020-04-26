@@ -185,6 +185,10 @@ std::string toInfixString(ExpressionNode* expr)
 		{
 			return toInfixString(expr->mChildren.front()) + "^" + toInfixString(expr->mChildren.back());
 		}
+		else if (expr->mStr == "-*" && expr->mChildren.size() == 1)
+		{
+			return "-" + toInfixString(expr->mChildren.front());
+		}
 		else
 		{
 			std::string sub = toInfixString(expr->mChildren.front());
@@ -297,8 +301,8 @@ int operatorPrec(const std::string& op)
 	if (op == "-*")										return 2;
 	else if (op == "^")									return 3;
 	else if (op == "!")									return 4;
-	else if (op == "*" || op == "**")					return 5;
-	else if (op == "/" || op == "%")					return 6;
+	else if (op == "**")								return 5;
+	else if (op == "*" || op == "/" || op == "%")		return 6;
 	else if (op == "+" || op == "-")					return 7;
 	else if (op == ">" || op == ">=" || op == "=" ||
 			 op == "<" || op == "<=")					return 8;

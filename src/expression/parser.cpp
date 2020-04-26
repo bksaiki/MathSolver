@@ -263,7 +263,7 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
         {
             ExpressionNode* arg = parseTokensR(next, end);
             arg->mParent = node;
-            node->mChildren.push_back(arg); 
+            node->mChildren.push_back(arg);
         }
         else // func (<arg>, <arg>, ...)
         {
@@ -272,7 +272,7 @@ ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, s
             {
                 std::list<ExpressionNode*>::const_iterator it2 = std::next(it);
                 bracketLevel = 0;
-                while (it2 != end && (*it2)->mStr != "," && ((*it2)->mStr != ")" || bracketLevel > 0))
+                while (it2 != end && (((*it2)->mStr != ")" && (*it2)->mStr != ",") || bracketLevel > 0))
                 {
                     if ((*it2)->mStr == "(")         ++bracketLevel;
                     else if ((*it2)->mStr == ")")    --bracketLevel;
