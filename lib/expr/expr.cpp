@@ -24,61 +24,61 @@ const std::string OPERATORS[OPERATOR_COUNT] =
 	">", "<", ">=", "<=", "="
 };
 
-ExpressionNode::ExpressionNode()
+ExprNode::ExprNode()
 {
-	mParent = nullptr;
-	mType = VARIABLE;
-	mPrecedence = 0;
-	mInexact = 0.0;
+	parent = nullptr;
+	type = VARIABLE;
+	prec = 0;
+	inexact = 0.0;
 }
 
-void assignExprNode(ExpressionNode* dest, ExpressionNode* src)
+void assignExprNode(ExprNode* dest, ExprNode* src)
 {
 	if (dest != nullptr && src != nullptr)
 	{		
-		dest->mChildren = src->mChildren;
-		dest->mType = src->mType;
-		dest->mPrecedence = src->mPrecedence;
-		dest->mStr = src->mStr;
-		dest->mExact = src->mExact;
-		dest->mInexact = src->mInexact;
+		dest->children = src->children;
+		dest->type = src->type;
+		dest->prec = src->prec;
+		dest->str = src->str;
+		dest->exact = src->exact;
+		dest->inexact = src->inexact;
 
-		for (ExpressionNode* child : dest->mChildren)
-			child->mParent = dest;
+		for (ExprNode* child : dest->children)
+			child->parent = dest;
 	}
 }
 
-ExpressionNode* copyOf(ExpressionNode* expr)
+ExprNode* copyOf(ExprNode* expr)
 {
-	ExpressionNode* cp = new ExpressionNode();
-	cp->mType = expr->mType;
-	cp->mPrecedence = expr->mPrecedence;
-	cp->mStr = expr->mStr;
-	cp->mExact = expr->mExact;
-	cp->mInexact = expr->mInexact;
+	ExprNode* cp = new ExprNode();
+	cp->type = expr->type;
+	cp->prec = expr->prec;
+	cp->str = expr->str;
+	cp->exact = expr->exact;
+	cp->inexact = expr->inexact;
 
-	for (ExpressionNode* child : expr->mChildren)
-		cp->mChildren.push_back(copyOf(child));
+	for (ExprNode* child : expr->children)
+		cp->children.push_back(copyOf(child));
 	return cp;
 }
 
-bool equivExpression(ExpressionNode* a, ExpressionNode* b)
+bool equivExpression(ExprNode* a, ExprNode* b)
 {
-	if (a->mType == b->mType)
+	if (a->type == b->type)
 	{
-		if (a->mType == ExpressionNode::INTEGER)
-			return (a->mExact == b->mExact);
-		else if (a->mType == ExpressionNode::FLOAT)
-			return (a->mInexact == b->mInexact);
-		else if (a->mType == ExpressionNode::CONSTANT ||
-				 a->mType == ExpressionNode::CONSTANT)	
-			return (a->mStr == b->mStr);
+		if (a->type == ExprNode::INTEGER)
+			return (a->exact == b->exact);
+		else if (a->type == ExprNode::FLOAT)
+			return (a->inexact == b->inexact);
+		else if (a->type == ExprNode::CONSTANT ||
+				 a->type == ExprNode::CONSTANT)	
+			return (a->str == b->str);
 		// Operator, function
-		if (a->mStr == b->mStr && a->mChildren.size() == b->mChildren.size())
+		if (a->str == b->str && a->children.size() == b->children.size())
 		{
-			std::list<ExpressionNode*>::iterator a_it = a->mChildren.begin();
-			std::list<ExpressionNode*>::iterator b_it = b->mChildren.begin();
-			for (; a_it != a->mChildren.end(); ++a_it, ++b_it)
+			auto a_it = a->children.begin();
+			auto b_it = b->children.begin();
+			for (; a_it != a->children.end(); ++a_it, ++b_it)
 			{
 				if (!equivExpression(*a_it, *b_it))
 					return false;
@@ -91,12 +91,12 @@ bool equivExpression(ExpressionNode* a, ExpressionNode* b)
 	return false;
 }
 
-void flattenExpr(ExpressionNode* expr)
+void flattenExpr(ExprNode* expr)
 {
 	bool hasGrandChildren = false;
-	for (ExpressionNode* child : expr->mChildren) // recursively flatten
+	for (ExprNode* child : expr->children) // recursively flatten
 	{
-		if (child->mChildren.size() != 0)
+		if (child->children.size() != 0)
 		{
 			flattenExpr(child);
 			hasGrandChildren = true;
@@ -107,15 +107,15 @@ void flattenExpr(ExpressionNode* expr)
 	{
 		for (size_t i = 0; i < FLATTENABLE_OP_COUNT; ++i)
 		{
-			if (expr->mStr == FLATTENABLE_OPS[i])
+			if (expr->str == FLATTENABLE_OPS[i])
 			{	
-				for (std::list<ExpressionNode*>::iterator child = expr->mChildren.begin(); child != expr->mChildren.end(); ++child)
+				for (auto child = expr->children.begin(); child != expr->children.end(); ++child)
 				{
-					if ((*child)->mStr == FLATTENABLE_OPS[i])
+					if ((*child)->str == FLATTENABLE_OPS[i])
 					{
-						expr->mChildren.insert(child, (*child)->mChildren.begin(), (*child)->mChildren.end());
+						expr->children.insert(child, (*child)->children.begin(), (*child)->children.end());
 						delete *child;
-						child = expr->mChildren.erase(child--);
+						child = expr->children.erase(child--);
 					}	
 				}
 			}
@@ -123,18 +123,18 @@ void flattenExpr(ExpressionNode* expr)
 	}
 }
 
-void freeExpression(ExpressionNode* expr)
+void freeExpression(ExprNode* expr)
 {
-	for (ExpressionNode* child : expr->mChildren)
+	for (ExprNode* child : expr->children)
 		freeExpression(child);
 	delete expr;	
 }
 
-bool isNumerical(ExpressionNode* expr)
+bool isNumerical(ExprNode* expr)
 {
-	if (expr->mType == ExpressionNode::FUNCTION || expr->mType == ExpressionNode::OPERATOR)
+	if (expr->type == ExprNode::FUNCTION || expr->type == ExprNode::OPERATOR)
 	{
-		for (ExpressionNode* child : expr->mChildren)
+		for (ExprNode* child : expr->children)
 		{
 			if (!isNumber(child))
 				return false;
@@ -146,78 +146,76 @@ bool isNumerical(ExpressionNode* expr)
 	return isNumber(expr);
 }
 
-bool isNumber(ExpressionNode* node)
+bool isNumber(ExprNode* node)
 {
-	return (node->mType == ExpressionNode::INTEGER || node->mType == ExpressionNode::FLOAT);
+	return (node->type == ExprNode::INTEGER || node->type == ExprNode::FLOAT);
 }
 
-bool isValue(ExpressionNode* node)
+bool isValue(ExprNode* node)
 {
-	return (node->mType == ExpressionNode::INTEGER || node->mType == ExpressionNode::FLOAT ||
-			node->mType == ExpressionNode::CONSTANT || node->mType == ExpressionNode::VARIABLE);
+	return (node->type == ExprNode::INTEGER || node->type == ExprNode::FLOAT ||
+			node->type == ExprNode::CONSTANT || node->type == ExprNode::VARIABLE);
 }
 
-std::string toInfixString(ExpressionNode* expr)
+std::string toInfixString(ExprNode* expr)
 {
-	if (expr->mType == ExpressionNode::FUNCTION)
+	if (expr->type == ExprNode::FUNCTION)
 	{
-		std::string sub = expr->mStr + "(";
-		if (!expr->mChildren.empty())
+		std::string sub = expr->str + "(";
+		if (!expr->children.empty())
 		{
-			sub += toInfixString(expr->mChildren.front());
-			for (std::list<ExpressionNode*>::iterator it = std::next(expr->mChildren.begin()); 
-				 it != expr->mChildren.end(); ++it)
+			sub += toInfixString(expr->children.front());
+			for (auto it = std::next(expr->children.begin()); it != expr->children.end(); ++it)
 				sub += (", " + toInfixString(*it));
 		}
 
 		return sub + ")";
 	}
-	else if (expr->mType == ExpressionNode::OPERATOR)
+	else if (expr->type == ExprNode::OPERATOR)
 	{
-		if (expr->mStr == "!")
+		if (expr->str == "!")
 		{
-			if (expr->mChildren.front()->mStr == "!")
-				return "(" + toInfixString(expr->mChildren.front()) + ")!";
+			if (expr->children.front()->str == "!")
+				return "(" + toInfixString(expr->children.front()) + ")!";
 			else
-				return toInfixString(expr->mChildren.front()) + "!";
+				return toInfixString(expr->children.front()) + "!";
 		}
-		else if (expr->mStr == "^")
+		else if (expr->str == "^")
 		{
-			return toInfixString(expr->mChildren.front()) + "^" + toInfixString(expr->mChildren.back());
+			return toInfixString(expr->children.front()) + "^" + toInfixString(expr->children.back());
 		}
-		else if (expr->mStr == "-*" && expr->mChildren.size() == 1)
+		else if (expr->str == "-*" && expr->children.size() == 1)
 		{
-			return "-" + toInfixString(expr->mChildren.front());
+			return "-" + toInfixString(expr->children.front());
 		}
 		else
 		{
-			std::string sub = toInfixString(expr->mChildren.front());
-			std::string op = (expr->mStr == "**") ? "" : (expr->mStr == "-*"? "-" : expr->mStr) ;
-			for (std::list<ExpressionNode*>::iterator it = std::next(expr->mChildren.begin()); 
-				 it != expr->mChildren.end(); ++it)
+			std::string sub = toInfixString(expr->children.front());
+			std::string op = (expr->str == "**") ? "" : (expr->str == "-*"? "-" : expr->str) ;
+			for (auto it = std::next(expr->children.begin()); it != expr->children.end(); ++it)
 				sub += (op + toInfixString(*it));
-			if (expr->mParent != nullptr && expr->mParent->mPrecedence < expr->mPrecedence)
+			if (expr->parent != nullptr && expr->parent->prec < expr->prec)
 				return "(" + sub + ")";
 			else
 				return sub;
 		}
 		
 	}
-	else if (expr->mType == ExpressionNode::INTEGER)
+	else if (expr->type == ExprNode::INTEGER)
 	{
-		return expr->mExact.toString();
+		return expr->exact.toString();
 	}
-	else if (expr->mType == ExpressionNode::FLOAT)
+	else if (expr->type == ExprNode::FLOAT)
 	{
-		return std::to_string(expr->mInexact);
+		return std::to_string(expr->inexact);
 	}
 	else // constant, variable
 	{
-		return expr->mStr;
+		return expr->str;
 	}
 }
 
-std::string toPrefixString(ExpressionNode* expr)
+std::string toPrefixString(ExprNode* expr)
 {
 	if (expr == nullptr)
 	{
@@ -225,18 +223,18 @@ std::string toPrefixString(ExpressionNode* expr)
 	}
 	else
 	{
-		if (!expr->mChildren.empty())
+		if (!expr->children.empty())
 		{
-			std::string sub = "(" + expr->mStr;
-			for (auto e : expr->mChildren)
+			std::string sub = "(" + expr->str;
+			for (auto e : expr->children)
 				sub += (" " + toPrefixString(e));
 			return sub + ")";
 		}
 		else
 		{
-			if (expr->mType == ExpressionNode::INTEGER) 	return expr->mExact.toString();
-			else if (expr->mType == ExpressionNode::FLOAT)	return std::to_string(expr->mInexact);
-			else 											return expr->mStr;
+			if (expr->type == ExprNode::INTEGER) 	return expr->exact.toString();
+			else if (expr->type == ExprNode::FLOAT)	return std::to_string(expr->inexact);
+			else 											return expr->str;
 		}
 	}
 }
@@ -284,12 +282,12 @@ bool isBracket(char c)
 			c == ')' || c == '}' || c == ']');
 }
 
-size_t nodeCount(ExpressionNode* expr)
+size_t nodeCount(ExprNode* expr)
 {
 	size_t c = 1;
-	if (expr->mType == ExpressionNode::OPERATOR || expr->mType == ExpressionNode::FUNCTION)
+	if (expr->type == ExprNode::OPERATOR || expr->type == ExprNode::FUNCTION)
 	{
-		for (ExpressionNode* child : expr->mChildren)
+		for (ExprNode* child : expr->children)
 			c += nodeCount(child);	
 	}
 

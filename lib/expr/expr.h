@@ -13,7 +13,7 @@ namespace MathSolver
 //
 
 // Stores unique identifiers
-struct ExpressionNode
+struct ExprNode
 {   
     enum Type
     {
@@ -26,55 +26,55 @@ struct ExpressionNode
     };
 
     // Default constructor
-    ExpressionNode();
+    ExprNode();
 
     // Direct copy unsupported
-    ExpressionNode(const ExpressionNode& other) = delete;
-    ExpressionNode& operator=(const ExpressionNode& other) = delete;
+    ExprNode(const ExprNode& other) = delete;
+    ExprNode& operator=(const ExprNode& other) = delete;
 
-    ExpressionNode* mParent;
-    std::list<ExpressionNode*> mChildren;
-    Type mType;
-    int mPrecedence;
+    ExprNode* parent;
+    std::list<ExprNode*> children;
+    Type type;
+    int prec;
 
-    std::string mStr;
-    Integer mExact;
-    double mInexact;
+    std::string str;
+    Integer exact;
+    double inexact;
 };
 
 // Assigns the expression node at source to dest by copying every member except for parent.
-void assignExprNode(ExpressionNode* dest, ExpressionNode* src);
+void assignExprNode(ExprNode* dest, ExprNode* src);
 
 // Returns a copy of the given expression tree
-ExpressionNode* copyOf(ExpressionNode* expr);
+ExprNode* copyOf(ExprNode* expr);
 
 // Returns true if the value of two nodes is the same.
-bool equivExpression(ExpressionNode* a, ExpressionNode* b);
+bool equivExpression(ExprNode* a, ExprNode* b);
 
 // Takes an expression node and recursively simplifes certain operators with interior nodes of the
 // same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)
-void flattenExpr(ExpressionNode* expr);
+void flattenExpr(ExprNode* expr);
 
 // Deletes an expression tree.
-void freeExpression(ExpressionNode* expr);
+void freeExpression(ExprNode* expr);
 
 // Returns true if the expression only contains numerical operands (Non-symbolic expression).
-bool isNumerical(ExpressionNode* expr);
+bool isNumerical(ExprNode* expr);
 
 // Returns true if the node is a number.
-bool isNumber(ExpressionNode* node);
+bool isNumber(ExprNode* node);
 
 // Returns true if the node is a number, constant, or variable
-bool isValue(ExpressionNode* node);
+bool isValue(ExprNode* node);
 
 // Returns the number of nodes in the expression tree.
-size_t nodeCount(ExpressionNode* expr);
+size_t nodeCount(ExprNode* expr);
 
 // Returns an expression tree as a string in infix notation. Assumes the tree is valid.
-std::string toInfixString(ExpressionNode* expr);
+std::string toInfixString(ExprNode* expr);
 
 // Returns an expression tree as a string in prefix notation. Assumes the tree is valid.
-std::string toPrefixString(ExpressionNode* expr);
+std::string toPrefixString(ExprNode* expr);
 
 //
 // Language constructs

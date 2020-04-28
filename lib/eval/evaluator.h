@@ -8,7 +8,7 @@ namespace MathSolver
 {
 
 // Evaluates a mathematical expression. Returns true on success and false otherwise.
-bool evaluateExpr(ExpressionNode* expr);
+bool evaluateExpr(ExprNode* expr);
 
 }
 

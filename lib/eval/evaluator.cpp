@@ -3,9 +3,9 @@
 namespace MathSolver
 {
 
-bool evaluateExpr(ExpressionNode* expr)
+bool evaluateExpr(ExprNode* expr)
 {   
-    for (ExpressionNode* child : expr->mChildren)
+    for (ExprNode* child : expr->children)
     {
         if (!isValue(child) && !evaluateExpr(child))
             return false;

@@ -6,13 +6,13 @@
 
 using namespace MathSolver;
 
-void printTokenList(const std::list<ExpressionNode*>& list)
+void printTokenList(const std::list<ExprNode*>& list)
 {
 	for (auto e : list)
 	{
-		if (e->mType == ExpressionNode::INTEGER) 	std::cout << e->mExact.toString();
-		else if (e->mType == ExpressionNode::FLOAT)	std::cout << std::to_string(e->mInexact);
-		else											std::cout << e->mStr;
+		if (e->type == ExprNode::INTEGER) 	std::cout << e->exact.toString();
+		else if (e->type == ExprNode::FLOAT)	std::cout << std::to_string(e->inexact);
+		else											std::cout << e->str;
 		std::cout << " ";
 	}
 	std::cout << std::endl;
@@ -40,7 +40,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -60,7 +60,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -80,7 +80,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -102,7 +102,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -121,7 +121,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -140,7 +140,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -160,7 +160,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -180,7 +180,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -199,7 +199,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -218,7 +218,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -237,7 +237,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -256,7 +256,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -275,7 +275,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -295,7 +295,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -316,7 +316,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -336,7 +336,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -356,7 +356,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -377,7 +377,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);
@@ -409,7 +409,7 @@ int main()
 
 		for (size_t i = 0; i < COUNT; ++i)
 		{
-			ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 			flattenExpr(expr);
 			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
 			freeExpression(expr);

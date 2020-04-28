@@ -11,7 +11,7 @@ bool evalExpr(TestModule& tester, const std::string exprs[], size_t count)
 {
 	for (size_t i = 0; i < count; ++i)
 	{
-		ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+		ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 		flattenExpr(expr);
 		bool s = evaluateExpr(expr);
 		tester.runTest(toInfixString(expr), exprs[2 * i + 1]);

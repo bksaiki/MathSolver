@@ -10,13 +10,13 @@ namespace MathSolver
 
 // Parses a mathematic expression and returns a vector of tokens
 // in order.
-std::list<ExpressionNode*> tokenizeStr(const std::string& expr);
+std::list<ExprNode*> tokenizeStr(const std::string& expr);
 
 // Corrects a vector of tokens by expanding implied operations.
-void expandTokens(std::list<ExpressionNode*>& tokens);
+void expandTokens(std::list<ExprNode*>& tokens);
 
 // Builds an expression tree from a vector of tokens.
-ExpressionNode* parseTokens(const std::list<ExpressionNode*>& tokens);
+ExprNode* parseTokens(const std::list<ExprNode*>& tokens);
 
 }
 

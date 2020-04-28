@@ -6,9 +6,9 @@ namespace MathSolver
 {
 
 // See header for description.
-std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
+std::list<ExprNode*> tokenizeStr(const std::string& expr)
 {
-    std::list<ExpressionNode*> tokens;
+    std::list<ExprNode*> tokens;
     std::stack<std::string> brackets;
     size_t len = expr.length();
     size_t itr = 0;
@@ -22,20 +22,20 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
         else if (isdigit(expr[itr]) ||        // <digit> OR <dot><digit> 
                 (expr[itr] == '.' && itr < (len - 1) && isdigit(expr[itr + 1])))
         {
-            ExpressionNode* num = new ExpressionNode();
+            ExprNode* num = new ExprNode();
             size_t i = itr + 1;
             for (; i != len && (isdigit(expr[i]) || expr[i] == '.'); ++i);
 
             std::string str = expr.substr(itr, i - itr);
             if (str.find('.') == std::string::npos)
             {
-                num->mExact = str;
-                num->mType = ExpressionNode::INTEGER;
+                num->exact = str;
+                num->type = ExprNode::INTEGER;
             }
             else
             {
-                num->mInexact = std::stod(str);
-                num->mType = ExpressionNode::FLOAT;
+                num->inexact = std::stod(str);
+                num->type = ExprNode::FLOAT;
             }
 
             tokens.push_back(num);
@@ -45,13 +45,13 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
         {
             size_t i = itr + 1;
             for (; i != len && isalpha(expr[i]); ++i);
-            ExpressionNode* str = new ExpressionNode();
-            str->mStr = expr.substr(itr, i - itr);
+            ExprNode* str = new ExprNode();
+            str->str = expr.substr(itr, i - itr);
 
-            if (isFunction(str->mStr))
+            if (isFunction(str->str))
             {
-                str->mType = ExpressionNode::FUNCTION;
-                str->mPrecedence = 1;
+                str->type = ExprNode::FUNCTION;
+                str->prec = 1;
             }
 
             tokens.push_back(str);
@@ -67,11 +67,11 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
             {
                 if (brackets.empty())
                 {
-                    ExpressionNode* rest = new ExpressionNode();
-                    rest->mStr = expr.substr(itr, len - itr);
-                    rest->mType = ExpressionNode::VARIABLE;
+                    ExprNode* rest = new ExprNode();
+                    rest->str = expr.substr(itr, len - itr);
+                    rest->type = ExprNode::VARIABLE;
                     tokens.push_back(rest);
-                    std::cout << "Unexpected bracket: \"" << expr[itr] << "\" Rest=\"" << rest->mStr << "\"" << std::endl; // TODO: error - expected different parentheses
+                    std::cout << "Unexpected bracket: \"" << expr[itr] << "\" Rest=\"" << rest->str << "\"" << std::endl; // TODO: error - expected different parentheses
                     return tokens;
                 }
 
@@ -79,34 +79,34 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
                 brackets.pop();
                 if ((expr[itr] == ')' && match != "(") || (expr[itr] == '}' && match != "{") || (expr[itr] == ']' && match != "["))
                 {
-                    ExpressionNode* rest = new ExpressionNode();
-                    rest->mStr = expr.substr(itr, len - itr);
-                    rest->mType = ExpressionNode::VARIABLE;
+                    ExprNode* rest = new ExprNode();
+                    rest->str = expr.substr(itr, len - itr);
+                    rest->type = ExprNode::VARIABLE;
                     tokens.push_back(rest);
-                    std::cout << "Wrong closing bracket: \"" << expr[itr] << "\" Rest=\"" << rest->mStr << "\"" << std::endl; // TODO: error - expected different parentheses
+                    std::cout << "Wrong closing bracket: \"" << expr[itr] << "\" Rest=\"" << rest->str << "\"" << std::endl; // TODO: error - expected different parentheses
                     return tokens;
                 }
             }
             
-            ExpressionNode* bracket = new ExpressionNode();
-            bracket->mStr = std::string(1, expr[itr]);
-            bracket->mType = ExpressionNode::OPERATOR;
+            ExprNode* bracket = new ExprNode();
+            bracket->str = std::string(1, expr[itr]);
+            bracket->type = ExprNode::OPERATOR;
             tokens.push_back(bracket);
             ++itr;
         }
         else if (isOperatorChar(expr[itr]))
         {
-            ExpressionNode* op = new ExpressionNode();
+            ExprNode* op = new ExprNode();
             size_t i = itr;
       
             do
             {
                 ++i;
-                op->mStr = expr.substr(itr, i - itr); 
-            } while (i != len && isOperator(op->mStr + expr[i]));
+                op->str = expr.substr(itr, i - itr); 
+            } while (i != len && isOperator(op->str + expr[i]));
 
-            op->mType = ExpressionNode::OPERATOR;
-            op->mPrecedence = operatorPrec(op->mStr);
+            op->type = ExprNode::OPERATOR;
+            op->prec = operatorPrec(op->str);
             tokens.push_back(op);
             itr = i;
         }
@@ -149,37 +149,37 @@ std::list<ExpressionNode*> tokenizeStr(const std::string& expr)
    <bracket><bracket>           (2)(3)
 */
 
-void expandTokens(std::list<ExpressionNode*>& tokens)
+void expandTokens(std::list<ExprNode*>& tokens)
 {
-    for (std::list<ExpressionNode*>::iterator it = tokens.begin(); it != tokens.end(); ++it)
+    for (auto it = tokens.begin(); it != tokens.end(); ++it)
     {
-        std::list<ExpressionNode*>::iterator next = std::next(it);
-        if (it == tokens.begin() && next != tokens.end() && (*it)->mStr == "-" &&  // beginning negative
-            ((*next)->mType != ExpressionNode::OPERATOR || (*next)->mStr == "("))
+        auto next = std::next(it);
+        if (it == tokens.begin() && next != tokens.end() && (*it)->str == "-" &&  // beginning negative
+            ((*next)->type != ExprNode::OPERATOR || (*next)->str == "("))
         {
-            (*it)->mStr = "-*";
-            (*it)->mPrecedence = operatorPrec((*it)->mStr);
+            (*it)->str = "-*";
+            (*it)->prec = operatorPrec((*it)->str);
         }
-        else if (next != tokens.end() && (*it)->mType == ExpressionNode::OPERATOR && (*next)->mStr == "-")
+        else if (next != tokens.end() && (*it)->type == ExprNode::OPERATOR && (*next)->str == "-")
         {
-            (*next)->mStr = "-*";
-            (*next)->mPrecedence = operatorPrec((*next)->mStr);
+            (*next)->str = "-*";
+            (*next)->prec = operatorPrec((*next)->str);
         }
         else if (next != tokens.end() && // implicit multiplication
-            ((((*it)->mType == ExpressionNode::INTEGER || (*it)->mType == ExpressionNode::FLOAT) &&
-                ((*next)->mType == ExpressionNode::VARIABLE || (*next)->mType == ExpressionNode::FUNCTION ||
-                (*next)->mType == ExpressionNode::CONSTANT || (*next)->mStr == "(")) ||
-            ((*it)->mType == ExpressionNode::CONSTANT && ((*next)->mType == ExpressionNode::VARIABLE || // constant
-                (*next)->mType == ExpressionNode::FUNCTION || (*next)->mStr == "(")) ||
-            ((*it)->mType == ExpressionNode::VARIABLE && ((*next)->mType == ExpressionNode::FUNCTION || // variable
-                (*next)->mStr == "(")) ||
-            ((*it)->mStr == "!" && (*next)->mType != ExpressionNode::OPERATOR) || // factorial
-            ((*it)->mStr == ")" && (*next)->mStr == "("))) // factorial
+            ((((*it)->type == ExprNode::INTEGER || (*it)->type == ExprNode::FLOAT) &&
+                ((*next)->type == ExprNode::VARIABLE || (*next)->type == ExprNode::FUNCTION ||
+                (*next)->type == ExprNode::CONSTANT || (*next)->str == "(")) ||
+            ((*it)->type == ExprNode::CONSTANT && ((*next)->type == ExprNode::VARIABLE || // constant
+                (*next)->type == ExprNode::FUNCTION || (*next)->str == "(")) ||
+            ((*it)->type == ExprNode::VARIABLE && ((*next)->type == ExprNode::FUNCTION || // variable
+                (*next)->str == "(")) ||
+            ((*it)->str == "!" && (*next)->type != ExprNode::OPERATOR) || // factorial
+            ((*it)->str == ")" && (*next)->str == "("))) // factorial
         {
-            ExpressionNode* mul = new ExpressionNode();
-            mul->mStr = "**";
-            mul->mType = ExpressionNode::OPERATOR;
-            mul->mPrecedence = operatorPrec(mul->mStr);
+            ExprNode* mul = new ExprNode();
+            mul->str = "**";
+            mul->type = ExprNode::OPERATOR;
+            mul->prec = operatorPrec(mul->str);
             it = tokens.insert(next, mul);
         }
     }
@@ -187,20 +187,20 @@ void expandTokens(std::list<ExpressionNode*>& tokens)
 
 // parseTokens(tokens) and related functions
 
-bool bracketedExpr(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end)
+bool bracketedExpr(std::list<ExprNode*>::const_iterator begin, std::list<ExprNode*>::const_iterator end)
 {
-    if (!((*begin)->mStr == "(" && (*end)->mStr == ")") && !((*begin)->mStr == "[" && (*end)->mStr == "]") &&
-        !((*begin)->mStr == "{" && (*end)->mStr == "}"))
+    if (!((*begin)->str == "(" && (*end)->str == ")") && !((*begin)->str == "[" && (*end)->str == "]") &&
+        !((*begin)->str == "{" && (*end)->str == "}"))
         return false;
 
     size_t bracketLevel = 0;
-    for (std::list<ExpressionNode*>::const_iterator it = begin; it != end; ++it)
+    for (auto it = begin; it != end; ++it)
     {
-        if ((*it)->mStr == "(" || (*it)->mStr == "[" || (*it)->mStr == "{")
+        if ((*it)->str == "(" || (*it)->str == "[" || (*it)->str == "{")
         {
             ++bracketLevel;
         }
-        else if ((*it)->mStr == ")" || (*it)->mStr == "]" || (*it)->mStr == "}")
+        else if ((*it)->str == ")" || (*it)->str == "]" || (*it)->str == "}")
         {
             if (--bracketLevel == 0 && it != end)
                 return false;
@@ -210,134 +210,134 @@ bool bracketedExpr(std::list<ExpressionNode*>::const_iterator begin, std::list<E
     return true;
 }
 
-ExpressionNode* parseTokensR(std::list<ExpressionNode*>::const_iterator begin, std::list<ExpressionNode*>::const_iterator end)
+ExprNode* parseTokensR(std::list<ExprNode*>::const_iterator begin, std::list<ExprNode*>::const_iterator end)
 {
     if (bracketedExpr(begin, end))
     {
-        ExpressionNode* ret = parseTokensR(std::next(begin),std::prev(end));
+        ExprNode* ret = parseTokensR(std::next(begin),std::prev(end));
         delete *begin;
         delete *end;
         return ret;
     }
 
-    std::list<ExpressionNode*>::const_iterator split = end; // loop through tokens from end to beginning
-    std::list<ExpressionNode*>::const_iterator rend = std::prev(begin);
+    auto split = end; // loop through tokens from end to beginning
+    auto rend = std::prev(begin);
     size_t bracketLevel = 0;
-    for (std::list<ExpressionNode*>::const_iterator it = end; it != rend; --it)
+    for (auto it = end; it != rend; --it)
     {
-        if ((*it)->mStr == ")" || (*it)->mStr == "]" || (*it)->mStr == "}")
+        if ((*it)->str == ")" || (*it)->str == "]" || (*it)->str == "}")
         {
             ++bracketLevel;
         }
-        else if ((*it)->mStr == "(" || (*it)->mStr == "[" || (*it)->mStr == "{")
+        else if ((*it)->str == "(" || (*it)->str == "[" || (*it)->str == "{")
         {
             --bracketLevel;
         }
         else if (bracketLevel == 0) // find lowest precision when not within the bracket
         {
-            if ((*it)->mPrecedence > operatorPrec("^"))
+            if ((*it)->prec > operatorPrec("^"))
             {
-                if((*it)->mPrecedence > (*split)->mPrecedence)
+                if((*it)->prec > (*split)->prec)
                     split = it;
             }
-            else if ((*it)->mPrecedence > 0)
+            else if ((*it)->prec > 0)
             {
-                if((*it)->mPrecedence >= (*split)->mPrecedence)
+                if((*it)->prec >= (*split)->prec)
                     split = it;
             }
         }
     }
 
-    ExpressionNode* node = *split;
-    std::list<ExpressionNode*>::const_iterator next = std::next(split);
-    std::list<ExpressionNode*>::const_iterator prev = std::prev(split);
-    if (node->mType == ExpressionNode::FUNCTION)
+    ExprNode* node = *split;
+    auto next = std::next(split);
+    auto prev = std::prev(split);
+    if (node->type == ExprNode::FUNCTION)
     {
         if (split == end) // TODO: arity match
         {
-            std::cout << "Expected " << node->mStr << " <args>...";
+            std::cout << "Expected " << node->str << " <args>...";
             return nullptr;
         }
 
-        if ((*next)->mStr != "(") // func <arg>"
+        if ((*next)->str != "(") // func <arg>"
         {
-            ExpressionNode* arg = parseTokensR(next, end);
-            arg->mParent = node;
-            node->mChildren.push_back(arg);
+            ExprNode* arg = parseTokensR(next, end);
+            arg->parent = node;
+            node->children.push_back(arg);
         }
         else // func (<arg>, <arg>, ...)
         {
-            std::list<ExpressionNode*>::const_iterator it = next;
-            while ((*it)->mStr != ")") // iterate forward now
+            auto it = next;
+            while ((*it)->str != ")") // iterate forward now
             {
-                std::list<ExpressionNode*>::const_iterator it2 = std::next(it);
+                auto it2 = std::next(it);
                 bracketLevel = 0;
-                while (it2 != end && (((*it2)->mStr != ")" && (*it2)->mStr != ",") || bracketLevel > 0))
+                while (it2 != end && (((*it2)->str != ")" && (*it2)->str != ",") || bracketLevel > 0))
                 {
-                    if ((*it2)->mStr == "(")         ++bracketLevel;
-                    else if ((*it2)->mStr == ")")    --bracketLevel;
+                    if ((*it2)->str == "(")         ++bracketLevel;
+                    else if ((*it2)->str == ")")    --bracketLevel;
                     ++it2; // split arg vector
                 }
 
-                ExpressionNode* arg = parseTokensR(std::next(it), std::prev(it2));
-                arg->mParent = node;
-                node->mChildren.push_back(arg);
+                ExprNode* arg = parseTokensR(std::next(it), std::prev(it2));
+                arg->parent = node;
+                node->children.push_back(arg);
                 delete *it;
                 it = it2; 
             }
             delete *it;
         }        
     }
-    else if (node->mType == ExpressionNode::OPERATOR)
+    else if (node->type == ExprNode::OPERATOR)
     {
-        if (node->mStr == "+" || node->mStr == "-" || node->mStr == "**" || node->mStr == "*" ||
-            node->mStr == "/" || node->mStr == "%" || node->mStr == "^" || node->mStr == "<" ||
-            node->mStr == ">" || node->mStr == "<=" || node->mStr == ">=" || node->mStr == "=") 
+        if (node->str == "+" || node->str == "-" || node->str == "**" || node->str == "*" ||
+            node->str == "/" || node->str == "%" || node->str == "^" || node->str == "<" ||
+            node->str == ">" || node->str == "<=" || node->str == ">=" || node->str == "=") 
         {         
             if (split == begin || split == end) // TODO: arity match
             {
-                std::cout << "Expected <lhs> " << node->mStr << " <rhs>.";
+                std::cout << "Expected <lhs> " << node->str << " <rhs>.";
                 return nullptr;
             }
 
-            ExpressionNode* lhs = parseTokensR(begin, prev);
-            ExpressionNode* rhs = parseTokensR(next, end);
+            ExprNode* lhs = parseTokensR(begin, prev);
+            ExprNode* rhs = parseTokensR(next, end);
 
-            lhs->mParent = node;
-            rhs->mParent = node;
-            node->mChildren.push_back(lhs);
-            node->mChildren.push_back(rhs);  
+            lhs->parent = node;
+            rhs->parent = node;
+            node->children.push_back(lhs);
+            node->children.push_back(rhs);  
         }
-        else if (node->mStr == "-*")
+        else if (node->str == "-*")
         {
             if (split == end) // TODO: arity match
             {
-                std::cout << "Expected " << node->mStr << " <arg>.";
+                std::cout << "Expected " << node->str << " <arg>.";
                 return nullptr;
             }
 
-            ExpressionNode* arg = parseTokensR(next, end);
-            arg->mParent = node;
-            node->mChildren.push_back(arg);
+            ExprNode* arg = parseTokensR(next, end);
+            arg->parent = node;
+            node->children.push_back(arg);
         }
-        else if (node->mStr == "!")
+        else if (node->str == "!")
         {
             if (split == begin) // TODO: arity match
             {
-                std::cout << "Expected <arg> " << node->mStr << ".";
+                std::cout << "Expected <arg> " << node->str << ".";
                 return nullptr;
             }
 
-            ExpressionNode* arg = parseTokensR(begin, prev);
-            arg->mParent = node;
-            node->mChildren.push_back(arg);
+            ExprNode* arg = parseTokensR(begin, prev);
+            arg->parent = node;
+            node->children.push_back(arg);
         }
     }
   
     return node;
 }
 
-ExpressionNode* parseTokens(const std::list<ExpressionNode*>& tokens)
+ExprNode* parseTokens(const std::list<ExprNode*>& tokens)
 {
     return parseTokensR(tokens.begin(), std::prev(tokens.end()));
 }
