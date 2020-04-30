@@ -25,13 +25,6 @@ struct ExprNode
         FLOAT
     };
 
-    // Default constructor
-    ExprNode();
-
-    // Direct copy unsupported
-    ExprNode(const ExprNode& other) = delete;
-    ExprNode& operator=(const ExprNode& other) = delete;
-
     ExprNode* parent;
     std::list<ExprNode*> children;
     Type type;
@@ -42,8 +35,14 @@ struct ExprNode
     double inexact;
 };
 
-// Assigns the expression node at source to dest by copying every member except for parent.
-void assignExprNode(ExprNode* dest, ExprNode* src);
+// Returns a new expression node
+ExprNode* initExprNode();
+
+// Clears this struct ignoring the parent and sets the type
+void clear(ExprNode* node, ExprNode::Type newType);
+
+// Moves the data from src to dest, ignoring the parent and updating the children respectively.
+void moveExprNode(ExprNode* dest, ExprNode* src);
 
 // Returns a copy of the given expression tree
 ExprNode* copyOf(ExprNode* expr);

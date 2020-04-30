@@ -24,15 +24,28 @@ const std::string OPERATORS[OPERATOR_COUNT] =
 	">", "<", ">=", "<=", "="
 };
 
-ExprNode::ExprNode()
+ExprNode* initExprNode()
 {
-	parent = nullptr;
-	type = VARIABLE;
-	prec = 0;
-	inexact = 0.0;
+	ExprNode* node = new ExprNode();
+	node->parent = nullptr;
+	node->type = ExprNode::VARIABLE;
+	node->prec = 0;
+	node->inexact = 0.0;
+	return node;
 }
 
-void assignExprNode(ExprNode* dest, ExprNode* src)
+void clear(ExprNode* node, ExprNode::Type newType)
+{
+	if (node->type == ExprNode::INTEGER) 		node->exact = 0;
+	else if (node->type == ExprNode::FLOAT) 	node->inexact = 0.0;
+	else  										node->str.clear();
+
+	node->children.clear();
+	node->type = newType;
+	node->prec = 0;
+}
+
+void moveExprNode(ExprNode* dest, ExprNode* src)
 {
 	if (dest != nullptr && src != nullptr)
 	{		
@@ -45,12 +58,13 @@ void assignExprNode(ExprNode* dest, ExprNode* src)
 
 		for (ExprNode* child : dest->children)
 			child->parent = dest;
+		delete src;
 	}
 }
 
 ExprNode* copyOf(ExprNode* expr)
 {
-	ExprNode* cp = new ExprNode();
+	ExprNode* cp = initExprNode();
 	cp->type = expr->type;
 	cp->prec = expr->prec;
 	cp->str = expr->str;

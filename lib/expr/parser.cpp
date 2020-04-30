@@ -22,7 +22,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
         else if (isdigit(expr[itr]) ||        // <digit> OR <dot><digit> 
                 (expr[itr] == '.' && itr < (len - 1) && isdigit(expr[itr + 1])))
         {
-            ExprNode* num = new ExprNode();
+            ExprNode* num = initExprNode();
             size_t i = itr + 1;
             for (; i != len && (isdigit(expr[i]) || expr[i] == '.'); ++i);
 
@@ -45,7 +45,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
         {
             size_t i = itr + 1;
             for (; i != len && isalpha(expr[i]); ++i);
-            ExprNode* str = new ExprNode();
+            ExprNode* str = initExprNode();
             str->str = expr.substr(itr, i - itr);
 
             if (isFunction(str->str))
@@ -67,9 +67,8 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
             {
                 if (brackets.empty())
                 {
-                    ExprNode* rest = new ExprNode();
+                    ExprNode* rest = initExprNode();
                     rest->str = expr.substr(itr, len - itr);
-                    rest->type = ExprNode::VARIABLE;
                     tokens.push_back(rest);
                     std::cout << "Unexpected bracket: \"" << expr[itr] << "\" Rest=\"" << rest->str << "\"" << std::endl; // TODO: error - expected different parentheses
                     return tokens;
@@ -79,16 +78,15 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
                 brackets.pop();
                 if ((expr[itr] == ')' && match != "(") || (expr[itr] == '}' && match != "{") || (expr[itr] == ']' && match != "["))
                 {
-                    ExprNode* rest = new ExprNode();
+                    ExprNode* rest = initExprNode();
                     rest->str = expr.substr(itr, len - itr);
-                    rest->type = ExprNode::VARIABLE;
                     tokens.push_back(rest);
                     std::cout << "Wrong closing bracket: \"" << expr[itr] << "\" Rest=\"" << rest->str << "\"" << std::endl; // TODO: error - expected different parentheses
                     return tokens;
                 }
             }
             
-            ExprNode* bracket = new ExprNode();
+            ExprNode* bracket = initExprNode();
             bracket->str = std::string(1, expr[itr]);
             bracket->type = ExprNode::OPERATOR;
             tokens.push_back(bracket);
@@ -96,7 +94,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
         }
         else if (isOperatorChar(expr[itr]))
         {
-            ExprNode* op = new ExprNode();
+            ExprNode* op = initExprNode();
             size_t i = itr;
       
             do
@@ -176,7 +174,7 @@ void expandTokens(std::list<ExprNode*>& tokens)
             ((*it)->str == "!" && (*next)->type != ExprNode::OPERATOR) || // factorial
             ((*it)->str == ")" && (*next)->str == "("))) // factorial
         {
-            ExprNode* mul = new ExprNode();
+            ExprNode* mul = initExprNode();
             mul->str = "**";
             mul->type = ExprNode::OPERATOR;
             mul->prec = operatorPrec(mul->str);

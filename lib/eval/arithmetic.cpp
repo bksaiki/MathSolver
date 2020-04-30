@@ -229,8 +229,7 @@ bool symbolicExp(ExprNode* op)
     if (op->children.front()->str == "log" && op->children.front()->children.size() == 1) // exp(log (x)) --> x
     {
         ExprNode* ln = op->children.front();
-        assignExprNode(op, ln->children.front());
-        delete ln->children.front();
+        moveExprNode(op, ln->children.front());
         delete ln;
     }
 
@@ -247,8 +246,7 @@ bool symbolicLog(ExprNode* op)
     if (op->children.front()->str == "exp" && op->children.front()->children.size() == 1) // (log (exp x)) --> x
     {
         ExprNode* ln = op->children.front();
-        assignExprNode(op, ln->children.front());
-        delete ln->children.front();
+        moveExprNode(op, ln->children.front());
         delete ln;
     }
 
@@ -295,8 +293,7 @@ bool symbolicNeg(ExprNode* op)
     ExprNode* arg = op->children.front();
     if (arg->str == "-*") // (- (- x)) ==> x
     {
-        assignExprNode(op, arg->children.front());
-        delete arg->children.front();
+        moveExprNode(op, arg->children.front());
         delete arg;
     }
     
@@ -315,7 +312,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
             std::list<ExprNode*> common = commonTerm(*i, *j);
             if (!common.empty())    // (coeff_a +- coeff_b) * common
             {
-                ExprNode* co = new ExprNode();
+                ExprNode* co = initExprNode();
                 co->type = ExprNode::OPERATOR;
                 co->str = "**";
                 co->prec = operatorPrec(co->str);
@@ -331,7 +328,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
                 
                 if (coeff_lhs.size() == 0) // coeff = 1
                 {
-                    lhs = new ExprNode();
+                    lhs = initExprNode();
                     lhs->type = ExprNode::INTEGER;
                     lhs->exact = 1;
                 }
@@ -341,7 +338,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
                 }
                 else
                 {
-                    lhs = new ExprNode();
+                    lhs = initExprNode();
                     lhs->type = ExprNode::OPERATOR;
                     lhs->str = str;
                     lhs->prec = operatorPrec(lhs->str);
@@ -352,7 +349,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
 
                 if (coeff_rhs.size() == 0) // coeff = 1
                 {
-                    rhs = new ExprNode();
+                    rhs = initExprNode();
                     rhs->type = ExprNode::INTEGER;
                     rhs->exact = 1;
                 }
@@ -362,7 +359,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
                 }
                 else
                 {
-                    rhs = new ExprNode();
+                    rhs = initExprNode();
                     rhs->type = ExprNode::OPERATOR;
                     rhs->str = "**";
                     rhs->prec = operatorPrec(rhs->str);
@@ -371,7 +368,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
                         child->parent = rhs;
                 }
 
-                ExprNode* add = new ExprNode(); // (coeff_a +- coeff_b)
+                ExprNode* add = initExprNode(); // (coeff_a +- coeff_b)
                 add->type = ExprNode::OPERATOR;
                 add->str = str;
                 add->prec = operatorPrec(add->str);
@@ -381,7 +378,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
                 rhs->parent = add;
                 evaluateArithmetic(add); // simplify the coefficients
 
-                ExprNode* mul = new ExprNode(); // coeff * common
+                ExprNode* mul = initExprNode(); // coeff * common
                 mul->type = ExprNode::OPERATOR;
                 mul->str = "**";
                 mul->prec = operatorPrec(mul->str);
@@ -412,10 +409,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
                 }
 
                 if (co->children.size() == 1) // correct: (* x) => x
-                {
-                    assignExprNode(co, co->children.front());
-                    delete co->children.front();
-                }
+                    moveExprNode(co, co->children.front());
                 
                 evaluateArithmetic(mul);
                 delete *i; // delete *i and *j
@@ -433,11 +427,7 @@ void symbolicAddSub(ExprNode* op, const char* str)
     }
     
     if (op->children.size() == 1) // (+- (...)) ==> (...)
-    {
-        ExprNode* arg = op->children.front();
-        assignExprNode(op, arg);
-        delete arg;
-    }
+        moveExprNode(op, op->children.front());
 
     flattenExpr(op);
 }
@@ -476,9 +466,7 @@ bool symbolicAdd(ExprNode* op)
 
     if (op->children.size() == 1) // (+ (- a b)) ==> (- a b)
     {
-        ExprNode* arg = op->children.front();
-        assignExprNode(op, arg);
-        delete arg;
+        moveExprNode(op, op->children.front());
         symbolicAddSub(op, "-");
     }
     else
@@ -515,9 +503,7 @@ bool symbolicSub(ExprNode* op)
 
     if (op->children.size() == 1) // (- (+ a b)) ==> (+ a b)
     {
-        ExprNode* arg = op->children.front();
-        assignExprNode(op, arg);
-        delete arg;
+        moveExprNode(op, op->children.front());
         symbolicAddSub(op, "+");
     }
     else
@@ -534,9 +520,7 @@ bool symbolicMul(ExprNode* op)
     if (op->children.size() == 0)     return false; // TODO: arity mismatch
     if (op->children.size() == 1) // special case: (* x) ==> x, internal use only
     {
-        ExprNode* arg = op->children.front();
-        assignExprNode(op, arg);
-        delete arg;
+        moveExprNode(op, op->children.front());
         return true;
     }
 
@@ -577,7 +561,7 @@ bool symbolicMul(ExprNode* op)
                 ExprNode* den = (*it)->children.back();
                 (*it)->children.clear();
 
-                ExprNode* mul1 = new ExprNode();
+                ExprNode* mul1 = initExprNode();
                 mul1->type = ExprNode::OPERATOR;
                 mul1->str = "**";
                 mul1->prec = operatorPrec(mul1->str);
@@ -585,7 +569,7 @@ bool symbolicMul(ExprNode* op)
                 mul1->children.push_back((*it2)->children.front());
                 evaluateArithmetic(mul1);
 
-                ExprNode* mul2 = new ExprNode();
+                ExprNode* mul2 = initExprNode();
                 mul2->type = ExprNode::OPERATOR;
                 mul2->str = "**";
                 mul2->prec = operatorPrec(mul2->str);
@@ -612,7 +596,7 @@ bool symbolicMul(ExprNode* op)
                 ExprNode* num = (*it)->children.front();
                 (*it)->children.erase((*it)->children.begin());
 
-                ExprNode* mul = new ExprNode();
+                ExprNode* mul = initExprNode();
                 mul->type = ExprNode::OPERATOR;
                 mul->str = "**";
                 mul->prec = operatorPrec(mul->str);
@@ -634,7 +618,7 @@ bool symbolicMul(ExprNode* op)
                 ExprNode* num = (*it2)->children.front();
                 (*it2)->children.erase((*it2)->children.begin());
 
-                ExprNode* mul = new ExprNode();
+                ExprNode* mul = initExprNode();
                 mul->type = ExprNode::OPERATOR;
                 mul->str = "**";
                 mul->prec = operatorPrec(mul->str);
@@ -760,20 +744,14 @@ bool symbolicDiv(ExprNode* op)
         {
             if (num->children.empty())
             {
-                num->type = ExprNode::INTEGER;
+                clear(num, ExprNode::INTEGER);
                 num->exact = 1;
-                num->prec = 0;
-                num->str.clear();
-                num->children.clear();
             }     
         
             if (den->children.empty())
             {
-                den->type = ExprNode::INTEGER;
+                clear(den, ExprNode::INTEGER);
                 den->exact = 1;
-                den->prec = 0;
-                den->str.clear();
-                den->children.clear();
             }
             
             evaluateArithmetic(num);
@@ -805,11 +783,8 @@ bool symbolicDiv(ExprNode* op)
             {
                 freeExpression(*it);
                 den->children.erase(it);
-                num->type = ExprNode::INTEGER;
+                clear(num, ExprNode::INTEGER);
                 num->exact = 1;
-                num->prec = 0;
-                num->str.clear();
-                num->children.clear();
                 evaluateArithmetic(den); // simplify denominator
                 break;
             }
@@ -817,29 +792,20 @@ bool symbolicDiv(ExprNode* op)
     }
     else if (equivExpression(num, den)) // (/ a a) ==> 1
     {
-        op->type = ExprNode::INTEGER;
+        clear(op, ExprNode::INTEGER);
         op->exact = 1;
-        op->prec = 0;
-        op->str.clear();
-        op->children.clear();
         freeExpression(num);
         freeExpression(den);
     } 
     else if (op->children.back()->exact == Integer(1)) // (/ x 1) == x
     {
-        ExprNode* arg = op->children.front();
         delete op->children.back();
         op->children.clear();
-        assignExprNode(op, arg);
-        delete arg;
+        moveExprNode(op, op->children.front());
     }  // else do nothing
 
     if (op->str == "/" && op->children.size() == 1)
-    {
-        ExprNode* arg = op->children.front();
-        assignExprNode(op, arg);
-        delete arg;
-    }
+        moveExprNode(op, op->children.front());
   
     return true; // TODO: evaluate
 }
