@@ -20,7 +20,7 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2);
 std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term);
 
 // Evaluates an arithmetic expression. Returns true upon success.
-bool evaluateArithmetic(ExprNode* expr);
+ExprNode* evaluateArithmetic(ExprNode* expr);
 
 }
 

@@ -1,101 +1,51 @@
+#include <list>
+#include <string>
+#include "../types/Integer.h"
 #include "expr.h"
 
 namespace MathSolver
 {
 
-const char* OPERATOR_CHARS = "+-*/%^!,=><|";
-
 const size_t FLATTENABLE_OP_COUNT = 4;
 const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**" };
 
-const size_t PREDEF_FUNC_COUNT = 5;
-const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] = 
-{
-	"exp", "log",
-	"sin", "cos", "tan"
-};
-
-const size_t OPERATOR_COUNT = 14;
-const std::string OPERATORS[OPERATOR_COUNT] = 
-{
-	"+", "-", "*", "/", "%",
-    "-*", "**"
-	"^", "!",
-	">", "<", ">=", "<=", "="
-};
-
-ExprNode* initExprNode()
-{
-	ExprNode* node = new ExprNode();
-	node->parent = nullptr;
-	node->type = ExprNode::VARIABLE;
-	node->prec = 0;
-	node->inexact = 0.0;
-	return node;
-}
-
-void clear(ExprNode* node, ExprNode::Type newType)
-{
-	if (node->type == ExprNode::INTEGER) 		node->exact = 0;
-	else if (node->type == ExprNode::FLOAT) 	node->inexact = 0.0;
-	else  										node->str.clear();
-
-	node->children.clear();
-	node->type = newType;
-	node->prec = 0;
-}
-
-void moveExprNode(ExprNode* dest, ExprNode* src)
-{
-	if (dest != nullptr && src != nullptr)
-	{		
-		dest->children = src->children;
-		dest->type = src->type;
-		dest->prec = src->prec;
-		dest->str = src->str;
-		dest->exact = src->exact;
-		dest->inexact = src->inexact;
-
-		for (ExprNode* child : dest->children)
-			child->parent = dest;
-		delete src;
-	}
-}
-
 ExprNode* copyOf(ExprNode* expr)
 {
-	ExprNode* cp = initExprNode();
-	cp->type = expr->type;
-	cp->prec = expr->prec;
-	cp->str = expr->str;
-	cp->exact = expr->exact;
-	cp->inexact = expr->inexact;
+	ExprNode* cp;
+	if (expr->type() == ExprNode::SYNTAX) 			cp = new SyntaxNode(((SyntaxNode*)expr)->name(), expr->parent());
+	else if (expr->type() == ExprNode::OPERATOR) 	cp = new OpNode(((OpNode*)expr)->name(), expr->parent());
+	else if (expr->type() == ExprNode::FUNCTION) 	cp = new FuncNode(((FuncNode*)expr)->name(), expr->parent());
+	else if (expr->type() == ExprNode::VARIABLE) 	cp = new VarNode(((VarNode*)expr)->name(), expr->parent());
+	else if (expr->type() == ExprNode::CONSTANT) 	cp = new ConstNode(((ConstNode*)expr)->name(), expr->parent());
+	else if (expr->type() == ExprNode::INTEGER) 	cp = new IntNode(((IntNode*)expr)->value(), expr->parent());
+	else /* expr->type() == ExprNode::FLOAT) */		cp = new FloatNode(((FloatNode*)expr)->value(), expr->parent());
 
-	for (ExprNode* child : expr->children)
-		cp->children.push_back(copyOf(child));
+	for (ExprNode* child : expr->children())
+		cp->children().push_back(copyOf(child));
 	return cp;
 }
 
 bool equivExpression(ExprNode* a, ExprNode* b)
 {
-	if (a->type == b->type)
+	if (a->type() == b->type())
 	{
-		if (a->type == ExprNode::INTEGER)
-			return (a->exact == b->exact);
-		else if (a->type == ExprNode::FLOAT)
-			return (a->inexact == b->inexact);
-		else if (a->type == ExprNode::CONSTANT ||
-				 a->type == ExprNode::CONSTANT)	
-			return (a->str == b->str);
-		// Operator, function
-		if (a->str == b->str && a->children.size() == b->children.size())
+		if (a->type() == ExprNode::INTEGER) 	return ((IntNode*)a)->value() == ((IntNode*)b)->value();
+		if (a->type() == ExprNode::FLOAT) 		return ((FloatNode*)a)->value() == ((FloatNode*)b)->value();
+		if (a->type() == ExprNode::CONSTANT) 	return ((ConstNode*)a)->name() == ((ConstNode*)b)->name();
+		if (a->type() == ExprNode::VARIABLE) 	return ((VarNode*)a)->name() == ((VarNode*)b)->name();
+
+		if (((a->isOperator() && ((OpNode*)a)->name() == ((OpNode*)b)->name()) ||
+			 (a->type() == ExprNode::FUNCTION && ((FuncNode*)a)->name() == ((FuncNode*)b)->name())) && 
+		   (a->children().size() == b->children().size()))
 		{
-			auto a_it = a->children.begin();
-			auto b_it = b->children.begin();
-			for (; a_it != a->children.end(); ++a_it, ++b_it)
+			auto a_it = a->children().begin();
+			auto b_it = b->children().begin();
+			while (a_it != a->children().end())
 			{
 				if (!equivExpression(*a_it, *b_it))
 					return false;
+				++a_it;
+				++b_it;
 			}
 
 			return true;
@@ -108,28 +58,29 @@ bool equivExpression(ExprNode* a, ExprNode* b)
 void flattenExpr(ExprNode* expr)
 {
 	bool hasGrandChildren = false;
-	for (ExprNode* child : expr->children) // recursively flatten
+	for (ExprNode* child : expr->children()) // recursively flatten
 	{
-		if (child->children.size() != 0)
+		if (child->children().size() != 0)
 		{
 			flattenExpr(child);
 			hasGrandChildren = true;
 		}
 	}
 
-	if (hasGrandChildren)
+	if (hasGrandChildren && expr->isOperator())
 	{
+		OpNode* op = (OpNode*)expr;
 		for (size_t i = 0; i < FLATTENABLE_OP_COUNT; ++i)
 		{
-			if (expr->str == FLATTENABLE_OPS[i])
+			if (op->name() == FLATTENABLE_OPS[i])
 			{	
-				for (auto child = expr->children.begin(); child != expr->children.end(); ++child)
+				for (auto child = op->children().begin(); child != op->children().end(); ++child)
 				{
-					if ((*child)->str == FLATTENABLE_OPS[i])
+					if ((*child)->isOperator() && ((OpNode*)*child)->name() == FLATTENABLE_OPS[i])
 					{
-						expr->children.insert(child, (*child)->children.begin(), (*child)->children.end());
+						op->children().insert(child, (*child)->children().begin(), (*child)->children().end());
 						delete *child;
-						child = expr->children.erase(child--);
+						child = op->children().erase(child--);
 					}	
 				}
 			}
@@ -139,93 +90,76 @@ void flattenExpr(ExprNode* expr)
 
 void freeExpression(ExprNode* expr)
 {
-	for (ExprNode* child : expr->children)
+	for (ExprNode* child : expr->children())
 		freeExpression(child);
 	delete expr;	
 }
 
 bool isNumerical(ExprNode* expr)
 {
-	if (expr->type == ExprNode::FUNCTION || expr->type == ExprNode::OPERATOR)
+	if (expr->type() == ExprNode::FUNCTION || expr->isOperator())
 	{
-		for (ExprNode* child : expr->children)
+		for (ExprNode* child : expr->children())
 		{
-			if (!isNumber(child))
+			if (!isNumerical(child))
 				return false;
 		}
 
 		return true;
 	}
 
-	return isNumber(expr);
-}
-
-bool isNumber(ExprNode* node)
-{
-	return (node->type == ExprNode::INTEGER || node->type == ExprNode::FLOAT);
-}
-
-bool isValue(ExprNode* node)
-{
-	return (node->type == ExprNode::INTEGER || node->type == ExprNode::FLOAT ||
-			node->type == ExprNode::CONSTANT || node->type == ExprNode::VARIABLE);
+	return expr->isNumber();
 }
 
 std::string toInfixString(ExprNode* expr)
 {
-	if (expr->type == ExprNode::FUNCTION)
+	if (expr->type() == ExprNode::FUNCTION)
 	{
-		std::string sub = expr->str + "(";
-		if (!expr->children.empty())
+		FuncNode* func = (FuncNode*)expr;
+		std::string sub = func->name() + "(";
+		if (!expr->children().empty())
 		{
-			sub += toInfixString(expr->children.front());
-			for (auto it = std::next(expr->children.begin()); it != expr->children.end(); ++it)
+			sub += toInfixString(expr->children().front());
+			for (auto it = std::next(expr->children().begin()); it != expr->children().end(); ++it)
 				sub += (", " + toInfixString(*it));
 		}
 
 		return sub + ")";
 	}
-	else if (expr->type == ExprNode::OPERATOR)
+	else if (expr->isOperator())
 	{
-		if (expr->str == "!")
+		OpNode* op = (OpNode*)expr;
+		if (op->name() == "!")
 		{
-			if (expr->children.front()->str == "!")
-				return "(" + toInfixString(expr->children.front()) + ")!";
+			if (op->children().front()->isOperator() && ((OpNode*)op->children().front())->name() == "!")
+				return "(" + toInfixString(op->children().front()) + ")!";
 			else
-				return toInfixString(expr->children.front()) + "!";
+				return toInfixString(op->children().front()) + "!";
 		}
-		else if (expr->str == "^")
+		else if (op->name() == "^")
 		{
-			return toInfixString(expr->children.front()) + "^" + toInfixString(expr->children.back());
+			return toInfixString(op->children().front()) + "^" + toInfixString(op->children().back());
 		}
-		else if (expr->str == "-*" && expr->children.size() == 1)
+		else if (op->name() == "-*" && op->children().size() == 1)
 		{
-			return "-" + toInfixString(expr->children.front());
+			return "-" + toInfixString(op->children().front());
 		}
 		else
 		{
-			std::string sub = toInfixString(expr->children.front());
-			std::string op = (expr->str == "**") ? "" : (expr->str == "-*"? "-" : expr->str) ;
-			for (auto it = std::next(expr->children.begin()); it != expr->children.end(); ++it)
-				sub += (op + toInfixString(*it));
-			if (expr->parent != nullptr && expr->parent->prec < expr->prec)
+			std::string sub = toInfixString(op->children().front());
+			std::string printOp = (op->name() == "**") ? "" : ((op->name() == "-*") ? "-" : op->name());
+			for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
+				sub += (printOp + toInfixString(*it));
+			if (op->parent() != nullptr && op->parent()->prec() < op->prec())
 				return "(" + sub + ")";
 			else
 				return sub;
 		}
 		
 	}
-	else if (expr->type == ExprNode::INTEGER)
+	else
 	{
-		return expr->exact.toString();
-	}
-	else if (expr->type == ExprNode::FLOAT)
-	{
-		return std::to_string(expr->inexact);
-	}
-	else // constant, variable
-	{
-		return expr->str;
+		return expr->toString();
 	}
 }
 
@@ -235,90 +169,29 @@ std::string toPrefixString(ExprNode* expr)
 	{
 		return "<null>";
 	}
+	else if (!expr->children().empty())
+	{
+		std::string sub = "(" + expr->toString();
+		for (auto e : expr->children())
+			sub += (" " + toPrefixString(e));
+		return sub + ")";
+	}
 	else
 	{
-		if (!expr->children.empty())
-		{
-			std::string sub = "(" + expr->str;
-			for (auto e : expr->children)
-				sub += (" " + toPrefixString(e));
-			return sub + ")";
-		}
-		else
-		{
-			if (expr->type == ExprNode::INTEGER) 	return expr->exact.toString();
-			else if (expr->type == ExprNode::FLOAT)	return std::to_string(expr->inexact);
-			else 											return expr->str;
-		}
+		return expr->toString();
 	}
-}
-
-//
-//	Language constructs
-//
-
-bool isFunction(const std::string& func)
-{
-	for (size_t i = 0; i < PREDEF_FUNC_COUNT; ++i)
-	{
-		if (func == PREDEF_FUNCTIONS[i])
-			return true;
-	}
-
-	return false;
-}
-
-bool isOperator(const std::string& op)
-{
-    for (size_t i = 0; i < OPERATOR_COUNT; ++i)
-    {
-        if (op == OPERATORS[i])
-            return true;
-    }
-
-    return false;
-}
-
-bool isOperatorChar(char c)
-{
-	for (size_t i = 0; OPERATOR_CHARS[i]; ++i)
-	{
-		if (c == OPERATOR_CHARS[i])
-			return true;
-	}
-
-	return false;
-}
-
-bool isBracket(char c)
-{
-	return (c == '(' || c == '{' || c == '[' ||
-			c == ')' || c == '}' || c == ']');
 }
 
 size_t nodeCount(ExprNode* expr)
 {
 	size_t c = 1;
-	if (expr->type == ExprNode::OPERATOR || expr->type == ExprNode::FUNCTION)
+	if (expr->isOperator() || expr->type() == ExprNode::FUNCTION)
 	{
-		for (ExprNode* child : expr->children)
+		for (ExprNode* child : expr->children())
 			c += nodeCount(child);	
 	}
 
 	return c;
-}
-
-int operatorPrec(const std::string& op)
-{
-	if (op == "-*")										return 2;
-	else if (op == "^")									return 3;
-	else if (op == "!")									return 4;
-	else if (op == "**")								return 5;
-	else if (op == "*" || op == "/" || op == "%")		return 6;
-	else if (op == "+" || op == "-")					return 7;
-	else if (op == ">" || op == ">=" || op == "=" ||
-			 op == "<" || op == "<=")					return 8;
-	else												return 0;
 }
 
 }

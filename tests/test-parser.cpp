@@ -6,18 +6,6 @@
 
 using namespace MathSolver;
 
-void printTokenList(const std::list<ExprNode*>& list)
-{
-	for (auto e : list)
-	{
-		if (e->type == ExprNode::INTEGER) 	std::cout << e->exact.toString();
-		else if (e->type == ExprNode::FLOAT)	std::cout << std::to_string(e->inexact);
-		else											std::cout << e->str;
-		std::cout << " ";
-	}
-	std::cout << std::endl;
-}
-
 int main()
 {
 	bool status = true;

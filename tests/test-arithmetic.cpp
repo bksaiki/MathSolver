@@ -13,9 +13,8 @@ bool evalExpr(TestModule& tester, const std::string exprs[], size_t count)
 	{
 		ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 		flattenExpr(expr);
-		bool s = evaluateExpr(expr);
+		expr = evaluateExpr(expr);
 		tester.runTest(toInfixString(expr), exprs[2 * i + 1]);
-		if (!s) std::cout << "\"" << toInfixString(expr) << "\": evaluation failed" << std::endl;
 		freeExpression(expr);
 	}
 
