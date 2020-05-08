@@ -1,5 +1,4 @@
 #include <iostream>
-#include <stack>
 #include "parser.h"
 
 namespace MathSolver
@@ -9,7 +8,7 @@ namespace MathSolver
 std::list<ExprNode*> tokenizeStr(const std::string& expr)
 {
     std::list<ExprNode*> tokens;
-    std::stack<std::string> brackets;
+    std::list<std::string> brackets;
     size_t len = expr.length();
     size_t itr = 0;
 
@@ -54,7 +53,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
         {
             if (expr[itr] == '(' || expr[itr] == '{' || expr[itr] == '[')
             {
-                brackets.push(std::string(1, expr[itr]));
+                brackets.push_front(std::string(1, expr[itr]));
             }
             else
             {
@@ -62,17 +61,17 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
                 {
                     SyntaxNode* rest = new SyntaxNode(expr.substr(itr, len - itr));
                     tokens.push_back(rest);
-                    std::cout << "Unexpected bracket: \"" << expr[itr] << "\" Rest=\"" << rest->name() << "\"" << std::endl; // TODO: error - expected different parentheses
+                    gErrorManager.log("Unexpected bracket: \"" + expr.substr(itr, 1)  + "\" Rest=\"" + rest->name() + "\"", ErrorManager::ERROR);
                     return tokens;
                 }
 
-                std::string match = brackets.top();
-                brackets.pop();
+                std::string match = brackets.front();
+                brackets.pop_front();
                 if ((expr[itr] == ')' && match != "(") || (expr[itr] == '}' && match != "{") || (expr[itr] == ']' && match != "["))
                 {
                     SyntaxNode* rest = new SyntaxNode(expr.substr(itr, len - itr));
                     tokens.push_back(rest);
-                    std::cout << "Wrong closing bracket: \"" << expr[itr] << "\" Rest=\"" << rest->name() << "\"" << std::endl; // TODO: error - expected different parentheses
+                    gErrorManager.log("Wrong closing bracket: \"" + expr.substr(itr, 1)  + "\" Rest=\"" + rest->name() + "\"", ErrorManager::ERROR);
                     return tokens;
                 }
             }
@@ -93,9 +92,9 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
             tokens.push_back(op);
             itr = i;
         }
-        else // TODO: error "Unknown character"
+        else
         {
-            std::cout << "Unknown character ";
+            gErrorManager.log("Unknown character: \"" + expr.substr(itr, 1) + "\"", ErrorManager::ERROR);
             return tokens;
         }
         
@@ -103,8 +102,15 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
 
     if (!brackets.empty())
     {
-        std::cout << "Mismatched brackets "; // TODO: error - expected different parentheses
-        return tokens;
+        gErrorManager.log("Mismatched brackets, expected: " + std::to_string(brackets.size()), ErrorManager::MESSAGE);
+        for (auto e : brackets)
+        {
+            if (e == "(")         tokens.push_back(new SyntaxNode(")"));
+            else if (e == "[")    tokens.push_back(new SyntaxNode("]"));
+            else /* e == "{" */   tokens.push_back(new SyntaxNode("}"));
+        }
+    
+        brackets.clear();
     }
 
     expandTokens(tokens);
@@ -229,9 +235,9 @@ ExprNode* parseTokensR(std::list<ExprNode*>::const_iterator begin, std::list<Exp
     if (node->type() == ExprNode::FUNCTION)
     {
         FuncNode* func = (FuncNode*)node;
-        if (split == end) // TODO: arity match
+        if (split == end) // TODO: arity mismatch
         {
-            std::cout << "Expected " << func->name() << " <args>...";
+            gErrorManager.log("Expected \"<func> (<args>...)\" for: " + func->name(), ErrorManager::ERROR);
             return nullptr;
         }
 
@@ -271,9 +277,9 @@ ExprNode* parseTokensR(std::list<ExprNode*>::const_iterator begin, std::list<Exp
             op->name() == "/" || op->name() == "%" || op->name() == "^" || op->name() == "<" ||
             op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "=") 
         {         
-            if (split == begin || split == end) // TODO: arity match
+            if (split == begin || split == end) // arity mismatch
             {
-                std::cout << "Expected <lhs> " << op->name() << " <rhs>.";
+                gErrorManager.log("Expected \"<lhs> " + op->name() + " <rhs>\"", ErrorManager::ERROR);
                 return nullptr;
             }
 
@@ -287,9 +293,9 @@ ExprNode* parseTokensR(std::list<ExprNode*>::const_iterator begin, std::list<Exp
         }
         else if (op->name() == "-*")
         {
-            if (split == end) // TODO: arity match
+            if (split == end) // arity mismatch
             {
-                std::cout << "Expected " << op->name() << " <arg>.";
+                gErrorManager.log("Expected \"" + op->name() + " <arg>\"", ErrorManager::ERROR);
                 return nullptr;
             }
 
@@ -301,7 +307,7 @@ ExprNode* parseTokensR(std::list<ExprNode*>::const_iterator begin, std::list<Exp
         {
             if (split == begin) // TODO: arity match
             {
-                std::cout << "Expected <arg> " << op->name() << ".";
+                gErrorManager.log("Expected \"<arg> " + op->name() + "\"", ErrorManager::ERROR);
                 return nullptr;
             }
 
@@ -316,6 +322,9 @@ ExprNode* parseTokensR(std::list<ExprNode*>::const_iterator begin, std::list<Exp
 
 ExprNode* parseTokens(const std::list<ExprNode*>& tokens)
 {
+    if (gErrorManager.hasError()) // Don't try to parse if there's an error =
+        return nullptr;
+
     return parseTokensR(tokens.begin(), std::prev(tokens.end()));
 }
 

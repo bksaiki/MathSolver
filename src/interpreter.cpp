@@ -9,10 +9,18 @@ int parseLine(const std::string& line)
     if (line == "exit" || line == "quit")  
         return 1;
 
-    ExprNode* eval = parseTokens(tokenizeStr(line));
+    std::list<ExprNode*> tokens = tokenizeStr(line);
+    ExprNode* eval = parseTokens(tokens);
+
+    if (gErrorManager.hasError())
+    {   
+        for (ExprNode* e : tokens)  delete e;
+        return 0;
+    }
+
     flattenExpr(eval);
-    if(!evaluateExpr(eval))     std::cout << "Evaluation failed!" << std::endl;
-    else                        std::cout << toInfixString(eval) << std::endl;
+    eval = evaluateExpr(eval);
+    std::cout << toInfixString(eval) << std::endl;
 
     return 0; 
 }

@@ -3,6 +3,7 @@
 
 #include <list>
 #include <string>
+#include "../common/base.h"
 #include "../types/Integer.h"
 
 namespace MathSolver
@@ -15,7 +16,7 @@ public:
 
     enum Type
     {
-        VARIABLE = 0,
+        VARIABLE,
         OPERATOR,
         FUNCTION,
         CONSTANT,

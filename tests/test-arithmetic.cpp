@@ -1,9 +1,8 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
-#include "../lib/eval/evaluator.h"
-#include "../lib/expr/parser.h"
 
 using namespace MathSolver;
 
@@ -101,7 +100,7 @@ int main()
 
 	tests.reset("/");
 	{
-		const size_t COUNT = 8;
+		const size_t COUNT = 10;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"(a/b)/(c/d)",		"ad/bc",

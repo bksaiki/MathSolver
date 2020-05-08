@@ -1,6 +1,7 @@
 #ifndef _MATHSOLVER_ARITHMETIC_H_
 #define _MATHSOLVER_ARITHMETIC_H_
 
+#include "../common/base.h"
 #include "../expr/expr.h"
 
 namespace MathSolver

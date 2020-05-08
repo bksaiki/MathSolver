@@ -57,6 +57,9 @@ bool equivExpression(ExprNode* a, ExprNode* b)
 
 void flattenExpr(ExprNode* expr)
 {
+	if (expr == nullptr)	// no expression
+		return;
+
 	bool hasGrandChildren = false;
 	for (ExprNode* child : expr->children()) // recursively flatten
 	{
@@ -113,7 +116,11 @@ bool isNumerical(ExprNode* expr)
 
 std::string toInfixString(ExprNode* expr)
 {
-	if (expr->type() == ExprNode::FUNCTION)
+	if (expr == nullptr)
+	{
+		return "<null>";
+	}
+	else if (expr->type() == ExprNode::FUNCTION)
 	{
 		FuncNode* func = (FuncNode*)expr;
 		std::string sub = func->name() + "(";

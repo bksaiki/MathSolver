@@ -2,6 +2,7 @@
 #define _MATHSOLVER_INTEGERMATH_H_
 
 #include "Integer.h"
+#include "../common/base.h"
 
 namespace MathSolver
 {

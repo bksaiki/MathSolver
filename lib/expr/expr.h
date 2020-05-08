@@ -1,8 +1,8 @@
 #ifndef _MATHSOLVER_EXPRESSION_H_
 #define _MATHSOLVER_EXPRESSION_H_
 
+#include "../common/base.h"
 #include "../expr/node.h"
-
 
 namespace MathSolver
 {
@@ -11,7 +11,7 @@ namespace MathSolver
 //  Expression operations
 //
 
-// Returns a copy of the given expression tree.
+// Returns a copy of the given expr#include "arithmetic.h"ssion tree.
 ExprNode* copyOf(ExprNode* expr);
 
 // Returns true if the value of two nodes is the same.

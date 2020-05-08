@@ -192,6 +192,14 @@ ExprNode* numericDiv(ExprNode* op)
 
     if (lhs->type() == ExprNode::INTEGER && rhs->type() == ExprNode::INTEGER) // <exact> / <exact>
     {   
+        if (((IntNode*)rhs)->value().isZero()) 
+        {
+            ExprNode* ret = new ConstNode("Undefined", op->parent());
+            gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
+            freeExpression(op);
+            return ret;
+        }
+
         return op; // no exact numerical division: a/b --> a/b
     }
 
@@ -763,7 +771,7 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "+")                         return numericAdd(op);
             else if (op->name() == "-")                         return numericSub(op);
             else if (op->name() == "*" || op->name() == "**")   return numericMul(op);
-            else if (op->name() == "/")                         return expr;    // TODO: rational simplication
+            else if (op->name() == "/")                         return numericDiv(op);
         }
         else
         {

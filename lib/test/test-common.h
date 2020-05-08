@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <string>
 #include <vector>
+#include "../common/base.h"
 
 namespace MathSolver
 {

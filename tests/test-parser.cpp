@@ -1,8 +1,8 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
-#include "../lib/expr/parser.h"
 
 using namespace MathSolver;
 

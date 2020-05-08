@@ -1,8 +1,9 @@
 #ifndef _MATHSOLVER_EVALUATOR_H_
 #define _MATHSOLVER_EVALUATOR_H_
 
-#include "arithmetic.h"
+#include "../common/base.h"
 #include "../expr/expr.h"
+#include "arithmetic.h"
 
 namespace MathSolver
 {
