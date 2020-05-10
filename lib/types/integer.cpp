@@ -1,6 +1,6 @@
 #include <cassert>
 #include <cstring>
-#include "Integer.h"
+#include "integer.h"
 
 namespace MathSolver
 {

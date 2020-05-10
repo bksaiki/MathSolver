@@ -1,4 +1,4 @@
-name: C++ CI
+name: build
 
 on: [push]
 
@@ -10,6 +10,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Build
-      run: make build build-tests
+      run: make build build-tests main
     - name: Testing
       run: make tests

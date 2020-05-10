@@ -1,5 +1,5 @@
 #include <cassert>
-#include "Bytes.h"
+#include "bytes.h"
 
 namespace MathSolver
 {

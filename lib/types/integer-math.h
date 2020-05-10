@@ -1,7 +1,8 @@
 #ifndef _MATHSOLVER_INTEGERMATH_H_
 #define _MATHSOLVER_INTEGERMATH_H_
 
-#include "Integer.h"
+#include "integer.h"
+#include "../common/base.h"
 
 namespace MathSolver
 {

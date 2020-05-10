@@ -1,9 +1,8 @@
 #include <iostream>
 #include <list>
 #include <string>
-#include "../src/test/test-common.h"
-#include "../src/expression/evaluator.h"
-#include "../src/expression/parser.h"
+#include "../lib/mathsolver.h"
+#include "../lib/test/test-common.h"
 
 using namespace MathSolver;
 
@@ -11,11 +10,10 @@ bool evalExpr(TestModule& tester, const std::string exprs[], size_t count)
 {
 	for (size_t i = 0; i < count; ++i)
 	{
-		ExpressionNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+		ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
 		flattenExpr(expr);
-		bool s = evaluateExpr(expr);
+		expr = evaluateExpr(expr);
 		tester.runTest(toInfixString(expr), exprs[2 * i + 1]);
-		if (!s) std::cout << "\"" << toInfixString(expr) << "\": evaluation failed" << std::endl;
 		freeExpression(expr);
 	}
 

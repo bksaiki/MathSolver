@@ -1,21 +1,30 @@
-BUILD_DIR	:= ./build
-SRC_DIR 	:= ./src
-TEST_DIR	:= ./tests
+BUILD_DIR	:= build
+LIB_DIR 	:= lib
+SRC_DIR 	:= src
+TEST_DIR	:= tests
 
-SRCS 		:= $(shell find $(SRC_DIR) -name *.cpp)
-OBJS 		:= $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+ENTRY		:= main.cpp
+EXE			:= msolve
+
+SRCS 		:= $(shell find $(LIB_DIR) $(SRC_DIR) -name *.cpp ! -name $(ENTRY) )
+OBJS 		:= $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
 DEPS 		:= $(OBJS:.o=.d)
 
 TESTS 		:= $(shell find $(TEST_DIR) -name *.cpp)
 TEST_EXES 	:= $(TESTS:$(TEST_DIR)/%.cpp=$(BUILD_DIR)/%)
 
-CFLAGS 		:= -MMD -MP -g -m64 -Wall -std=c++17
-LDFLAGS		:= 
+DEPFLAGS 	:= -MMD -MP
+CFLAGS 		:= -g -m64 -Wall -std=c++17
 
 .PRECIOUS: $(BUILD_DIR)/. $(BUILD_DIR)%/.
 .SECONDEXPANSION: $(BUILD_DIR)/%.o
 
 # Specific rules
+
+all: build-tests main;
+
+main: $(OBJS)
+	$(CXX) $(CFLAGS) $(OBJS) $(SRC_DIR)/$(ENTRY) -o $(EXE)
 
 tests: $(OBJS) $(TEST_EXES)
 	$(TEST_DIR)/test.sh $(TEST_EXES)
@@ -28,13 +37,13 @@ build-tests: $(TEST_EXES);
 build: $(OBJS);
 
 clean:
-	$(RM) $(OBJS) $(TEST_EXES)
+	$(RM) $(OBJS) $(TEST_EXES) $(EXE)
 
 clean-deps:
 	$(RM) -r $(DEPS) $(TEST_DEPS)
 
 clean-all:
-	rm -r -f build
+	rm -r -f build $(EXE)
 
 ### Specific tests
 
@@ -62,11 +71,14 @@ $(BUILD_DIR)/.:
 $(BUILD_DIR)%/.:
 	mkdir -p $@
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $$(@D)/.
-	$(CXX) $(CFLAGS) -c -o $@ $<
+$(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.cpp | $$(@D)/.
+	$(CXX) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
+
+$(BUILD_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp | $$(@D)/.
+	$(CXX) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
 
 $(BUILD_DIR)/%: $(TEST_DIR)/%.cpp $(OBJS)
-	$(CXX) $(CFLAGS) -o $@ $(OBJS) $<
+	$(CXX) $(CFLAGS) $(DEPFLAGS) -o $@ $(OBJS) $<
 
 -include $(DEPS)
 .PHONY: tests test-integer test-parser test-sandbox test-integermath test-memcheck build clean clean-deps clean-all setup

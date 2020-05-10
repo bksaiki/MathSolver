@@ -1,14 +1,15 @@
 #ifndef _MATHSOLVER_EVALUATOR_H_
 #define _MATHSOLVER_EVALUATOR_H_
 
+#include "../common/base.h"
+#include "../expr/expr.h"
 #include "arithmetic.h"
-#include "expression.h"
 
 namespace MathSolver
 {
 
 // Evaluates a mathematical expression. Returns true on success and false otherwise.
-bool evaluateExpr(ExpressionNode* expr);
+ExprNode* evaluateExpr(ExprNode* expr);
 
 }
 

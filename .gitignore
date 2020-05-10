@@ -2,3 +2,4 @@
 *.o
 build/*
 tests/test-sandbox.cpp
+msolve
