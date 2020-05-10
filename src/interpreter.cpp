@@ -21,6 +21,7 @@ int parseLine(const std::string& line)
     flattenExpr(eval);
     eval = evaluateExpr(eval);
     std::cout << toInfixString(eval) << std::endl;
+    freeExpression(eval);
 
     return 0; 
 }

@@ -7,7 +7,7 @@
 #include "expr/expr.h"
 #include "expr/node.h"
 #include "expr/parser.h"
-#include "types/Integer.h"
-#include "types/IntegerMath.h"
+#include "types/integer.h"
+#include "types/integer-math.h"
 
 #endif

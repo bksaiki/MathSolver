@@ -4,7 +4,7 @@
 #include <list>
 #include <string>
 #include "../common/base.h"
-#include "../types/Integer.h"
+#include "../types/integer.h"
 
 namespace MathSolver
 {

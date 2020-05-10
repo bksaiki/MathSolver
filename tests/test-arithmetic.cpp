@@ -100,7 +100,7 @@ int main()
 
 	tests.reset("/");
 	{
-		const size_t COUNT = 10;
+		const size_t COUNT = 8;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"(a/b)/(c/d)",		"ad/bc",

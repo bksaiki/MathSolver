@@ -1,6 +1,6 @@
 #include <list>
 #include <string>
-#include "../types/Integer.h"
+#include "../types/integer.h"
 #include "expr.h"
 
 namespace MathSolver
@@ -77,14 +77,25 @@ void flattenExpr(ExprNode* expr)
 		{
 			if (op->name() == FLATTENABLE_OPS[i])
 			{	
-				for (auto child = op->children().begin(); child != op->children().end(); ++child)
+				auto child = op->children().begin();
+				while (child != op->children().end())
 				{
 					if ((*child)->isOperator() && ((OpNode*)*child)->name() == FLATTENABLE_OPS[i])
 					{
-						op->children().insert(child, (*child)->children().begin(), (*child)->children().end());
+						for (auto e : (*child)->children())
+						{
+							op->children().insert(child, e);
+							e->setParent(op);
+						}
+
 						delete *child;
-						child = op->children().erase(child--);
-					}	
+						child = op->children().erase(child);
+					}
+					else
+					{
+						++child;
+					}
+						
 				}
 			}
 		}

@@ -1,4 +1,5 @@
 #include "arithmetic.h"
+#include "../types/integer-math.h"
 
 namespace MathSolver
 {
@@ -190,14 +191,28 @@ ExprNode* numericDiv(ExprNode* op)
     ExprNode* lhs = op->children().front();
     ExprNode* rhs = op->children().back();
 
+    if ((rhs->type() == ExprNode::INTEGER && ((IntNode*)rhs)->value().isZero()) ||
+        (rhs->type() == ExprNode::FLOAT && ((FloatNode*)rhs)->value() == 0.0))
+    {
+        ExprNode* ret = new ConstNode("undef", op->parent());
+        gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
+        freeExpression(op);
+        return ret;
+    }
+
     if (lhs->type() == ExprNode::INTEGER && rhs->type() == ExprNode::INTEGER) // <exact> / <exact>
     {   
-        if (((IntNode*)rhs)->value().isZero()) 
+        Integer factor = gcd(((IntNode*)lhs)->value(), ((IntNode*)rhs)->value());
+        if (factor > Integer(1))
         {
-            ExprNode* ret = new ConstNode("Undefined", op->parent());
-            gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
-            freeExpression(op);
-            return ret;
+            ((IntNode*)lhs)->value() /= factor;
+            ((IntNode*)rhs)->value() /= factor;
+        }
+
+        if (((IntNode*)rhs)->value() == Integer(1))
+        {
+            delete rhs;
+            return moveNode(op, lhs);
         }
 
         return op; // no exact numerical division: a/b --> a/b
@@ -347,22 +362,13 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                 }
 
                 if (co->children().size() == 1) // correct: (* x) => x
+                {
                     co = moveNode(co, co->children().front());
+                    common.pop_front();
+                    common.push_front(co);
+                }
 
-                ExprNode* add = new OpNode(str); // (coeff_a +- coeff_b)
-                add->children().push_back(lhs);
-                add->children().push_back(rhs);
-                lhs->setParent(add);
-                rhs->setParent(add);
-                add = evaluateArithmetic(add); // simplify the coefficients
-
-                ExprNode* mul = new OpNode("**"); // coeff * common
-                mul->children().push_back(add);
-                mul->children().push_back(co);
-                add->setParent(mul);
-                co->setParent(mul);
-
-                for (ExprNode* itr : co->children()) // delete common terms in *i and *j
+                for (ExprNode* itr : common) // delete common terms in *i and *j
                 {
                     auto ichild = (*i)->children().begin();
                     while (ichild != (*i)->children().end())
@@ -384,7 +390,7 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                         if (equivExpression(*jchild, itr))
                         {
                             delete *jchild;
-                            ichild = (*j)->children().erase(jchild);
+                            jchild = (*j)->children().erase(jchild);
                         }
                         else
                         {
@@ -392,8 +398,21 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                         }           
                     }
                 }
-                
+
+                ExprNode* add = new OpNode(str); // (coeff_a +- coeff_b)
+                add->children().push_back(lhs);
+                add->children().push_back(rhs);
+                lhs->setParent(add);
+                rhs->setParent(add);
+                add = evaluateArithmetic(add); // simplify the coefficients
+
+                ExprNode* mul = new OpNode("**"); // coeff * common
+                mul->children().push_back(add);
+                mul->children().push_back(co);
+                add->setParent(mul);
+                co->setParent(mul);
                 mul = evaluateArithmetic(mul);
+
                 delete *i; // delete *i and *j
                 delete *j;
                 op->children().insert(i, mul);
@@ -495,23 +514,22 @@ ExprNode* symbolicMul(ExprNode* op)
         if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value().isZero()) || // (* 0 a ...) ==> 0
             ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == 0.0))
         {
-            for (auto c : op->children())
-                freeExpression(c);
+            for (auto c : op->children()) freeExpression(c);
             return moveNode(op, new IntNode());
         }
         else if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value() == Integer(1)) || // (* 1 a ...) ==> (* a ...)
                 ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == 1.0))
         {
-            op->children().erase(it);
             delete *it;
+            op->children().erase(it);
             it = it2;
         }
         else if ((*it)->isOperator() &&     // (* a... (* b... ) c...) ==> (* a... b... c...)
                 (((OpNode*)*it)->name() == "*" || ((OpNode*)*it)->name() == "**"))
         {        
             op->children().insert(it, (*it)->children().begin(), (*it)->children().end());
-            op->children().erase(it);
             delete *it;
+            op->children().erase(it);
             it = it2;
         }   
         else if (it2 != op->children().end())
@@ -607,6 +625,15 @@ ExprNode* symbolicDiv(OpNode* op)
 
     ExprNode* num = op->children().front();
     ExprNode* den = op->children().back();
+
+    if ((den->type() == ExprNode::INTEGER && ((IntNode*)den)->value().isZero()) ||
+        (den->type() == ExprNode::FLOAT && ((FloatNode*)den)->value() == 0.0))
+    {
+        ExprNode* ret = new ConstNode("undef", op->parent());
+        gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
+        freeExpression(op);
+        return ret;
+    }
     
     if (num->isOperator() && den->isOperator() &&  // (/ (/ a b) (/ c d)) ==> (/ (* a d) (* b c))
         ((OpNode*)num)->name() == "/" && ((OpNode*)den)->name() == "/") 

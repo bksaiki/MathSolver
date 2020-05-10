@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include "../common/base.h"
-#include "Bytes.h"
+#include "bytes.h"
 
 #define MATHSOLVER_DEFAULT_INT_WIDTH    4
 #define MATHSOLVER_MAX_INT_WIDTH        65536
