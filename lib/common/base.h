@@ -8,4 +8,8 @@
 #define MATHSOLVER_MINOR        0
 #define MATHSOLVER_PATCH        0
 
+#ifndef MATHSOLVER_RELEASE_BUILD
+#define MATHSOLVER_DEBUG         
+#endif
+
 #endif

@@ -9,6 +9,17 @@ namespace MathSolver
 const size_t FLATTENABLE_OP_COUNT = 4;
 const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**" };
 
+bool containsType(ExprNode* expr, ExprNode::Type type)
+{
+	for (auto e : expr->children())
+	{
+		if (containsType(e, type))
+			return true;
+	}
+
+	return (expr->type() == type);
+}
+
 ExprNode* copyOf(ExprNode* expr)
 {
 	ExprNode* cp;
@@ -25,7 +36,7 @@ ExprNode* copyOf(ExprNode* expr)
 	return cp;
 }
 
-bool equivExpression(ExprNode* a, ExprNode* b)
+bool eqvExpr(ExprNode* a, ExprNode* b)
 {
 	if (a->type() == b->type())
 	{
@@ -42,7 +53,7 @@ bool equivExpression(ExprNode* a, ExprNode* b)
 			auto b_it = b->children().begin();
 			while (a_it != a->children().end())
 			{
-				if (!equivExpression(*a_it, *b_it))
+				if (!eqvExpr(*a_it, *b_it))
 					return false;
 				++a_it;
 				++b_it;

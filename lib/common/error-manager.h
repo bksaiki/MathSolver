@@ -65,6 +65,9 @@ public:
     inline std::list<std::string>& messages() { return mMessages; }
     inline const std::list<std::string>& messages() const { return mMessages; }
 
+    // Returns all messages in a single string with each entry separated by a new line character.
+    std::string toString() const;
+
     // Returns a reference to the list of warnings.
     inline std::list<std::string>& warnings() { return mWarnings; }
     inline const std::list<std::string>& warnings() const { return mWarnings; }

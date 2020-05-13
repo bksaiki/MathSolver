@@ -43,7 +43,7 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)
         {
             for (auto j = expr2->children().begin(); j != expr2->children().end(); ++j)
             {
-                if (equivExpression(*i, *j))
+                if (eqvExpr(*i, *j))
                     common.push_back(copyOf(*i));
             }
         }
@@ -53,7 +53,7 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)
     {
         for (auto i = expr1->children().begin(); i != expr1->children().end(); ++i)
         {
-            if (equivExpression(*i, expr2))
+            if (eqvExpr(*i, expr2))
                 common.push_back(copyOf(*i));
         }
     }
@@ -62,14 +62,14 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)
     {
         for (auto i = expr2->children().begin(); i != expr2->children().end(); ++i)
         {
-            if (equivExpression(expr1, *i))
+            if (eqvExpr(expr1, *i))
                 common.push_back(copyOf(*i));
         }
     }
     else if ((expr1->type() == ExprNode::VARIABLE || expr1->type() == ExprNode::CONSTANT) && 
              (expr2->type() == ExprNode::VARIABLE || expr2->type() == ExprNode::CONSTANT))
     {
-        if (equivExpression(expr1, expr2))
+        if (eqvExpr(expr1, expr2))
             common.push_back(copyOf(expr1));
     }
 
@@ -88,7 +88,7 @@ std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term)
             bool containedIn = false;
             for (auto j = term->children().begin(); !containedIn && j != term->children().end(); ++j)
             {
-                if (equivExpression(*i, *j))
+                if (eqvExpr(*i, *j))
                     containedIn = true;
             }
 
@@ -373,7 +373,7 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                     auto ichild = (*i)->children().begin();
                     while (ichild != (*i)->children().end())
                     {
-                        if (equivExpression(*ichild, itr))
+                        if (eqvExpr(*ichild, itr))
                         {
                             delete *ichild;
                             ichild = (*i)->children().erase(ichild);
@@ -387,7 +387,7 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                     auto jchild = (*j)->children().begin();
                     while (jchild != (*j)->children().end())
                     {
-                        if (equivExpression(*jchild, itr))
+                        if (eqvExpr(*jchild, itr))
                         {
                             delete *jchild;
                             jchild = (*j)->children().erase(jchild);
@@ -701,7 +701,7 @@ ExprNode* symbolicDiv(OpNode* op)
         {
             for (auto it2 = den->children().begin(); it2 != den->children().end(); ++it2)
             {
-                if (equivExpression(*it, *it2))
+                if (eqvExpr(*it, *it2))
                 {
                     freeExpression(*it);
                     freeExpression(*it2);
@@ -732,7 +732,7 @@ ExprNode* symbolicDiv(OpNode* op)
         ((OpNode*)num)->setName("**");
         for (auto it = num->children().begin(); it != num->children().end(); ++it)
         {
-            if (equivExpression(*it, den))
+            if (eqvExpr(*it, den))
             {
                 freeExpression(*it);
                 freeExpression(den);
@@ -749,7 +749,7 @@ ExprNode* symbolicDiv(OpNode* op)
         ((OpNode*)den)->setName("**");
         for (auto it = den->children().begin(); it != den->children().end(); ++it)
         {
-            if (equivExpression(*it, num))
+            if (eqvExpr(*it, num))
             {
                 num = moveNode(num, new IntNode(Integer(1)));
                 freeExpression(*it);
@@ -761,7 +761,7 @@ ExprNode* symbolicDiv(OpNode* op)
             }
         }
     }
-    else if (equivExpression(num, den)) // (/ a a) ==> 1
+    else if (eqvExpr(num, den)) // (/ a a) ==> 1
     {
         freeExpression(num);
         freeExpression(den);

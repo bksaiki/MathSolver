@@ -3,6 +3,7 @@
 
 #include "../common/base.h"
 #include "../expr/expr.h"
+#include "../expr/polynomial.h"
 
 namespace MathSolver
 {
