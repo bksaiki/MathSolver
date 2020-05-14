@@ -20,6 +20,7 @@ int parseLine(const std::string& line)
 
     flattenExpr(eval);
     eval = evaluateExpr(eval);
+    if (gErrorManager.hasAny()) std::cout << gErrorManager.toString();
     std::cout << toInfixString(eval) << std::endl;
     freeExpression(eval);
 

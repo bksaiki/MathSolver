@@ -12,7 +12,7 @@ namespace MathSolver
 bool isMonomialBasis(ExprNode* expr);
 
 // Returns true if the expression is equivalent to a monomial.  Used for unsimplified expressions that
-// can be simplified into a monomial
+// can be simplified into a monomial.
 bool isMonomialEqv(ExprNode* expr);
 
 // Returns true if the expression is equivalent to a polynomial. Used for unsimplified expressions that

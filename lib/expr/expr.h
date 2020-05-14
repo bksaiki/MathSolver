@@ -30,12 +30,6 @@ void freeExpression(ExprNode* expr);
 // Returns true if the expression only contains numerical operands (Non-symbolic expression).
 bool isNumerical(ExprNode* expr);
 
-// Returns true if the node is a number.
-bool isNumber(ExprNode* node);
-
-// Returns true if the node is a number, constant, or variable
-bool isValue(ExprNode* node);
-
 // Returns the number of nodes in the expression tree.
 size_t nodeCount(ExprNode* expr);
 

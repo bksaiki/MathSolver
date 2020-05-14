@@ -14,7 +14,7 @@ TESTS 		:= $(shell find $(TEST_DIR) -name *.cpp)
 TEST_EXES 	:= $(TESTS:$(TEST_DIR)/%.cpp=$(BUILD_DIR)/%)
 
 DEPFLAGS 	:= -MMD -MP
-CFLAGS 		:= -g -m64 -Wall -std=c++17
+CFLAGS 		:= -g -Wall -std=c++17
 
 .PRECIOUS: $(BUILD_DIR)/. $(BUILD_DIR)%/.
 .SECONDEXPANSION: $(BUILD_DIR)/%.o

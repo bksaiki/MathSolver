@@ -124,9 +124,9 @@ bool isNumerical(ExprNode* expr)
 {
 	if (expr->type() == ExprNode::FUNCTION || expr->isOperator())
 	{
-		for (ExprNode* child : expr->children())
+		for (auto child : expr->children())
 		{
-			if (!isNumerical(child))
+			if (!child->isNumber())
 				return false;
 		}
 

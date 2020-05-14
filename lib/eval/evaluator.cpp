@@ -1,3 +1,5 @@
+#include "../expr/arithmetic.h"
+#include "arithmetic.h"
 #include "evaluator.h"
 
 namespace MathSolver

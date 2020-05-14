@@ -3,7 +3,6 @@
 
 #include "../common/base.h"
 #include "../expr/expr.h"
-#include "arithmetic.h"
 
 namespace MathSolver
 {

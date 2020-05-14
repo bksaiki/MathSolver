@@ -1,104 +1,11 @@
+#include <cstring>
 #include "arithmetic.h"
+#include "../expr/arithmetic.h"
+#include "../expr/polynomial.h"
 #include "../types/integer-math.h"
 
 namespace MathSolver
 {
-
-bool isArithmetic(ExprNode* expr)
-{
-    for (ExprNode* child : expr->children())
-    {
-        if (!isArithmetic(child))
-            return false;
-    }
-
-    if (expr->type() == ExprNode::FUNCTION)
-    {
-        FuncNode* func = (FuncNode*)expr;
-        return (func->name() == "exp" || func->name() == "log" ||
-                func->name() == "sin" || func->name() == "cos" || func->name() == "tan");
-    }
-    else if (expr->isOperator())
-    {
-        OpNode* op = (OpNode*)expr;
-        return (op->name() == "-*" ||
-                op->name() == "+" || op->name() == "-" || op->name() == "**" ||
-                op->name() == "*" || op->name() == "/" || op->name() == "%" ||
-                op->name() == "^" || op->name() == "!");
-    }
-    else
-    {
-        return true;
-    }
-}
-
-std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)
-{
-    std::list<ExprNode*> common;
-    if (expr1->isOperator() && expr2->isOperator() && 
-        (((OpNode*)expr1)->name() == "*" || ((OpNode*)expr1)->name() == "**") && 
-        (((OpNode*)expr2)->name() == "*" || ((OpNode*)expr2)->name() == "**"))
-    {
-        for (auto i = expr1->children().begin(); i != expr1->children().end(); ++i)
-        {
-            for (auto j = expr2->children().begin(); j != expr2->children().end(); ++j)
-            {
-                if (eqvExpr(*i, *j))
-                    common.push_back(copyOf(*i));
-            }
-        }
-    }
-    else if (expr1->isOperator() && (((OpNode*)expr1)->name() == "*" || ((OpNode*)expr1)->name() == "**") && 
-             (expr2->type() == ExprNode::VARIABLE || expr2->type() == ExprNode::CONSTANT))
-    {
-        for (auto i = expr1->children().begin(); i != expr1->children().end(); ++i)
-        {
-            if (eqvExpr(*i, expr2))
-                common.push_back(copyOf(*i));
-        }
-    }
-    else if ((expr1->type() == ExprNode::VARIABLE || expr1->type() == ExprNode::CONSTANT) && 
-             expr2->isOperator() && (((OpNode*)expr2)->name() == "*" || ((OpNode*)expr2)->name() == "**"))
-    {
-        for (auto i = expr2->children().begin(); i != expr2->children().end(); ++i)
-        {
-            if (eqvExpr(expr1, *i))
-                common.push_back(copyOf(*i));
-        }
-    }
-    else if ((expr1->type() == ExprNode::VARIABLE || expr1->type() == ExprNode::CONSTANT) && 
-             (expr2->type() == ExprNode::VARIABLE || expr2->type() == ExprNode::CONSTANT))
-    {
-        if (eqvExpr(expr1, expr2))
-            common.push_back(copyOf(expr1));
-    }
-
-    return common;
-}
-
-std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term)
-{
-    std::list<ExprNode*> coeff;
-    if (expr->isOperator() && term->isOperator() &&
-        (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**") && 
-        (((OpNode*)term)->name() == "*" || ((OpNode*)term)->name() == "**"))
-    {
-        for (auto i = expr->children().begin(); i != expr->children().end(); ++i)
-        {
-            bool containedIn = false;
-            for (auto j = term->children().begin(); !containedIn && j != term->children().end(); ++j)
-            {
-                if (eqvExpr(*i, *j))
-                    containedIn = true;
-            }
-
-            if (!containedIn)
-                coeff.push_back(*i);
-        }
-    }
-
-    return coeff;
-}
 
 //
 //  Numerical arithmetic evaluators
@@ -309,12 +216,29 @@ ExprNode* symbolicNeg(ExprNode* op)
 // Shared evaluator for symbolic + and -
 ExprNode* symbolicAddSub(ExprNode* op, const char* str)
 {
+    if (isPolynomial(op))   reorderPolynomial(op);
+
     auto i = op->children().begin();
-    while (i != op->children().end())
+    while (std::next(i) != op->children().end())
     {       
-        bool added = false;
-        for (auto j = std::next(i); j != op->children().end(); ++j)
+        auto j = std::next(i);
+
+        // (- a b c ...) for any pair excluding a ==> (- a (+ b c ...)) is actually addition
+        if (i != op->children().begin()) str = "+";
+
+        if ((*i)->isNumber() && (*j)->isNumber()) // simplify with temporary expression (+- i j)
         {
+            ExprNode* tmp = new OpNode(((OpNode*)op)->name(), op);
+            tmp->children().push_back(*i);
+            tmp->children().push_back(*j);
+            if (strcmp(str, "+") == 0)          tmp = numericAdd(tmp);
+            else /* name == "-" */              tmp = numericSub(tmp);
+            i = op->children().erase(i, std::next(j));
+            i = op->children().insert(i, tmp); 
+        }
+        else
+        {
+            bool added = false;
             std::list<ExprNode*> common = commonTerm(*i, *j);
             if (!common.empty())    // (coeff_a +- coeff_b) * common
             {
@@ -339,7 +263,7 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                 }
                 else
                 {
-                    lhs = new OpNode(str);
+                    lhs = new OpNode("**");
                     lhs->children() = coeff_lhs;
                     for (ExprNode* child : lhs->children())
                         child->setParent(lhs);
@@ -417,14 +341,11 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                 delete *j;
                 op->children().insert(i, mul);
                 op->children().erase(i, std::next(j));
-                i = op->children().begin();
                 added = true;
-                break;
             }
-        }
 
-        if (added)      i = op->children().begin();
-        else            ++i;   
+            i = (added) ? op->children().begin() : std::next(i);
+        }
     }
     
     if (op->children().size() == 1) // (+- (...)) ==> (...)
@@ -494,7 +415,6 @@ ExprNode* symbolicSub(ExprNode* op)
 
     if (op->children().size() == 1) // (- (+ a b)) ==> (+ a b)
         return symbolicAddSub(moveNode(op, op->children().front()), "+");
-
     return symbolicAddSub(op, "-");
 }
 
@@ -523,6 +443,26 @@ ExprNode* symbolicMul(ExprNode* op)
             delete *it;
             op->children().erase(it);
             it = it2;
+        }
+        else if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value() == Integer(-1)) || // (* -1 a ...) ==> (-* (* a ...))
+                 ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == -1.0))
+        {
+            if (op->children().size() == 2) // specific: (* -1 a) ==> (-* a)
+            {
+                ((OpNode*)op)->setName("-*");
+                delete *it;
+                op->children().erase(it);
+                return op;
+            }
+            else  // general
+            {
+                ExprNode* neg = new OpNode("-*", op->parent());
+                delete *it;
+                op->children().erase(it);
+                op->setParent(neg);
+                neg->children().push_back(op);
+                return neg;
+            }          
         }
         else if ((*it)->isOperator() &&     // (* a... (* b... ) c...) ==> (* a... b... c...)
                 (((OpNode*)*it)->name() == "*" || ((OpNode*)*it)->name() == "**"))
