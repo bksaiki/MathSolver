@@ -2,7 +2,7 @@
 #include "arithmetic.h"
 #include "../expr/arithmetic.h"
 #include "../expr/polynomial.h"
-#include "../types/integer-math.h"
+#include "../math/integer-math.h"
 
 namespace MathSolver
 {
@@ -14,7 +14,11 @@ namespace MathSolver
 // Evalutes "(-* <num>)"
 ExprNode* numericNeg(ExprNode* op)
 {
-    if (op->children().size() != 1)     return op; // TODO: arity mismatch
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     if (op->children().front()->type() == ExprNode::INTEGER)
         ((IntNode*)op->children().front())->setValue(-((IntNode*)op->children().front())->value());
@@ -90,10 +94,14 @@ ExprNode* numericMul(ExprNode* op)
     return moveNode(op, acc);
 }
 
-// Evaluates "<num> / <num>"
+// Evaluates "(/ <num> <num>)"
 ExprNode* numericDiv(ExprNode* op)
 {
-    if (op->children().size() != 2)     return op; // TODO: arity mismatch
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     ExprNode* lhs = op->children().front();
     ExprNode* rhs = op->children().back();
@@ -128,6 +136,30 @@ ExprNode* numericDiv(ExprNode* op)
     return op;
 }
 
+// Evaluates (^ <num> <num>)
+ExprNode* numericPow(ExprNode* op)
+{
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    if (((IntNode*)op->children().back())->value().sign())  // (^ x -n)
+    {
+        ((OpNode*)op)->setName("/");
+        ((IntNode*)op->children().back())->setValue(pow(((IntNode*)op->children().front())->value(), 
+                                                        -((IntNode*)op->children().back())->value()));
+        ((IntNode*)op->children().front())->setValue(Integer(1));
+        return op;                                 
+    }
+    else
+    {
+        return moveNode(op, new IntNode(pow(((IntNode*)op->children().front())->value(), 
+                                            ((IntNode*)op->children().back())->value())));
+    }
+}
+
 //
 //  Symbolic arithmetic evaluators
 //
@@ -135,7 +167,11 @@ ExprNode* numericDiv(ExprNode* op)
 // Evaluates "(exp x)"
 ExprNode* symbolicExp(ExprNode* op)
 {
-    if (op->children().size() != 1)      return op;  // TODO: arity mismatch
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     if (op->children().front()->isOperator() && // (exp (log x)) --> x
         ((OpNode*)op->children().front())->name() == "log" && op->children().front()->children().size() == 1) 
@@ -153,7 +189,11 @@ ExprNode* symbolicExp(ExprNode* op)
 // Evaluates "(log x) or (log b x)"
 ExprNode* symbolicLog(ExprNode* op)
 {
-    if (op->children().size() != 1 && op->children().size() != 2)      return op;  // TODO: arity mismatch
+    if (op->children().size() != 1 || op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 or 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     if (op->children().front()->isOperator() && // (log (exp x)) --> x
         ((OpNode*)op->children().front())->name() == "exp" && op->children().front()->children().size() == 1) 
@@ -171,7 +211,11 @@ ExprNode* symbolicLog(ExprNode* op)
 // Evaluates "(sin x)"
 ExprNode* symbolicSin(ExprNode* op)
 {
-    if (op->children().size() != 1)      return op;  // TODO: arity mismatch
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     // TODO: more simplifications
 
@@ -181,7 +225,11 @@ ExprNode* symbolicSin(ExprNode* op)
 // Evaluates "(cos x)"
 ExprNode* symbolicCos(ExprNode* op)
 {
-    if (op->children().size() != 1)      return op;  // TODO: arity mismatch
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     // TODO: more simplifications
 
@@ -191,7 +239,11 @@ ExprNode* symbolicCos(ExprNode* op)
 // Evaluates "(tan x)"
 ExprNode* symbolicTan(ExprNode* op)
 {
-    if (op->children().size() != 1)      return op;  // TODO: arity mismatch
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     // TODO: more simplifications
 
@@ -201,7 +253,11 @@ ExprNode* symbolicTan(ExprNode* op)
 // Evalutes "(-* x)"
 ExprNode* symbolicNeg(ExprNode* op)
 {
-    if (op->children().size() != 1)     return op; // TODO: arity mismatch
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     ExprNode* arg = op->children().front();
     if (arg->isOperator() && ((OpNode*)arg)->name() == "-*") // (- (- x)) ==> x
@@ -331,8 +387,19 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                 add = evaluateArithmetic(add); // simplify the coefficients
 
                 ExprNode* mul = new OpNode("**"); // coeff * common
-                mul->children().push_back(add);
-                mul->children().push_back(co);
+
+                if (co->isNumber() || co->type() == ExprNode::CONSTANT || // ordering
+                    containsType(add, ExprNode::FUNCTION))
+                {
+                    mul->children().push_back(co);
+                    mul->children().push_back(add);
+                }
+                else
+                {
+                    mul->children().push_back(add);
+                    mul->children().push_back(co);
+                }
+                
                 add->setParent(mul);
                 co->setParent(mul);
                 mul = evaluateArithmetic(mul);
@@ -358,7 +425,11 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
 // Evalutes "(+ <arg0> <arg1> ... )"
 ExprNode* symbolicAdd(ExprNode* op)
 {
-    if (op->children().size() < 2)     return op; // TODO: arity mismatch
+    if (op->children().size() < 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected at least 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     auto it = op->children().begin();
     auto next = std::next(it); 
@@ -395,7 +466,11 @@ ExprNode* symbolicAdd(ExprNode* op)
 // Evalutes "(- <arg0> <arg1> ... )"
 ExprNode* symbolicSub(ExprNode* op)
 {
-    if (op->children().size() < 2)     return op; // TODO: arity mismatch
+    if (op->children().size() < 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected at least 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
     
     auto it = op->children().begin();
     for (auto next = std::next(it); next != op->children().end(); ++next) // (- a (-* b) c d) ==> (- (+ a b) c d)
@@ -421,10 +496,10 @@ ExprNode* symbolicSub(ExprNode* op)
 // Evalutes "(* <arg0> <arg1> ... )" or "(** <arg0> <arg1> ... )"
 ExprNode* symbolicMul(ExprNode* op)
 {
-    if (op->children().size() == 0)     return op; // TODO: arity mismatch
-    if (op->children().size() == 1) // special case: (* x) ==> x, internal use only
+    if (op->children().size() < 2)     
     {
-        return moveNode(op, op->children().front());
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected at least 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
     }
 
     auto it = op->children().begin();
@@ -552,16 +627,19 @@ ExprNode* symbolicMul(ExprNode* op)
         }
     }
 
-    if (op->children().size() == 1) // possibly need second pass
-        return symbolicMul(op);
-  
+    if (op->children().size() == 1) // correct: (* x) => x
+        return moveNode(op, op->children().front());
     return op;
 }
 
 // Evalutes "(/ <arg0> <arg1>)"
 ExprNode* symbolicDiv(OpNode* op)
 {
-    if (op->children().size() != 2)  return op; // TODO: arity mismatch
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
 
     ExprNode* num = op->children().front();
     ExprNode* den = op->children().back();
@@ -728,6 +806,7 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
 {
     if (expr->isNumber())                         return expr;     // fully evaluated
     if (expr->type() == ExprNode::CONSTANT)       return expr;    // TODO: constant table
+    if (expr->type() == ExprNode::VARIABLE)       return expr;
     
     if (isNumerical(expr))
     {
@@ -739,6 +818,7 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "-")                         return numericSub(op);
             else if (op->name() == "*" || op->name() == "**")   return numericMul(op);
             else if (op->name() == "/")                         return numericDiv(op);
+            else if (op->name() == "^")                         return numericPow(op);
         }
         else
         {
@@ -759,7 +839,8 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "+")                         return symbolicAdd(op);
             else if (op->name() == "-")                         return symbolicSub(op);
             else if (op->name() == "*" || op->name() == "**")   return symbolicMul(op);
-            else if (op->name() == "/")                         return symbolicDiv(op);  
+            else if (op->name() == "/")                         return symbolicDiv(op);
+            else if (op->name() == "^")                         return op;  // unimplemented 
         }
         else
         {
@@ -772,6 +853,7 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
         }                                     
     }
 
+    gErrorManager.log("Unimpemented operation: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);
     return expr;
 }
 

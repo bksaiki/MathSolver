@@ -163,8 +163,14 @@ public:
     // the remainder at rem.
     Integer divRem(const Integer& other, Integer& rem) const;
 
-    // Returns true if the integer is zero
-    inline bool  isZero() const { return rangeIsEmpty(mData, &mData[mSize]); }
+    // Returns true if this Integer is even.
+    inline bool isEven() const { return !(mData[0] & 0x1); }
+
+    // Returns true if this Integer is odd.
+    inline bool isOdd() const { return (mData[0] & 0x1); }
+
+    // Returns true if this Integer is zero
+    inline bool isZero() const { return rangeIsEmpty(mData, &mData[mSize]); }
 
     // Sets the data of this Integer using a byte array of a specified length.
     void set(uint8_t* arr, size_t len, bool sign);

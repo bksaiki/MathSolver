@@ -102,7 +102,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
 
     if (!brackets.empty())
     {
-        gErrorManager.log("Mismatched brackets, expected: " + std::to_string(brackets.size()), ErrorManager::MESSAGE);
+        gErrorManager.log("Mismatched brackets, Attempted to fix", ErrorManager::MESSAGE);
         for (auto e : brackets)
         {
             if (e == "(")         tokens.push_back(new SyntaxNode(")"));

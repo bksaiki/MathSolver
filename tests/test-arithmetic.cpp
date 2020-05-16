@@ -84,7 +84,7 @@ int main()
 
 	tests.reset("*");
 	{
-		const size_t COUNT = 7;
+		const size_t COUNT = 9;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"100*1000",		"100000",
@@ -93,7 +93,9 @@ int main()
 			"0*x*y",		"0",
 			"-1*x^2",		"-x^2",
 			"(a/b)*(c/d)",	"ac/bd",
-			"a*(1/d)",		"a/d"
+			"a*(1/d)",		"a/d",
+			"2*a+2*b",		"2(a+b)",
+			"2a+a(b)",		"(b+2)a"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);
@@ -128,6 +130,20 @@ int main()
 			"-a+b*c+d", 		"b*c-a+d",
 			"(3a+5a)/5a",		"8/5",
 			"2a/(15*a*b)",		"2/15b"
+		};
+
+		status &= evalExpr(tests, exprs, COUNT);
+	}
+
+	tests.reset("^");
+	{
+		const size_t COUNT = 4;
+		const std::string exprs[COUNT * 2] = 
+		{ 
+			"2^5",		"32",
+			"3^4",		"81",
+			"2^-5",		"1/32",
+			"3^-4",		"1/81"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

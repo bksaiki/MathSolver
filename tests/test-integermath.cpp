@@ -56,5 +56,22 @@ int main()
 		status &= tests.status();
     }
 
+    {
+        Integer i1(10);
+        Integer i2(4);
+        Integer i3(7);
+        Integer i4(5);
+
+        tests.reset("pow");
+        tests.runTest(pow(i1, i2).toString(), "10000");
+        tests.runTest(pow(i2, i1).toString(), "1048576");
+        tests.runTest(pow(i3, i4).toString(), "16807");
+        tests.runTest(pow(i4, i3).toString(), "78125");
+        tests.runTest(pow(i4, i1).toString(), "9765625");
+
+        std::cout << tests.result() << std::endl;
+		status &= tests.status();
+    }
+
     return (int)!status;
 }
