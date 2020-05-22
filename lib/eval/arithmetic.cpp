@@ -155,8 +155,9 @@ ExprNode* numericPow(ExprNode* op)
     }
     else
     {
-        return moveNode(op, new IntNode(pow(((IntNode*)op->children().front())->value(), 
-                                            ((IntNode*)op->children().back())->value())));
+        ExprNode* res = new IntNode(pow(((IntNode*)op->children().front())->value(), ((IntNode*)op->children().back())->value()));
+        freeExpression(op);
+        return res;
     }
 }
 
@@ -502,6 +503,52 @@ ExprNode* symbolicMul(ExprNode* op)
         return op;
     }
 
+    // reorder monomial
+    if (isMonomial(op))    op = reorderMonomial(op);
+
+    for (auto it = op->children().begin(); it != op->children().end() && std::next(it) != op->children().end(); ++it)
+    {
+        auto it2 = std::next(it);
+        while (it2 != op->children().end())
+        {
+            if (eqvExpr(getPowBase(*it), getPowBase(*it2))) // (* (^ a n) ... (^ a m)) ==> (* (^ a (+ n m)) ... )
+            {
+                ExprNode* add = new OpNode("+");             
+                add->children().push_back(getPowExp(*it));
+                add->children().push_back(getPowExp(*it2));
+                add = evaluateArithmetic(add);
+
+                if (!(*it)->isOperator()) // (* a ... (^ a n)) ==> (* (^ a (+ n 1)) ... ) or (* a ... a) ==> (* (^ a 2) ... )
+                { 
+                    ExprNode* pow = new OpNode("^", op);
+                    pow->children().push_back(*it);
+                    pow->children().push_back(add); 
+                    add->setParent(pow);    
+                    pow = evaluateArithmetic(pow);
+                    it = replaceChild(op, pow, it);      // (* a ... ) R=> (* (^ a n) ... )
+                }
+                else
+                {
+                    add->setParent(*it);
+                    *it = evaluateArithmetic(*it);
+                    (*it)->children().erase(std::prev((*it)->children().end()));
+                    (*it)->children().push_back(add);
+                }               
+
+                if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "^") // if second arg is x^m, release m
+                    (*it2)->children().erase(std::prev((*it2)->children().end()));
+
+                freeExpression(*it2);
+                it2 = op->children().erase(it2);
+            }  
+            else
+            {
+                ++it2;
+            } 
+        }
+    }
+
+    // initial pass for like-terms 
     auto it = op->children().begin();
     while (it != op->children().end())
     {
@@ -516,8 +563,7 @@ ExprNode* symbolicMul(ExprNode* op)
                 ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == 1.0))
         {
             delete *it;
-            op->children().erase(it);
-            it = it2;
+            it = op->children().erase(it);
         }
         else if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value() == Integer(-1)) || // (* -1 a ...) ==> (-* (* a ...))
                  ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == -1.0))
@@ -539,88 +585,86 @@ ExprNode* symbolicMul(ExprNode* op)
                 return neg;
             }          
         }
-        else if ((*it)->isOperator() &&     // (* a... (* b... ) c...) ==> (* a... b... c...)
-                (((OpNode*)*it)->name() == "*" || ((OpNode*)*it)->name() == "**"))
+
+        if (it2 == op->children().end())
+            break;
+
+        // second pass (requires two operands)
+        if ((*it)->isOperator() &&     // (* a... (* b... ) c...) ==> (* a... b... c...)
+           (((OpNode*)*it)->name() == "*" || ((OpNode*)*it)->name() == "**"))
         {        
             op->children().insert(it, (*it)->children().begin(), (*it)->children().end());
             delete *it;
             op->children().erase(it);
             it = it2;
         }   
-        else if (it2 != op->children().end())
+        else if ((*it)->isOperator() && (*it2)->isOperator() && // (* (/ a b) (/ c d) ...) ==> (* (/ (* a c) (* b d)) ...)
+            ((OpNode*)*it)->name() == "/" && ((OpNode*)*it2)->name() == "/") 
         {
-            if ((*it)->isOperator() && (*it2)->isOperator() && // (* (/ a b) (/ c d) ...) ==> (* (/ (* a c) (* b d)) ...)
-                ((OpNode*)*it)->name() == "/" && ((OpNode*)*it2)->name() == "/") 
-            {
-                ExprNode* num = (*it)->children().front();
-                ExprNode* den = (*it)->children().back();
+            ExprNode* num = (*it)->children().front();
+            ExprNode* den = (*it)->children().back();
 
-                ExprNode* mul1 = new OpNode("**");
-                mul1->children().push_back(num);
-                mul1->children().push_back((*it2)->children().front());
-                mul1 = evaluateArithmetic(mul1);
+            ExprNode* mul1 = new OpNode("**");
+            mul1->children().push_back(num);
+            mul1->children().push_back((*it2)->children().front());
+            mul1 = evaluateArithmetic(mul1);
 
-                ExprNode* mul2 = new OpNode("**");
-                mul2->children().push_back(den);
-                mul2->children().push_back((*it2)->children().back());
-                mul2 = evaluateArithmetic(mul2);
-                
-                (*it)->children().clear();
-                (*it)->children().push_front(mul1);
-                (*it)->children().push_back(mul2);
-                num->setParent(mul1);
-                (*it2)->children().front()->setParent(mul1);
-                den->setParent(mul2);
-                (*it2)->children().back()->setParent(mul2);
-                
-                delete *it2;
-                op->children().erase(it2);
-                num = evaluateArithmetic(num);
-                den = evaluateArithmetic(den);
-                *it = evaluateArithmetic(*it);
-                ++it;  
-            }
-            else if ((*it)->isOperator() && ((OpNode*)*it)->name() == "/") // (* (/ a b) c ...) ==> (* (/ (* a c) b) ...)
-            {
-                ExprNode* num = (*it)->children().front();
-                ExprNode* mul = new OpNode("**");
-
-                (*it)->children().erase((*it)->children().begin());
-                mul->children().push_back(num);
-                mul->children().push_back(*it2);
-                (*it2)->setParent(mul);
-                num->setParent(mul);
-                mul = evaluateArithmetic(mul);
-
-                (*it)->children().push_front(mul);
-                mul->setParent(*it);
-                op->children().erase(it2);
-                num = evaluateArithmetic(num);
-                *it = evaluateArithmetic(*it);
-                ++it;  
-            }
-            else if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "/") // (* ... a (/ b c)) ==> (* ... (/ (* a b) c))
-            {              
-                ExprNode* num = (*it2)->children().front();
-                ExprNode* mul = new OpNode("**");
-
-                (*it2)->children().erase((*it2)->children().begin());
-                mul->children().push_back(*it);
-                mul->children().push_back(num);
-                (*it)->setParent(mul);
-                num->setParent(mul);
-                mul = evaluateArithmetic(mul);
-
-                (*it2)->children().push_front(mul);
-                mul->setParent(*it2);
-                it = op->children().erase(it);
-                *it2 = evaluateArithmetic(*it2);
-            }     
-            else
-            {
-                ++it;
-            }
+            ExprNode* mul2 = new OpNode("**");
+            mul2->children().push_back(den);
+            mul2->children().push_back((*it2)->children().back());
+            mul2 = evaluateArithmetic(mul2);
+            
+            (*it)->children().clear();
+            (*it)->children().push_front(mul1);
+            (*it)->children().push_back(mul2);
+            num->setParent(mul1);
+            (*it2)->children().front()->setParent(mul1);
+            den->setParent(mul2);
+            (*it2)->children().back()->setParent(mul2);
+            
+            delete *it2;
+            op->children().erase(it2);
+            num = evaluateArithmetic(num);
+            den = evaluateArithmetic(den);
+            *it = evaluateArithmetic(*it);
+            ++it;  
         }
+        else if ((*it)->isOperator() && ((OpNode*)*it)->name() == "/") // (* (/ a b) c ...) ==> (* (/ (* a c) b) ...)
+        {
+            ExprNode* num = (*it)->children().front();
+            ExprNode* mul = new OpNode("**");
+
+            (*it)->children().erase((*it)->children().begin());
+            mul->children().push_back(num);
+            mul->children().push_back(*it2);
+            (*it2)->setParent(mul);
+            num->setParent(mul);
+            mul = evaluateArithmetic(mul);
+
+            (*it)->children().push_front(mul);
+            mul->setParent(*it);
+            op->children().erase(it2);
+            num = evaluateArithmetic(num);
+            *it = evaluateArithmetic(*it);
+            ++it;  
+        }
+        else if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "/") // (* ... a (/ b c)) ==> (* ... (/ (* a b) c))
+        {              
+            ExprNode* num = (*it2)->children().front();
+            ExprNode* mul = new OpNode("**");
+
+            (*it2)->children().erase((*it2)->children().begin());
+            mul->children().push_back(*it);
+            mul->children().push_back(num);
+            (*it)->setParent(mul);
+            num->setParent(mul);
+            mul = evaluateArithmetic(mul);
+
+            (*it2)->children().push_front(mul);
+            mul->setParent(*it2);
+            it = op->children().erase(it);
+            *it2 = evaluateArithmetic(*it2);
+        }     
         else
         {
             ++it;
@@ -785,7 +829,7 @@ ExprNode* symbolicDiv(OpNode* op)
         freeExpression(den);
         return moveNode(op, new IntNode(Integer(1)));
     } 
-    else if (op->children().back()->type() == ExprNode::INTEGER && ((IntNode*)op->children().back())->value() == Integer(1)) // (/ x 1) == x
+    else if (op->children().back()->type() == ExprNode::INTEGER && ((IntNode*)op->children().back())->value() == Integer(1)) // (/ x 1) ==> x
     {
         delete op->children().back();
         op->children().clear();
@@ -793,8 +837,39 @@ ExprNode* symbolicDiv(OpNode* op)
     }  // else do nothing
 
     if (((OpNode*)op)->name() == "/" && op->children().size() == 1)
-        return moveNode(op, op->children().front());
-  
+        return moveNode(op, op->children().front()); 
+    return op;
+}
+
+// Evalutes "(^ <arg0> <arg1>)"
+ExprNode* symbolicPow(OpNode* op)
+{
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    if (op->children().front()->isOperator() && ((OpNode*)op->children().front())->name() == "^") // (^ (^ x n) m) ==> (^ x (* n m))
+    {
+        ExprNode* base = op->children().front()->children().front();
+        ExprNode* mul = new OpNode("**", op);
+
+        mul->children().push_back(op->children().front()->children().back());
+        mul->children().push_back(op->children().back());
+        mul->children().front()->setParent(mul);
+        mul->children().back()->setParent(mul);
+        mul = evaluateArithmetic(mul);
+
+        op->children().front()->children().clear();
+        delete op->children().front();
+        
+        op->children().clear();
+        op->children().push_back(base);
+        op->children().push_back(mul);
+        base->setParent(op);
+    }
+
     return op;
 }
 
@@ -804,7 +879,7 @@ ExprNode* symbolicDiv(OpNode* op)
 
 ExprNode* evaluateArithmetic(ExprNode* expr)
 {
-    if (expr->isNumber())                         return expr;     // fully evaluated
+    if (expr->isNumber())                         return expr;
     if (expr->type() == ExprNode::CONSTANT)       return expr;    // TODO: constant table
     if (expr->type() == ExprNode::VARIABLE)       return expr;
     
@@ -840,7 +915,7 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "-")                         return symbolicSub(op);
             else if (op->name() == "*" || op->name() == "**")   return symbolicMul(op);
             else if (op->name() == "/")                         return symbolicDiv(op);
-            else if (op->name() == "^")                         return op;  // unimplemented 
+            else if (op->name() == "^")                         return symbolicPow(op);
         }
         else
         {

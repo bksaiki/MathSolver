@@ -137,13 +137,28 @@ int main()
 
 	tests.reset("^");
 	{
-		const size_t COUNT = 4;
+		const size_t COUNT = 5;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"2^5",		"32",
 			"3^4",		"81",
 			"2^-5",		"1/32",
-			"3^-4",		"1/81"
+			"3^-4",		"1/81",
+			"(a^b)^c",	"a^(bc)"
+		};
+
+		status &= evalExpr(tests, exprs, COUNT);
+	}
+
+	tests.reset("*,^ mixed");
+	{
+		const size_t COUNT = 4;
+		const std::string exprs[COUNT * 2] = 
+		{ 
+			"x*x",		"x^2",
+			"x*x^2",	"x^3",
+			"x^2*x",	"x^3",
+			"x^2*x^2",	"x^4"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

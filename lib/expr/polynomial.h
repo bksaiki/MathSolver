@@ -28,6 +28,10 @@ bool isPolynomial(ExprNode* expr);
 // Returns the order of the monomial.
 int monomialOrder(ExprNode* expr);
 
+// Returns the monomial in standard form. Constants and numbers appear first followed by monomial basis from
+// highest to lowest order.
+ExprNode* reorderMonomial(ExprNode* expr);
+
 // Returns the polynomial at expr as a polynomial in standard form. By default, higher order terms appear first.
 // Settings down to false reverses this order.
 ExprNode* reorderPolynomial(ExprNode* expr, bool down = true);

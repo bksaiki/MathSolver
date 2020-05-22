@@ -157,12 +157,35 @@ ExprNode* moveNode(ExprNode* dest, ExprNode* src)
     return src;
 }
 
-void replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos)
+std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos)
 {
     if (parent != nullptr)
-    {
-        parent->children().insert(pos, src);
+    {       
+        auto it = parent->children().insert(pos, src);
         parent->children().erase(pos);
+        return it;
+    }
+
+    return pos;
+}
+
+void releaseChild(ExprNode* node)
+{
+    if (node->parent() != nullptr)
+    {
+        auto e = node->parent()->children().begin();
+        while (e != node->parent()->children().end())
+        {
+            if (*e == node) 
+            {
+                e = node->parent()->children().erase(e);
+                break;
+            }
+            else           
+            {
+                ++e;
+            }
+        }
     }
 }
 

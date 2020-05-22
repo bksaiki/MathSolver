@@ -99,4 +99,16 @@ std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term)
     return coeff;
 }
 
+ExprNode* getPowBase(ExprNode* op)
+{
+    if (op->isOperator() && ((OpNode*)op)->name() == "^")       return op->children().front();
+    else                                                        return op;
+}
+
+ExprNode* getPowExp(ExprNode* op)
+{
+    if (op->isOperator() && ((OpNode*)op)->name() == "^")       return op->children().back();
+    else                                                        return new IntNode(1);
+}
+
 }

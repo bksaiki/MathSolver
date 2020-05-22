@@ -395,7 +395,11 @@ ExprNode* moveNode(ExprNode* dest, ExprNode* src);
 
 // Replaces dest from the parent's list of children with src. Assumes dest is an invalid
 // pointer that needs updating.
-void replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos);
+std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos);
+
+// Removes this expression from the parent's list of children. Assumes another pointer is tracking this node,
+// else data will be lost.
+void releaseChild(ExprNode* node);
 
 }
 

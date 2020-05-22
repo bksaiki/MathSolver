@@ -103,6 +103,32 @@ int monomialOrder(ExprNode* expr)
 // Comparators
 //
 
+int monomialBasisCmp(ExprNode* lhs, ExprNode* rhs)
+{
+    if (lhs->children().empty() && rhs->children().empty())
+    {
+        if (lhs->type() == ExprNode::VARIABLE && rhs->type() != ExprNode::VARIABLE) return -1;
+        if (lhs->type() != ExprNode::VARIABLE && rhs->type() == ExprNode::VARIABLE) return 1;
+
+        if (lhs->isNumber() && !rhs->isNumber())                                    return 1;
+        if (!lhs->isNumber() && rhs->isNumber())                                    return -1;
+        if (lhs->type() == ExprNode::CONSTANT && rhs->type() != ExprNode::CONSTANT) return 1;
+        if (lhs->type() != ExprNode::CONSTANT && rhs->type() == ExprNode::CONSTANT) return -1;
+    } // else: x^n and y^m
+    else if (lhs->isOperator() && rhs->isOperator() && ((OpNode*)lhs)->name() == "^" && ((OpNode*)rhs)->name() == "^")
+    {
+        int lo = monomialOrder(lhs);
+        int ro = monomialOrder(rhs);
+        if (lo > ro)   return 1;
+        if (lo < ro)   return -1;  
+    }
+
+    return 0;
+}
+
+bool monomialBasisGt(ExprNode* lhs, ExprNode* rhs) { return (monomialBasisCmp(lhs, rhs) > 0); }
+// bool monomialBasisLt(ExprNode* lhs, ExprNode* rhs) { return (monomialBasisCmp(lhs, rhs) > 0); } 
+
 int monomialOrderCmp(ExprNode* lhs, ExprNode* rhs)
 {
     if (lhs->children().empty() && rhs->children().empty())
@@ -172,14 +198,25 @@ int monomialOrderCmp(ExprNode* lhs, ExprNode* rhs)
     return 0;
 }
 
-bool monomialOrderGt(ExprNode* lhs, ExprNode* rhs)
-{
-    return (monomialOrderCmp(lhs, rhs) > 0);
-}
+bool monomialOrderGt(ExprNode* lhs, ExprNode* rhs) { return (monomialOrderCmp(lhs, rhs) > 0); }
+bool monomialOrderLt(ExprNode* lhs, ExprNode* rhs) { return (monomialOrderCmp(lhs, rhs) > 0); }
 
-bool monomialOrderLt(ExprNode* lhs, ExprNode* rhs)
+//
+//  End comparators
+//
+
+ExprNode* reorderMonomial(ExprNode* expr)
 {
-    return (monomialOrderCmp(lhs, rhs) < 0);
+#ifdef MATHSOLVER_DEBUG
+    if (!isMonomial(expr))
+    {
+        gErrorManager.log("Expected a monomial: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);
+        return expr;
+    }
+#endif
+
+    expr->children().sort(monomialBasisGt);
+    return expr;
 }
 
 ExprNode* reorderPolynomial(ExprNode* expr, bool down)
@@ -191,6 +228,9 @@ ExprNode* reorderPolynomial(ExprNode* expr, bool down)
         return expr;
     }
 #endif
+
+    for (auto e : expr->children())
+        e->children().sort(monomialBasisGt);
 
     if (!expr->isOperator() || (((OpNode*)expr)->name() != "+" && ((OpNode*)expr)->name() != "-")) // single term
         return expr;
