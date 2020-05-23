@@ -9,7 +9,7 @@ namespace MathSolver
 
 // Returns true if the expression only contains the following:
 //      numbers, constants, variables,
-//      operators: +, -, *, /, %, !, ^
+//      operators: +, -, *, /, % (mod), !, ^
 //      functions: exp, log, sin, cos, tan
 // Assumes the expression is valid.
 bool isArithmetic(ExprNode* expr);

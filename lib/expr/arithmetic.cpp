@@ -22,7 +22,7 @@ bool isArithmetic(ExprNode* expr)
         OpNode* op = (OpNode*)expr;
         return (op->name() == "-*" ||
                 op->name() == "+" || op->name() == "-" || op->name() == "**" ||
-                op->name() == "*" || op->name() == "/" || op->name() == "%" ||
+                op->name() == "*" || op->name() == "/" || op->name() == "%" || op->name() == "mod" || 
                 op->name() == "^" || op->name() == "!");
     }
     else

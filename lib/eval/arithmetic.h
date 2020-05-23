@@ -22,7 +22,9 @@ ExprNode* numericAdd(ExprNode* op);
 ExprNode* numericSub(ExprNode* op);
 ExprNode* numericMul(ExprNode* op);
 ExprNode* numericDiv(ExprNode* op);
+ExprNode* numericMod(ExprNode* op);
 ExprNode* numericPow(ExprNode* op);
+ExprNode* numericFact(ExprNode* op); // this may need to go under 'combinatorics'
 
 //
 // Symbolic evaluators
@@ -39,6 +41,7 @@ ExprNode* symbolicAdd(ExprNode* op);
 ExprNode* symbolicSub(ExprNode* op);
 ExprNode* symbolicMul(ExprNode* op);
 ExprNode* symbolicDiv(ExprNode* op);
+ExprNode* symbolicMod(ExprNode* op);
 ExprNode* symbolicPow(ExprNode* op);
 
 // Evaluates an arithmetic expression. Returns resulting expression

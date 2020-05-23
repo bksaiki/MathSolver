@@ -374,8 +374,8 @@ bool isOperator(const std::string& op);
     3   ^                   RL
     4   !                   LR
     5   **                  LR
-    6   * / %               LR
-    7   +-                  LR
+    6   * / %, mod          LR
+    7   + -                 LR
     8   > < >= < == !=      --
 
     N   , | () [] {}

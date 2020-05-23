@@ -39,8 +39,9 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
             std::string name = expr.substr(itr, i - itr);
             ExprNode* node;
 
-            if (isFunction(name))   node = new FuncNode(name);
-            else                    node = new VarNode(name);
+            if (name == "mod")          node = new OpNode("mod");     // special case
+            else if (isFunction(name))  node = new FuncNode(name);
+            else                        node = new VarNode(name);
             tokens.push_back(node);
             itr = i;
         }
@@ -274,8 +275,8 @@ ExprNode* parseTokensR(std::list<ExprNode*>::const_iterator begin, std::list<Exp
     {
         OpNode* op = (OpNode*)node;
         if (op->name() == "+" || op->name() == "-" || op->name() == "**" || op->name() == "*" ||
-            op->name() == "/" || op->name() == "%" || op->name() == "^" || op->name() == "<" ||
-            op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "=") 
+            op->name() == "/" || op->name() == "%" || op->name() == "mod" || op->name() == "^" ||
+            op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "=") 
         {         
             if (split == begin || split == end) // arity mismatch
             {

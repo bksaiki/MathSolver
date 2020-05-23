@@ -61,13 +61,24 @@ int main()
         Integer i2(4);
         Integer i3(7);
         Integer i4(5);
-
+    
         tests.reset("pow");
         tests.runTest(pow(i1, i2).toString(), "10000");
         tests.runTest(pow(i2, i1).toString(), "1048576");
         tests.runTest(pow(i3, i4).toString(), "16807");
         tests.runTest(pow(i4, i3).toString(), "78125");
         tests.runTest(pow(i4, i1).toString(), "9765625");
+
+        std::cout << tests.result() << std::endl;
+		status &= tests.status();
+    }
+
+    {
+        tests.reset("factorial");
+        tests.runTest(fact(10).toString(), "3628800");
+        tests.runTest(fact(4).toString(), "24");
+        tests.runTest(fact(7).toString(), "5040");
+        tests.runTest(fact(5).toString(), "120");
 
         std::cout << tests.result() << std::endl;
 		status &= tests.status();

@@ -136,6 +136,20 @@ ExprNode* numericDiv(ExprNode* op)
     return op;
 }
 
+// Evaluates (% <num> <num>)
+ExprNode* numericMod(ExprNode* op)
+{
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    } 
+
+    ExprNode* res = new IntNode(((IntNode*)op->children().front())->value() % ((IntNode*)op->children().back())->value(), op->parent());
+    freeExpression(op);
+    return res;
+}
+
 // Evaluates (^ <num> <num>)
 ExprNode* numericPow(ExprNode* op)
 {
@@ -155,10 +169,33 @@ ExprNode* numericPow(ExprNode* op)
     }
     else
     {
-        ExprNode* res = new IntNode(pow(((IntNode*)op->children().front())->value(), ((IntNode*)op->children().back())->value()));
+        ExprNode* res = new IntNode(pow(((IntNode*)op->children().front())->value(), ((IntNode*)op->children().back())->value()), op->parent());
         freeExpression(op);
         return res;
     }
+}
+
+// Evaluates (! <num>)
+ExprNode* numericFact(ExprNode* op)
+{
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    if (op->children().front()->type() == ExprNode::FLOAT)
+    {
+        gErrorManager.log("Factorial is defined for integers only. Try the gamma function.", ErrorManager::ERROR, __FILE__, __LINE__);
+        return op;
+    }
+
+    ExprNode* res = new IntNode(fact(((IntNode*)op->children().front())->value().toInt()), op->parent());
+    freeExpression(op);
+
+    if (gErrorManager.hasError())
+        return moveNode(res, new ConstNode("undef"));
+    return res;
 }
 
 //
@@ -841,6 +878,52 @@ ExprNode* symbolicDiv(OpNode* op)
     return op;
 }
 
+// Evalutes "(% <arg0> <arg1>)"
+ExprNode* symbolicMod(ExprNode* op)
+{
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    if (op->children().front()->isOperator() &&   // (% (% x n) n) ==> (% x n)
+        (((OpNode*)op->children().front())->name() == "%" || ((OpNode*)op->children().front())->name() == "mod") && 
+        eqvExpr(op->children().front()->children().back(), op->children().back()))
+    {
+        delete op->children().back();
+        return moveNode(op, op->children().front());
+    }
+    else if (op->children().front()->isOperator() && ((OpNode*)op->children().front())->name() == "^" && // (% (^ n x) n) ==> 0, where x ∈ N
+             eqvExpr(op->children().front()->children().front(), op->children().back()) &&
+             op->children().front()->children().back()->type() == ExprNode::INTEGER && 
+             ((IntNode*)op->children().front()->children().back())->value() > Integer(0))
+    {
+        ExprNode* res = new IntNode(0, op->parent());
+        freeExpression(op);
+        return res;
+    }
+    else if (op->children().front()->isOperator() && (((OpNode*)op->children().front())->name() == "+" ||               // (% (+ (% a n) (% b n)) n) ==> (% (+ a b) n)
+            ((OpNode*)op->children().front())->name() == "*" || ((OpNode*)op->children().front())->name() == "**") &&   // (% (* (% a n) (% b n)) n) ==> (% (* a b) n)
+             op->children().front()->children().front()->isOperator() && (((OpNode*)op->children().front()->children().front())->name() == "%" ||
+             ((OpNode*)op->children().front()->children().front())->name() == "mod") && 
+             op->children().front()->children().back()->isOperator() && (((OpNode*)op->children().front()->children().back())->name() == "%" ||
+             ((OpNode*)op->children().front()->children().back())->name() == "mod") &&
+             eqvExpr(op->children().front()->children().front()->children().back(), op->children().front()->children().back()->children().back()))
+    {
+        ExprNode* lhs = op->children().front()->children().front()->children().front();
+        ExprNode* rhs = op->children().front()->children().back()->children().front();
+        op->children().front()->children().front()->children().pop_front();
+        op->children().front()->children().back()->children().pop_front();
+        freeExpression(op->children().front()->children().front());
+        freeExpression(op->children().front()->children().back());
+        replaceChild(op->children().front(), lhs, op->children().front()->children().begin());
+        replaceChild(op->children().front(), rhs, std::next(op->children().front()->children().begin()));
+    }
+
+    return op;
+}
+
 // Evalutes "(^ <arg0> <arg1>)"
 ExprNode* symbolicPow(OpNode* op)
 {
@@ -893,7 +976,9 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "-")                         return numericSub(op);
             else if (op->name() == "*" || op->name() == "**")   return numericMul(op);
             else if (op->name() == "/")                         return numericDiv(op);
+            else if (op->name() == "%" || op->name() == "mod")  return numericMod(op);
             else if (op->name() == "^")                         return numericPow(op);
+            else if (op->name() == "!")                         return numericFact(op);
         }
         else
         {
@@ -915,7 +1000,9 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "-")                         return symbolicSub(op);
             else if (op->name() == "*" || op->name() == "**")   return symbolicMul(op);
             else if (op->name() == "/")                         return symbolicDiv(op);
+            else if (op->name() == "%" || op->name() == "mod")  return symbolicMod(op);
             else if (op->name() == "^")                         return symbolicPow(op);
+            else if (op->name() == "!")                         return expr;    // No simplification needed?
         }
         else
         {

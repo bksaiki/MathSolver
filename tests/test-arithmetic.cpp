@@ -135,6 +135,26 @@ int main()
 		status &= evalExpr(tests, exprs, COUNT);
 	}
 
+	tests.reset("%");
+	{
+		const size_t COUNT = 10;
+		const std::string exprs[COUNT * 2] = 
+		{ 
+			"10%3",				"1",
+			"10%-3",			"-2",
+			"-10%3",			"2",
+			"-10%-3", 			"-1",
+			"(a%n)%n",			"a%n",
+			"(n^2)%n",			"0",
+			"((a%n)+(b%n))%n",	"(a+b)%n",
+			"((a%n)(b%n))%n",	"ab%n",
+			"11 mod 3",			"2",
+			"a mod n",			"a mod n"
+		};
+
+		status &= evalExpr(tests, exprs, COUNT);
+	}
+
 	tests.reset("^");
 	{
 		const size_t COUNT = 5;
@@ -159,6 +179,20 @@ int main()
 			"x*x^2",	"x^3",
 			"x^2*x",	"x^3",
 			"x^2*x^2",	"x^4"
+		};
+
+		status &= evalExpr(tests, exprs, COUNT);
+	}
+
+	tests.reset("!");
+	{
+		const size_t COUNT = 4;
+		const std::string exprs[COUNT * 2] = 
+		{ 
+			"10!",		"3628800",
+			"4!",		"24",
+			"7!",		"5040",
+			"5!",		"120"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

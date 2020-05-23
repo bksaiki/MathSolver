@@ -410,6 +410,12 @@ Integer Integer::divRem(const Integer& other, Integer& rem) const
     return quo;
 }
 
+void Integer::fromString(const std::string& str)
+{
+    delete[] mData;
+    fromString(str.c_str());
+}
+
 void Integer::set(uint8_t* arr, size_t len, bool sign)
 {
     delete[] mData;
@@ -418,10 +424,19 @@ void Integer::set(uint8_t* arr, size_t len, bool sign)
     mSign = sign;
 }
 
-void Integer::fromString(const std::string& str)
+int Integer::toInt() const
 {
-    delete[] mData;
-    fromString(str.c_str());
+    if (mSize < 4)
+    {
+        uint8_t* arr = new uint8_t[4];
+        for (size_t i = 0; i < 4; ++i) arr[i] = 0;
+        memcpy(arr, mData, mSize);
+        return (mSign ? -1 : 1) * (*((int*)arr));
+    }
+
+    if (mSize > 4 && !rangeIsEmpty(&mData[4], &mData[mSize]))
+        gErrorManager.log("Integer to int conversion: value to large, data lost", ErrorManager::WARNING);
+    return (mSign ? -1 : 1) * (*((int*)mData));
 }
 
 std::string Integer::toString() const

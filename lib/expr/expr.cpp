@@ -169,6 +169,10 @@ std::string toInfixString(ExprNode* expr)
 		{
 			return toInfixString(op->children().front()) + "^" + toInfixString(op->children().back());
 		}
+		else if (op->name() == "mod")
+		{
+			return toInfixString(op->children().front()) + " mod " + toInfixString(op->children().back());
+		}
 		else if (op->name() == "-*" && op->children().size() == 1)
 		{
 			return "-" + toInfixString(op->children().front());

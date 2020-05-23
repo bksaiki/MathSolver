@@ -42,4 +42,30 @@ Integer pow(const Integer& a, const Integer& b)
     return powr(a, b);
 }
 
+
+Integer factr(const Integer& p, int n)
+{
+    if (n > 1)  return factr(p * Integer(n), n - 1);
+    else        return p;
+}
+
+Integer fact(int n)
+{
+    if (n > MATHSOLVER_FACTORIAL_MAX)
+    {
+        gErrorManager.log("Factorial value too large. Giving up and returning infinity", ErrorManager::WARNING);
+        return Integer(0);  // TODO: return inf
+    }    
+    
+    if (n < 0)
+    {
+        gErrorManager.log("Cannot take the factorial of a negative integer", ErrorManager::ERROR);
+        return Integer(0); // TODO: return undef
+    }
+    
+    if (n == 0) 
+        return Integer(1);
+    return factr(Integer(1), n);
+}
+
 }

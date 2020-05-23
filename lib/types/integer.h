@@ -163,6 +163,9 @@ public:
     // the remainder at rem.
     Integer divRem(const Integer& other, Integer& rem) const;
 
+    // Sets this integer from a std::string.
+    void fromString(const std::string& str);  
+
     // Returns true if this Integer is even.
     inline bool isEven() const { return !(mData[0] & 0x1); }
 
@@ -181,14 +184,14 @@ public:
     // Returns the width of this Integer.
     inline size_t size() const { return mSize; } 
 
-    // Sets this integer from a std::string.
-    void fromString(const std::string& str);  
+    // Returns this Integer as a double.
+    double toDouble() const;
+
+    // Returns this Integer as a 32-bit fixed int.
+    int toInt() const;
 
     // Returns this Integer as a std::string.
     std::string toString() const;
-
-    // Returns this Integer as a double.
-    double toDouble() const;
 
 private:
 
