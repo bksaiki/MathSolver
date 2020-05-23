@@ -63,9 +63,12 @@ jobs:
         echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
         echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
         echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
-    - run: echo "${{ steps.gitversion.outputs.legacySemVer }}" > version.log
+    - run: |
+        echo "BranchName: ${{ steps.gitversion.outputs.branchName }}" >> version.log
+        echo "Version: ${{ steps.gitversion.outputs.legacySemVer }}" >> version.log
+        echo "Date: ${{ steps.gitversion.outputs.commitDate }}" >> version.log
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: version
+        name: ${{ steps.gitversion.outputs.branchName }}
         path: version.log
