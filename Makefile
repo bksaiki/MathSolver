@@ -43,7 +43,7 @@ clean-deps:
 	$(RM) -r $(DEPS) $(TEST_DEPS)
 
 clean-all:
-	rm -r -f build $(EXE)
+	rm -r -f $(BUILD_DIR) tmp $(EXE)
 
 ### Specific tests
 

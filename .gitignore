@@ -1,5 +1,6 @@
 *.d
 *.o
 build/*
+tmp/*
 tests/test-sandbox.cpp
 msolve

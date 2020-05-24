@@ -65,8 +65,9 @@ jobs:
         echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
     - run: |
         echo "BranchName: ${{ steps.gitversion.outputs.branchName }}" >> version.log
-        echo "Version: ${{ steps.gitversion.outputs.legacySemVer }}" >> version.log
         echo "Date: ${{ steps.gitversion.outputs.commitDate }}" >> version.log
+        echo "Listed version: $(./version.sh current)" | tee -a version.log
+        echo "Generated version: ${{ steps.gitversion.outputs.legacySemVer }}" | tee -a version.log            
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
