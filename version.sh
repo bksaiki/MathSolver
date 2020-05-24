@@ -23,6 +23,7 @@ full_version=$(echo $(grep -oP '(?<=MATHSOLVER_VERSION_STR\s)[^ ]*' $ver_file) |
 version=${full_version%-$rev_str*}
 ver_comp=($(echo ${version} | sed -e 's/\./\n/g' | sed -e '/^[0-9]*$/!d'))
 new_version=""
+
 if [ $1 == "current" ]; then
     echo $full_version
     exit 0
