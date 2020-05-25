@@ -516,16 +516,16 @@ int main()
 		r68 %= cints[8];
 		r07 %= cints[7];
 
-		tests.runTest(r01.toString(), "-1773273743103461260925877823936");
-		tests.runTest(r23.toString(), "-1129409795571040706");
-		tests.runTest(r45.toString(), "-1693718277");
-		tests.runTest(r67.toString(), "-310237");
-		tests.runTest(r89.toString(), "-124");
+		tests.runTest(r01.toString(), "7817571355697357692875402758499");
+		tests.runTest(r23.toString(), "104713639049421634");
+		tests.runTest(r45.toString(), "648623046");
+		tests.runTest(r67.toString(), "43214");
+		tests.runTest(r89.toString(), "25");
 		tests.runTest(r13.toString(), "-1095703636533614875");
-		tests.runTest(r25.toString(), "-1008389444");
-		tests.runTest(r49.toString(), "-29");
+		tests.runTest(r25.toString(), "1333951879");
+		tests.runTest(r49.toString(), "120");
 		tests.runTest(r68.toString(), "14");
-		tests.runTest(r07.toString(), "-120504");
+		tests.runTest(r07.toString(), "232947");
 
 		std::cout << tests.result() << std::endl;
 		status &= tests.status();
@@ -545,16 +545,16 @@ int main()
 		Integer r68 = cints[6] % cints[8];
 		Integer r07 = cints[0] % cints[7];
 
-		tests.runTest(r01.toString(), "-1773273743103461260925877823936");
-		tests.runTest(r23.toString(), "-1129409795571040706");
-		tests.runTest(r45.toString(), "-1693718277");
-		tests.runTest(r67.toString(), "-310237");
-		tests.runTest(r89.toString(), "-124");
+		tests.runTest(r01.toString(), "7817571355697357692875402758499");
+		tests.runTest(r23.toString(), "104713639049421634");
+		tests.runTest(r45.toString(), "648623046");
+		tests.runTest(r67.toString(), "43214");
+		tests.runTest(r89.toString(), "25");
 		tests.runTest(r13.toString(), "-1095703636533614875");
-		tests.runTest(r25.toString(), "-1008389444");
-		tests.runTest(r49.toString(), "-29");
+		tests.runTest(r25.toString(), "1333951879");
+		tests.runTest(r49.toString(), "120");
 		tests.runTest(r68.toString(), "14");
-		tests.runTest(r07.toString(), "-120504");
+		tests.runTest(r07.toString(), "232947");
 
 		std::cout << tests.result() << std::endl;
 		status &= tests.status();

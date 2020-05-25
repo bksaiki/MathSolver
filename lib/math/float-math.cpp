@@ -4,11 +4,26 @@
 namespace MathSolver
 {
 
+
+Float mod(const Float&x, const Float n)
+{
+    Float res;
+    mpfr_fmod(res.data(), x.data(), n.data(), MPFR_RNDN);
+    return res;
+}
+
 Float exp(const Float& x)
 {
     Float res;
     mpfr_exp(res.data(), x.data(), MPFR_RNDN);
     return res;   
+}
+
+Float pow(const Float& b, const Float& x)
+{
+    Float res;
+    mpfr_pow(res.data(), b.data(), x.data(), MPFR_RNDN);
+    return res;
 }
 
 Float log(const Float& x)

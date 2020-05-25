@@ -56,7 +56,7 @@ IntNode::IntNode(const Integer& data, ExprNode* parent)
     mPrec = 0;
 }
 
-FloatNode::FloatNode(double data, ExprNode* parent)
+FloatNode::FloatNode(const Float& data, ExprNode* parent)
 {
     mData = data;
     mParent = parent;

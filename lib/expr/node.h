@@ -4,6 +4,7 @@
 #include <list>
 #include <string>
 #include "../common/base.h"
+#include "../types/float.h"
 #include "../types/integer.h"
 
 namespace MathSolver
@@ -317,13 +318,14 @@ class FloatNode : public ExprNode
 public:
 
     // Default constructor 
-    FloatNode(double data = 0.0, ExprNode* parent = nullptr);
+    FloatNode(const Float& data = "0.0", ExprNode* parent = nullptr);
 
     // Destructor
     ~FloatNode() {}
 
     // Returns the data stored at this node.
-    inline double value() const { return mData; }
+    inline Float& value() { return mData; }
+    inline const Float& value() const { return mData; }
 
     // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return true; }
@@ -338,16 +340,16 @@ public:
     inline bool isValue() const { return true; }
 
     // Sets the data at this node.
-    inline void setValue(double d) { mData = d; }
+    inline void setValue(const Float& d) { mData = d; }
 
     // Returns a string representation of this node.
-    inline std::string toString() const { return std::to_string(mData); }
+    inline std::string toString() const { return mData.toString(); }
  
     // Returns the type of this node.
     inline Type type() const { return FLOAT; }
 
 private:
-    double mData;
+    Float mData;
 };
 
 //

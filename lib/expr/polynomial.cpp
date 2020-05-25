@@ -64,8 +64,7 @@ bool isPolynomial(ExprNode* expr)
 
     for (auto e : expr->children())
     {
-        if (((((OpNode*)e)->name() == "+" || ((OpNode*)e)->name() == "-") && !isPolynomial(e)) || // unflattened polynomial
-            !isMonomial(e))     // monomial term
+        if (!isMonomial(e) && !isPolynomial(e)) // unflattened polynomial
             return false;
     }
 

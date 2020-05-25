@@ -27,7 +27,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
 
             std::string str = expr.substr(itr, i - itr);
             if (str.find('.') == std::string::npos)     node = new IntNode(Integer(str));
-            else                                        node = new FloatNode(strtod(str.c_str(), NULL));
+            else                                        node = new FloatNode(Float(str));
             tokens.push_back(node);
             itr = i;
         }

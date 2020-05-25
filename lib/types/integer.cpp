@@ -216,10 +216,8 @@ Integer Integer::operator%(const Integer& other) const
 {
     Integer quo;
     Integer rem;
-    
     divAndRem(other, quo, rem);
-    if (mSign == other.mSign)   rem.mSign = other.mSign;
-    else                        rem.subAssign(other, other.mSign);
+    rem.mSign = (mSign ? !rem.mSign : rem.mSign);
     return rem;
 }
 
@@ -289,11 +287,8 @@ Integer& Integer::operator%=(const Integer& other)
 {
     Integer quo;
     Integer rem;
-
     divAndRem(other, quo, rem);
-    if (mSign == other.mSign)   rem.mSign = other.mSign;
-    else                        rem.subAssign(other, other.mSign);
-
+    rem.mSign = (mSign ? !rem.mSign : rem.mSign);
     delete[] mData;
     move(rem);
     return *this;
