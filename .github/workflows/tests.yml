@@ -68,8 +68,3 @@ jobs:
         echo "Date: ${{ steps.gitversion.outputs.commitDate }}" >> version.log
         echo "Listed version: $(./version.sh current)" | tee -a version.log
         echo "Generated version: ${{ steps.gitversion.outputs.legacySemVer }}" | tee -a version.log            
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{ steps.gitversion.outputs.branchName }}
-        path: version.log
