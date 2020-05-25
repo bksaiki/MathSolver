@@ -9,6 +9,7 @@
 #include "expr/node.h"
 #include "expr/parser.h"
 #include "expr/polynomial.h"
+#include "math/float-math.h"
 #include "math/integer-math.h"
 #include "types/float.h"
 #include "types/integer.h"
