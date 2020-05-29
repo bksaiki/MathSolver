@@ -35,7 +35,7 @@ public:
     inline std::list<ExprNode*>& children() { return mChildren; }
     inline const std::list<ExprNode*>& children() const { return mChildren; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     virtual bool isNumber() const = 0;
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -87,7 +87,7 @@ public:
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     inline bool isNumber() const { return false; }
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -127,7 +127,7 @@ public:
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     inline bool isNumber() const { return false; }
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -167,7 +167,7 @@ public:
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     inline bool isNumber() const { return false; }
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -207,7 +207,7 @@ public:
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     inline bool isNumber() const { return false; }
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -247,7 +247,7 @@ public:
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     inline bool isNumber() const { return false; }
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -287,7 +287,7 @@ public:
     inline Integer& value() { return mData; }
     inline const Integer& value() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     inline bool isNumber() const { return true; }
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -327,7 +327,7 @@ public:
     inline Float& value() { return mData; }
     inline const Float& value() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     inline bool isNumber() const { return true; }
 
     // Returns true if this node is an operator (i.e. not a value).

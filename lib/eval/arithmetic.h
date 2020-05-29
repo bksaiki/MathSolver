@@ -11,11 +11,11 @@ namespace MathSolver
 // Numeric evaluators
 //
 
-// ExprNode* numericExp(ExprNode* op);
-// ExprNode* numericLog(ExprNode* op);
-// ExprNode* numericSin(ExprNode* op);
-// ExprNode* numericCos(ExprNode* op);
-// ExprNode* numericTan(ExprNode* op);
+ExprNode* numericExp(ExprNode* op);
+ExprNode* numericLog(ExprNode* op);
+ExprNode* numericSin(ExprNode* op);
+ExprNode* numericCos(ExprNode* op);
+ExprNode* numericTan(ExprNode* op);
 
 ExprNode* numericNeg(ExprNode* op);
 ExprNode* numericAdd(ExprNode* op);
@@ -45,7 +45,7 @@ ExprNode* symbolicMod(ExprNode* op);
 ExprNode* symbolicPow(ExprNode* op);
 
 // Evaluates an arithmetic expression. Returns resulting expression
-ExprNode* evaluateArithmetic(ExprNode* expr);
+ExprNode* evaluateArithmetic(ExprNode* expr, bool firstPass = false);
 
 }
 

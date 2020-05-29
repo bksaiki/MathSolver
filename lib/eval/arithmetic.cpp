@@ -29,9 +29,15 @@ ExprNode* numericExp(ExprNode* op)
 
 ExprNode* numericLog(ExprNode* op)
 {
-    if (op->children().size() != 1)     
+    if (op->children().size() != 1 && op->children().size() != 2)     
     {
-        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 or 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    if (op->children().size() != 1)    // TODO
+    {
+        gErrorManager.log("Log of base " + op->children().front()->toString() + " unimplemented", ErrorManager::ERROR, __FILE__, __LINE__); 
         return op;
     }
 
@@ -330,34 +336,37 @@ ExprNode* symbolicExp(ExprNode* op)
         return op;
     }
 
-    if (op->children().front()->isOperator() && // (exp (log x)) --> x
-        ((OpNode*)op->children().front())->name() == "log" && op->children().front()->children().size() == 1) 
+    ExprNode* arg = op->children().front();
+    if (arg->type() == ExprNode::FUNCTION && ((FuncNode*)arg)->name() == "log" && arg->children().size() == 1) // (exp (log x)) --> x
     {
-        ExprNode* ln = op->children().front();
-        op = moveNode(op, ln->children().front());
-        delete ln;
+        op = moveNode(op, arg->children().front());
+        delete arg;
     }
 
     // TODO: more simplifications
-
     return op;
 }
 
 // Evaluates "(log x) or (log b x)"
 ExprNode* symbolicLog(ExprNode* op)
 {
-    if (op->children().size() != 1 || op->children().size() != 2)     
+    if (op->children().size() != 1 && op->children().size() != 2)     
     {
         gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 or 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
         return op;
     }
 
-    if (op->children().front()->isOperator() && // (log (exp x)) --> x
-        ((OpNode*)op->children().front())->name() == "exp" && op->children().front()->children().size() == 1) 
+    if (op->children().size() != 1)    // TODO
     {
-        ExprNode* ln = op->children().front();
-        op = moveNode(op, ln->children().front());
-        delete ln;
+        gErrorManager.log("Log of base " + op->children().front()->toString() + " unimplemented", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    ExprNode* arg = op->children().front();
+    if (arg->type() == ExprNode::FUNCTION && ((FuncNode*)arg)->name() == "exp" && arg->children().size() == 1) // (log (exp x)) --> x
+    {
+        op = moveNode(op, arg->children().front());
+        delete arg;
     }
 
     // TODO: more simplifications
@@ -1079,17 +1088,17 @@ ExprNode* symbolicPow(OpNode* op)
 // Arithmetic evaluator
 //
 
-ExprNode* evaluateArithmetic(ExprNode* expr)
+ExprNode* evaluateArithmetic(ExprNode* expr, bool firstPass)
 {
     if (expr->isNumber())                         return expr;
     if (expr->type() == ExprNode::CONSTANT)       return expr;    // TODO: constant table
     if (expr->type() == ExprNode::VARIABLE)       return expr;
     
-    if (isNumerical(expr))
+    if (expr->type() == ExprNode::OPERATOR)
     {
-        if (expr->type() == ExprNode::OPERATOR)
+        OpNode* op = (OpNode*)expr;                  
+        if (isNumerical(expr))
         {
-            OpNode* op = (OpNode*)expr;                  
             if (op->name() == "-*")                             return numericNeg(op);
             else if (op->name() == "+")                         return numericAdd(op);
             else if (op->name() == "-")                         return numericSub(op);
@@ -1101,19 +1110,6 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
         }
         else
         {
-            FuncNode* func = (FuncNode*)expr; 
-            if (func->name() == "exp")              return numericExp(expr);
-            else if (func->name() == "log")         return numericLog(expr);
-            else if (func->name() == "sin")         return numericSin(expr);
-            else if (func->name() == "cos")         return numericCos(expr);
-            else if (func->name() == "tan")         return numericTan(expr);
-        }
-    }
-    else // symbolic
-    {
-        if (expr->type() == ExprNode::OPERATOR)
-        {
-            OpNode* op = (OpNode*)expr; 
             if (op->name() == "-*")                             return symbolicNeg(op);
             else if (op->name() == "+")                         return symbolicAdd(op);
             else if (op->name() == "-")                         return symbolicSub(op);
@@ -1122,16 +1118,27 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "%" || op->name() == "mod")  return symbolicMod(op);
             else if (op->name() == "^")                         return symbolicPow(op);
             else if (op->name() == "!")                         return expr;    // No simplification needed?
+        }     
+    }
+    else
+    {
+        FuncNode* func = (FuncNode*)expr; 
+        if (!firstPass && isNumerical(expr))
+        {
+            if (func->name() == "exp")              return numericExp(expr);
+            else if (func->name() == "log")         return numericExp(expr);
+            else if (func->name() == "sin")         return numericSin(expr);
+            else if (func->name() == "cos")         return numericCos(expr);
+            else if (func->name() == "tan")         return numericTan(expr);
         }
         else
         {
-            FuncNode* func = (FuncNode*)expr; 
             if (func->name() == "exp")              return symbolicExp(func);
             else if (func->name() == "log")         return symbolicLog(func);
             else if (func->name() == "sin")         return symbolicSin(func);
             else if (func->name() == "cos")         return symbolicCos(func);
-            else if (func->name() == "tan")         return symbolicTan(func);    
-        }                                     
+            else if (func->name() == "tan")         return symbolicTan(func); 
+        }
     }
 
     gErrorManager.log("Unimpemented operation: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);

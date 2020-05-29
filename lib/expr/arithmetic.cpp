@@ -3,23 +3,17 @@
 namespace MathSolver
 {
 
-bool isArithmetic(ExprNode* expr)
+bool nodeIsArithmetic(ExprNode* node)
 {
-    for (ExprNode* child : expr->children())
+    if (node->type() == ExprNode::FUNCTION)
     {
-        if (!isArithmetic(child))
-            return false;
-    }
-
-    if (expr->type() == ExprNode::FUNCTION)
-    {
-        FuncNode* func = (FuncNode*)expr;
+        FuncNode* func = (FuncNode*)node;
         return (func->name() == "exp" || func->name() == "log" ||
                 func->name() == "sin" || func->name() == "cos" || func->name() == "tan");
     }
-    else if (expr->isOperator())
+    else if (node->isOperator())
     {
-        OpNode* op = (OpNode*)expr;
+        OpNode* op = (OpNode*)node;
         return (op->name() == "-*" ||
                 op->name() == "+" || op->name() == "-" || op->name() == "**" ||
                 op->name() == "*" || op->name() == "/" || op->name() == "%" || op->name() == "mod" || 

@@ -7,12 +7,18 @@
 namespace MathSolver
 {
 
-// Returns true if the expression only contains the following:
+// Returns true if the node only contains the following:
 //      numbers, constants, variables,
 //      operators: +, -, *, /, % (mod), !, ^
 //      functions: exp, log, sin, cos, tan
 // Assumes the expression is valid.
-bool isArithmetic(ExprNode* expr);
+bool nodeIsArithmetic(ExprNode* node);
+
+// Returns true if every node in the expression is arithmetic:
+inline bool isArithmetic(ExprNode* expr) { return containsAll(expr, nodeIsArithmetic); }
+
+// Returns true if the expression contains inexact (Float) subexpressions.
+inline bool isInexact(ExprNode* expr) { return containsAll(expr, [](ExprNode* node) { return node->type() != ExprNode::FLOAT; }); }
 
 // Finds the common term between two monomial expressions.
 std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2);

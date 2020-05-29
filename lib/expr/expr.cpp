@@ -9,17 +9,6 @@ namespace MathSolver
 const size_t FLATTENABLE_OP_COUNT = 4;
 const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**" };
 
-bool containsType(ExprNode* expr, ExprNode::Type type)
-{
-	for (auto e : expr->children())
-	{
-		if (containsType(e, type))
-			return true;
-	}
-
-	return (expr->type() == type);
-}
-
 ExprNode* copyOf(ExprNode* expr)
 {
 	ExprNode* cp;
@@ -118,22 +107,6 @@ void freeExpression(ExprNode* expr)
 	for (ExprNode* child : expr->children())
 		freeExpression(child);
 	delete expr;	
-}
-
-bool isNumerical(ExprNode* expr)
-{
-	if (expr->type() == ExprNode::FUNCTION || expr->isOperator())
-	{
-		for (auto child : expr->children())
-		{
-			if (!child->isNumber())
-				return false;
-		}
-
-		return true;
-	}
-
-	return expr->isNumber();
 }
 
 std::string toInfixString(ExprNode* expr)
