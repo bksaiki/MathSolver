@@ -15,6 +15,7 @@ Integer::Integer(const Integer& other)
     mData = new uint8_t[other.mSize];
     mSize = other.mSize;
     mSign = other.mSign;
+    mFlags = other.mFlags;
     memcpy(mData, other.mData, other.mSize);
 }
 
@@ -28,6 +29,7 @@ Integer::Integer(uint8_t* arr, size_t len, bool sign)
     mData = arr;
     mSize = len;
     mSign = sign;
+    mFlags = 0;
 }
 
 Integer::Integer(unsigned int x)
@@ -35,6 +37,7 @@ Integer::Integer(unsigned int x)
     mData = new uint8_t[4];
     mSize = 4;
     mSign = false;
+    mFlags = 0;
     memcpy(mData, &x, 4);
 }
 
@@ -52,17 +55,13 @@ Integer::Integer(signed x)
     
     mData = new uint8_t[4];
     mSize = 4;
+    mFlags = 0;
     memcpy(mData, &x, 4);
-}
-
-Integer::Integer(const char* str)
-{
-    fromString(str);
 }
 
 Integer::Integer(const std::string& str)
 {   
-    fromString(str.c_str());
+    fromStringNoCheck(str);
 }
 
 Integer::~Integer()
@@ -80,6 +79,7 @@ Integer& Integer::operator=(const Integer& other)
         mData = new uint8_t[other.mSize];
         mSize = other.mSize;
         mSign = other.mSign;
+        mFlags = other.mFlags;
         memcpy(mData, other.mData, other.mSize);
     }
 
@@ -97,67 +97,36 @@ Integer& Integer::operator=(Integer&& other)
     return *this;
 }
 
-Integer& Integer::operator=(const char* str)
-{
-    delete[] mData;
-    fromString(str);
-
-    return *this;
-}
-
 Integer& Integer::operator=(const std::string& str)
 {
     delete[] mData;
-    fromString(str.c_str());
-
+    fromStringNoCheck(str);
     return *this;
-}
-
-bool Integer::operator==(const Integer& other) const
-{
-    return (mSign == other.mSign) && (cmpBytes(mData, mSize, other.mData, other.mSize) == 0);
-}
-
-bool Integer::operator!=(const Integer& other) const
-{
-    return (mSign != other.mSign) || (cmpBytes(mData, mSize, other.mData, other.mSize) != 0);
-}
-
-bool Integer::operator>(const Integer& other) const
-{
-    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) < 0);
-    else if (mSign && !other.mSign)     return false;
-    else if (!mSign && other.mSign)     return true;
-    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) > 0);
-}
-
-bool Integer::operator<(const Integer& other) const
-{
-    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) > 0);
-    else if (mSign && !other.mSign)     return true;
-    else if (!mSign && other.mSign)     return false;
-    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) < 0);
-}
-
-bool Integer::operator>=(const Integer& other) const
-{
-    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) <= 0);
-    else if (mSign && !other.mSign)     return false;
-    else if (!mSign && other.mSign)     return true;
-    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0);
-}
-
-bool Integer::operator<=(const Integer& other) const
-{
-    if (mSign && other.mSign)           return (cmpBytes(mData, mSize, other.mData, other.mSize) >= 0);
-    else if (mSign && !other.mSign)     return true;
-    else if (!mSign && other.mSign)     return false;
-    else                                return (cmpBytes(mData, mSize, other.mData, other.mSize) <= 0);
 }
 
 Integer Integer::operator+(const Integer& other) const
 {
-    if(mSign == other.mSign)
+    if (isUndef() || other.isUndef())
+    {
+        return Integer("undef");
+    }
+    else if (isInf() || other.isInf())
+    {
+        if (isInf() && other.isInf())
+        {
+            if (mSign != other.mSign) return Integer("undef"); // +inf + -inf = ?
+            else                      return Integer(*this);
+        }       
+        else if (isInf())
+        {
+            return Integer(*this);
+        }
+        else
+        {
+            return Integer(other);
+        }
+    }
+    else if(mSign == other.mSign)
     {
         return add(other, mSign);
     }
@@ -179,6 +148,24 @@ Integer Integer::operator+(const Integer& other) const
 
 Integer Integer::operator-(const Integer& other) const
 {
+    if (isUndef() || other.isUndef())   return Integer("undef");
+    if (isInf() || other.isInf())
+    {
+        if (isInf() && other.isInf())
+        {
+            if (mSign == other.mSign) return Integer("undef"); // +inf + -inf = ?
+            else                      return Integer(*this);
+        }       
+        else if (isInf())
+        {
+            return Integer(*this);
+        }
+        else
+        {
+            return Integer(-other);
+        }
+    }
+
     int cmp = cmpBytes(mData, mSize, other.mData, other.mSize);
     if (mSign == other.mSign)
     {
@@ -201,12 +188,33 @@ Integer Integer::operator-(const Integer& other) const
 
 Integer Integer::operator*(const Integer& other) const
 {
+    if (isUndef() || other.isUndef())     return Integer("undef");
+    if (isInf() || other.isInf())
+    {
+        Integer inf("inf");
+        inf.mSign = mSign ^ other.mSign;
+        return inf;
+    }
+
+    if (isZero() || other.isZero()) return Integer(0);
     return mul(other, mSign ^ other.mSign);
 }
 
 Integer Integer::operator/(const Integer& other) const
 {
     Integer quo;
+
+    if (isUndef() || other.isUndef())   return Integer("undef");
+    if (isInf() && other.isInf())       return Integer("undef");
+    if (isInf())                        return Integer(*this); 
+    if (other.isInf())                  return Integer(); 
+
+    if (other.isZero())  
+    {
+        quo.mFlags = MATHSOLVER_INT_UNDEF;
+        return quo;
+    }   
+             
     Integer rem;
     divAndRem(other, quo, rem);
     return quo;
@@ -214,16 +222,37 @@ Integer Integer::operator/(const Integer& other) const
 
 Integer Integer::operator%(const Integer& other) const
 {
+    if (isUndef() || other.isUndef() || isInf() || other.isInf())
+        return Integer("undef");
+
     Integer quo;
     Integer rem;
-    divAndRem(other, quo, rem);
-    rem.mSign = (mSign ? !rem.mSign : rem.mSign);
+
+    if (other.isZero()) 
+    {
+        rem.mFlags = MATHSOLVER_INT_UNDEF;
+    }
+    else                
+    {
+        divAndRem(other, quo, rem);
+        rem.mSign = (mSign ? !rem.mSign : rem.mSign);
+    }
+
     return rem;
 }
 
 Integer& Integer::operator+=(const Integer& other)
 {
-    if(mSign == other.mSign)
+    if (isUndef() || other.isUndef())
+    {
+        fromString("undef");
+    }
+    else if (isInf() || other.isInf())
+    {
+        if (isInf() && other.isInf() && mSign != other.mSign)   fromString("undef"); // else, unchanged      
+        else if (other.isInf())                                 *this = other;
+    }
+    else if(mSign == other.mSign)
     {
         addAssign(other, mSign);
     }
@@ -247,9 +276,18 @@ Integer& Integer::operator+=(const Integer& other)
 
 Integer& Integer::operator-=(const Integer& other)
 {
-    int cmp = cmpBytes(mData, mSize, other.mData, other.mSize); 
-    if(mSign == other.mSign)
+    if (isUndef() || other.isUndef())
     {
+        fromString("undef");
+    }
+    else if (isInf() || other.isInf())
+    {
+        if (isInf() && other.isInf() && mSign == other.mSign)   fromString("undef"); // else, unchanged      
+        else if (other.isInf())                                 *this = -other;
+    }
+    else if(mSign == other.mSign)
+    {
+        int cmp = cmpBytes(mData, mSize, other.mData, other.mSize); 
         if (cmp == 0) // Avoid computation: x - x = 0
         {
             delete[] mData;
@@ -270,32 +308,62 @@ Integer& Integer::operator-=(const Integer& other)
 
 Integer& Integer::operator*=(const Integer& other)
 {
-    Integer res = mul(other, mSign ^ other.mSign);  
-    delete[] mData;
-    move(res);
+    if (isUndef() || other.isUndef())     fromString("undef");
+    else if (isInf() || other.isInf())
+    {
+        bool sign = mSign ^ other.mSign;
+        fromString("inf");
+        mSign = sign;
+    }
+    else
+    {    
+        Integer res = mul(other, mSign ^ other.mSign);  
+        delete[] mData;
+        move(res);
+    }
+
     return *this;
 }
 
 Integer& Integer::operator/=(const Integer& other)
 {
-    Integer rem;
-    divAssignAndRem(other, rem);
+    if (isUndef() || other.isUndef())   fromString("undef");
+    else if (isInf() && other.isInf())  fromString("undef");
+    else if (other.isInf())             *this = Integer(0);
+    else if (other.isZero()) 
+    {
+        mFlags = MATHSOLVER_INT_UNDEF;
+    }
+    else        
+    {
+        Integer rem;
+        divAssignAndRem(other, rem);
+    }
+
     return *this;
 }
 
 Integer& Integer::operator%=(const Integer& other)
 {
-    Integer quo;
-    Integer rem;
-    divAndRem(other, quo, rem);
-    rem.mSign = (mSign ? !rem.mSign : rem.mSign);
-    delete[] mData;
-    move(rem);
+    if (isUndef() || other.isUndef() || isInf() || other.isInf())
+    {
+        *this = "undef";
+    }
+    else
+    {    
+        Integer quo;
+        Integer rem;
+        divAndRem(other, quo, rem);
+        rem.mSign = (mSign ? !rem.mSign : rem.mSign);
+        delete[] mData;
+        move(rem);
+    }
+
     return *this;
 }
 
 Integer Integer::operator+() const
-{
+{  
     Integer res = *this;
     return res;
 }
@@ -336,6 +404,9 @@ Integer Integer::operator--(int)
 
 Integer Integer::operator>>(int bits) const
 {
+    if (isUndef() || isInf())
+        return Integer(*this);
+
     Integer res = *this;
     res.shrAssign(bits);
     return res;
@@ -343,6 +414,9 @@ Integer Integer::operator>>(int bits) const
 
 Integer Integer::operator<<(int bits) const
 {
+    if (isUndef() || isInf())
+        return Integer(*this);
+
     Integer res = *this;   
     res.shlAssign(bits);
     return res;
@@ -350,19 +424,16 @@ Integer Integer::operator<<(int bits) const
 
 Integer& Integer::operator>>=(int bits)
 {
-    shrAssign(bits);
+    if (!isUndef() && !isInf())
+        shrAssign(bits);  
     return *this;
 }
 
 Integer& Integer::operator<<=(int bits)
 {
-    shlAssign(bits);
+    if (!isUndef() && !isInf())
+        shlAssign(bits);  
     return *this;
-}
-
-Integer::operator bool() const
-{
-    return !(rangeIsEmpty(mData, &mData[mSize]));
 }
 
 std::ostream& operator<<(std::ostream& out, const Integer& integer)
@@ -398,6 +469,19 @@ std::istream& operator>>(std::istream& in, Integer& integer)
     return in;
 }
 
+int Integer::compare(const Integer& other) const
+{
+    if (isUndef() && other.isUndef())                     return 0;                        // (undef, undef)
+    if (isInf() && other.isInf() && mSign == other.mSign) return 0;                        // (+inf, +inf), (-inf, -inf)
+    if (isInf() && other.isInf())                         return ((mSign) ? -1 : 1);       // (+inf, -inf), (-inf, +inf)
+    if (isInf())                                          return ((mSign) ? -1 : 1);       // (+inf, fin), (-inf, fin)
+    if (other.isInf())                                    return ((other.mSign) ? -1 : 1); // (n, +inf), (n, -inf)
+    if (mSign && other.mSign)                             return -(cmpBytes(mData, mSize, other.mData, other.mSize));  
+    if (mSign && !other.mSign)                            return -1;
+    if (!mSign && other.mSign)                            return 1;
+    else                                                  return cmpBytes(mData, mSize, other.mData, other.mSize);
+}
+
 Integer Integer::divRem(const Integer& other, Integer& rem) const
 {
     Integer quo;
@@ -408,7 +492,7 @@ Integer Integer::divRem(const Integer& other, Integer& rem) const
 void Integer::fromString(const std::string& str)
 {
     delete[] mData;
-    fromString(str.c_str());
+    fromStringNoCheck(str);
 }
 
 void Integer::set(uint8_t* arr, size_t len, bool sign)
@@ -417,6 +501,7 @@ void Integer::set(uint8_t* arr, size_t len, bool sign)
     mData = arr;
     mSize = len;
     mSign = sign;
+    mFlags = 0;
 }
 
 int Integer::toInt() const
@@ -436,19 +521,31 @@ int Integer::toInt() const
 
 std::string Integer::toString() const
 {
-    std::string str = "";
-    Integer tmp = *this;
-    Integer base = 10;
-    Integer rem = 0;
-    while (cmpBytes(tmp.mData, tmp.mSize, base.mData, 1) >= 0)
+    if (mFlags & MATHSOLVER_INT_UNDEF)
     {
-        tmp.divAssignAndRem(base, rem);
-        str = (char)((char)rem.mData[0] + '0') + str;
-        memset(rem.mData, 0, rem.mSize);
+        return "undef";
     }
+    else if (mFlags & MATHSOLVER_INT_INF)
+    {
+        return ((mSign) ? "-" : "") + std::string("inf");
+    }
+    else
+    {
+        std::string str;
+        Integer tmp = *this;
+        Integer base = 10;
+        Integer rem = 0;
 
-    str = (char)((char)tmp.mData[0] + '0') + str;
-    return  ((mSign) ? "-" : "") + str;
+        while (cmpBytes(tmp.mData, tmp.mSize, base.mData, 1) >= 0)
+        {
+            tmp.divAssignAndRem(base, rem);
+            str = (char)((char)rem.mData[0] + '0') + str;
+            memset(rem.mData, 0, rem.mSize);
+        }
+
+        str = (char)((char)tmp.mData[0] + '0') + str;
+        return  ((mSign) ? "-" : "") + str;
+    }
 }
 
 // 
@@ -598,29 +695,43 @@ void Integer::divAssignAndRem(const Integer& other, Integer& rem)
     }
 }
 
-void Integer::fromString(const char* str)
+void Integer::fromStringNoCheck(const std::string& str)
 {
-    Integer base = 10;
-    size_t i = 0;
-
-    setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
-    if (str[0] == '\0' || (str[0] == '-' && str[1] == '\0')) // digitless strings
-        return;
-    
-    if (str[0] == '-')
+    if (str == "undef")
     {
-        mSign = true;
-        ++i;
+        setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
+        mFlags = MATHSOLVER_INT_UNDEF;
     }
-
-    while (str[i])
+    else if (str == "inf" || str == "-inf")
     {
-        if (!isdigit(str[i]))
-            return;
+        setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
+        mFlags = MATHSOLVER_INT_INF;
+        mSign = (str[0] == '-');
+    }
+    else
+    {
+        Integer base = 10;
+        size_t i = 0;
 
-        *this *= base;
-        addAssign((int)(str[i] - '0'), mSign);
-        ++i;
+        setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
+        if (str[0] == '\0' || (str[0] == '-' && str[1] == '\0')) // digitless strings
+            return;
+        
+        if (str[0] == '-')
+        {
+            mSign = true;
+            ++i;
+        }
+
+        while (str[i])
+        {
+            if (!isdigit(str[i]))
+                return;
+
+            *this *= base;
+            addAssign((int)(str[i] - '0'), mSign);
+            ++i;
+        }
     }
 }
 
@@ -629,6 +740,7 @@ void Integer::move(Integer& other)
     mData = other.mData;
     mSize = other.mSize;
     mSign = other.mSign;
+    mFlags = other.mFlags;
     other.mData = nullptr;
 }
 
@@ -687,6 +799,7 @@ void Integer::setZero(size_t len)
     mData = new uint8_t[len];
     mSize = len;
     mSign = false;
+    mFlags = 0;
     memset(mData, 0, len);
 }
 

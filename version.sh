@@ -4,7 +4,7 @@
 #   
 #  Commands:
 #
-#  'show'       prints the current version of the repo
+#  'current'       prints the current version of the repo
 #
 #  'increment'     increases the version number by:
 #    'major'       1.0.0 -> 2.0.0
@@ -24,7 +24,7 @@ version=${full_version%-$rev_str*}
 ver_comp=($(echo ${version} | sed -e 's/\./\n/g' | sed -e '/^[0-9]*$/!d'))
 new_version=""
 
-if [ $1 == "show" ]; then
+if [ $1 == "current" ]; then
     echo $full_version
     exit 0
 elif [[ $1 == "increment" ]]; then

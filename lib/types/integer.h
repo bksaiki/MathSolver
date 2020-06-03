@@ -9,6 +9,9 @@
 #define MATHSOLVER_DEFAULT_INT_WIDTH    4
 #define MATHSOLVER_MAX_INT_WIDTH        65536
 
+#define MATHSOLVER_INT_UNDEF    0x01
+#define MATHSOLVER_INT_INF      0x02
+
 namespace MathSolver
 {
 
@@ -34,9 +37,6 @@ public:
     // Constructs an Integer from a 32-bit signed integer.
     Integer(signed int x);
 
-    // Constructs an Integer from a C-style string.
-    Integer(const char* str);
-
     // Constructs an Integer from a std::string.
     Integer(const std::string& str);
 
@@ -49,29 +49,26 @@ public:
     // Move assignment
     Integer& operator=(Integer&& other);
 
-    // Assignement from C-style string.
-    Integer& operator=(const char* str);
-
     // Assignement from std::string.
     Integer& operator=(const std::string& str);
 
     // Equality operator
-    bool operator==(const Integer& other) const;
+    inline bool operator==(const Integer& other) const { return !isUndef() && !other.isUndef() && compare(other) == 0; }
 
     // Inequality operator
-    bool operator!=(const Integer& other) const;
+    inline bool operator!=(const Integer& other) const { return !isUndef() && !other.isUndef() && compare(other) != 0; }
 
     // Greater than operator
-    bool operator>(const Integer& other) const;
+    inline bool operator>(const Integer& other) const { return !isUndef() && !other.isUndef() && compare(other) > 0; }
 
     // Less than operator
-    bool operator<(const Integer& other) const;
+    inline bool operator<(const Integer& other) const { return !isUndef() && !other.isUndef() && compare(other) < 0; }
 
     // Greater than or equal operator
-    bool operator>=(const Integer& other) const;
+    inline bool operator>=(const Integer& other) const { return !isUndef() && !other.isUndef() && compare(other) >= 0; }
 
     // Less than or equal operator
-    bool operator<=(const Integer& other) const;
+    inline bool operator<=(const Integer& other) const { return !isUndef() && !other.isUndef() && compare(other) <= 0; }
 
     // Addition operator
     Integer operator+(const Integer& other) const;
@@ -148,13 +145,17 @@ public:
     */
 
     // Returns true if the Integer is non-zero.
-    operator bool() const;
+    inline operator bool() const { return !isZero(); }
 
     // Stream extraction operator.
     friend std::ostream& operator<<(std::ostream& out, const Integer& integer);
 
     // Stream insertion operator.
     friend std::istream& operator>>(std::istream& in, Integer& integer);
+
+    // Compares this Integer and another. Returns a positive value if this Integer is larger. Returns a smaller value if
+    // the other Integer is larger. Returns zero if they are equal. Comparing 'undef' and 'undef' returns 0.
+    int compare(const Integer& other) const;
 
     // Returns a pointer to the byte array.
     inline uint8_t* data() const { return mData; }
@@ -169,8 +170,14 @@ public:
     // Returns true if this Integer is even.
     inline bool isEven() const { return !(mData[0] & 0x1); }
 
+    // Returns true if this Integer is inf
+    inline bool isInf() const { return (mFlags & MATHSOLVER_INT_INF); }
+
     // Returns true if this Integer is odd.
     inline bool isOdd() const { return (mData[0] & 0x1); }
+
+    // Returns true if this Integer is inf
+    inline bool isUndef() const { return (mFlags & MATHSOLVER_INT_UNDEF); }
 
     // Returns true if this Integer is zero
     inline bool isZero() const { return rangeIsEmpty(mData, &mData[mSize]); }
@@ -211,8 +218,8 @@ private:
     // the positive remainder at rem. The size of the remainder is this size.
     void divAssignAndRem(const Integer& other, Integer& rem);
 
-    // Helper function. Clears the data and sets this Integer based on a C-style string. 
-    void fromString(const char* str);
+    // Helper function. Sets this Integer from a std::string. Assumes the underlying array does not exist.
+    void fromStringNoCheck(const std::string& str);
 
     // Helper function. Moves the contents of one Integer to this one. The argument is unusable
     // after this function is called. Does not free the existing byte array.
@@ -249,6 +256,7 @@ private:
     uint8_t*    mData;
     size_t      mSize;
     bool        mSign;
+    uint8_t     mFlags;
 };
 
 

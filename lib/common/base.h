@@ -3,7 +3,7 @@
 
 #include "error-manager.h"
 
-#define MATHSOLVER_VERSION_STR "0.1.5-rev3"
+#define MATHSOLVER_VERSION_STR "0.1.5-rev5"
 
 #ifndef MATHSOLVER_RELEASE_BUILD
 #define MATHSOLVER_DEBUG         

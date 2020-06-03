@@ -67,15 +67,6 @@ int main()
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
 	
-	tests.reset("Constructor (C-string)");
-	for (size_t i = 0; i < TEST_COUNT; ++i)
-	{
-		Integer tmp(strs[i].c_str());
-		tests.runTest(tmp.toString(), strs[i]);
-	}
-	std::cout << tests.result() << std::endl;
-	status &= tests.status();
-	
 	tests.reset("Assignment (int)");
 	for (size_t i = 0; i < TEST_COUNT; ++i)
 	{
@@ -89,15 +80,6 @@ int main()
 	for (size_t i = 0; i < TEST_COUNT; ++i)
 	{
 		cints[i] = strs[i];
-		tests.runTest(cints[i].toString(), strs[i]);
-	}
-	std::cout << tests.result() << std::endl;
-	status &= tests.status();
-	
-	tests.reset("Assignment (C-string)");
-	for (size_t i = 0; i < TEST_COUNT; ++i)
-	{
-		cints[i] = strs[i].c_str();
 		tests.runTest(cints[i].toString(), strs[i]);
 	}
 	std::cout << tests.result() << std::endl;
@@ -880,6 +862,241 @@ int main()
 	}
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
-	
+
+	Integer inf("inf");
+	Integer ninf("-inf");
+	Integer u("undef");
+	Integer n("1");
+
+	{
+		tests.reset("inf/undef (construct, compare)");
+		
+		tests.runTest(u.toString(), "undef");
+		tests.runTest(inf.toString(), "inf");
+		tests.runTest(ninf.toString(), "-inf");
+
+		tests.runTest(bool_to_string(u == u), "false");
+		tests.runTest(bool_to_string(inf == inf), "true");
+		tests.runTest(bool_to_string(ninf == ninf), "true");
+
+		tests.runTest(bool_to_string(u > u), "false");
+		tests.runTest(bool_to_string(inf > ninf), "true");
+		tests.runTest(bool_to_string(ninf > inf), "false");
+
+		tests.runTest(bool_to_string(u < u), "false");
+		tests.runTest(bool_to_string(inf < ninf), "false");
+		tests.runTest(bool_to_string(ninf < inf), "true");
+
+		tests.runTest(bool_to_string(u >= u), "false");
+		tests.runTest(bool_to_string(inf >= inf), "true");
+		tests.runTest(bool_to_string(ninf >= ninf), "true");
+
+		tests.runTest(bool_to_string(u <= u), "false");
+		tests.runTest(bool_to_string(inf <= inf), "true");
+		tests.runTest(bool_to_string(ninf <= ninf), "true");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef +");
+
+		tests.runTest((u + u).toString(), "undef");
+		tests.runTest((n + u).toString(), "undef");
+		tests.runTest((inf + inf).toString(), "inf");
+		tests.runTest((inf + ninf).toString(), "undef");
+		tests.runTest((inf + n).toString(), "inf");
+		tests.runTest((n + ninf).toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef -");
+
+		tests.runTest((u - u).toString(), "undef");
+		tests.runTest((n - u).toString(), "undef");
+		tests.runTest((inf - inf).toString(), "undef");
+		tests.runTest((inf - ninf).toString(), "inf");
+		tests.runTest((inf - n).toString(), "inf");
+		tests.runTest((n - ninf).toString(), "inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef *");
+
+		tests.runTest((u * u).toString(), "undef");
+		tests.runTest((n * u).toString(), "undef");
+		tests.runTest((inf * inf).toString(), "inf");
+		tests.runTest((inf * ninf).toString(), "-inf");
+		tests.runTest((inf * n).toString(), "inf");
+		tests.runTest((n * ninf).toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef /");
+
+		tests.runTest((u / u).toString(), "undef");
+		tests.runTest((n / u).toString(), "undef");
+		tests.runTest((inf / inf).toString(), "undef");
+		tests.runTest((inf / ninf).toString(), "undef");
+		tests.runTest((inf / n).toString(), "inf");
+		tests.runTest((n / ninf).toString(), "0");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef %");
+
+		tests.runTest((u % u).toString(), "undef");
+		tests.runTest((n % u).toString(), "undef");
+		tests.runTest((inf % inf).toString(), "undef");
+		tests.runTest((inf % ninf).toString(), "undef");
+		tests.runTest((inf % n).toString(), "undef");
+		tests.runTest((n % ninf).toString(), "undef");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef +=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 += u;
+		r2 += u;
+		r3 += inf;
+		r4 += ninf;
+		r5 += n;
+		r6 += ninf;
+
+		tests.runTest(r1.toString(), "undef");
+		tests.runTest(r2.toString(), "undef");
+		tests.runTest(r3.toString(), "inf");
+		tests.runTest(r4.toString(), "undef");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef -=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 -= u;
+		r2 -= u;
+		r3 -= inf;
+		r4 -= ninf;
+		r5 -= n;
+		r6 -= ninf;
+
+		tests.runTest(r1.toString(), "undef");
+		tests.runTest(r2.toString(), "undef");
+		tests.runTest(r3.toString(), "undef");
+		tests.runTest(r4.toString(), "inf");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef *=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 *= u;
+		r2 *= u;
+		r3 *= inf;
+		r4 *= ninf;
+		r5 *= n;
+		r6 *= ninf;
+
+		tests.runTest(r1.toString(), "undef");
+		tests.runTest(r2.toString(), "undef");
+		tests.runTest(r3.toString(), "inf");
+		tests.runTest(r4.toString(), "-inf");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef *=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 /= u;
+		r2 /= u;
+		r3 /= inf;
+		r4 /= ninf;
+		r5 /= n;
+		r6 /= ninf;
+
+		tests.runTest(r1.toString(), "undef");
+		tests.runTest(r2.toString(), "undef");
+		tests.runTest(r3.toString(), "undef");
+		tests.runTest(r4.toString(), "undef");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "0");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/undef %=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 %= u;
+		r2 %= u;
+		r3 %= inf;
+		r4 %= ninf;
+		r5 %= n;
+		r6 %= ninf;
+
+		tests.runTest(r1.toString(), "undef");
+		tests.runTest(r2.toString(), "undef");
+		tests.runTest(r3.toString(), "undef");
+		tests.runTest(r4.toString(), "undef");
+		tests.runTest(r5.toString(), "undef");
+		tests.runTest(r6.toString(), "undef");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
 	return (int)(!status);
 }
