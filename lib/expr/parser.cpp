@@ -149,7 +149,8 @@ void expandTokens(std::list<ExprNode*>& tokens)
         {
             ((OpNode*)*it)->setName("-*");
         }
-        else if (next != tokens.end() && (*it)->isOperator() && (*next)->isOperator() && ((OpNode*)*next)->name() == "-")
+        else if (next != tokens.end() && ((*it)->isOperator() || ((*it)->isSyntax() && ((SyntaxNode*)*it)->name() == "(")) &&
+                (*next)->isOperator() && ((OpNode*)*next)->name() == "-")
         {
             ((OpNode*)*next)->setName("-*");
         }

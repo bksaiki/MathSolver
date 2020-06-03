@@ -4,11 +4,12 @@
 #include <mpfr.h>
 #include "../common/base.h"
 
-#define MATHSOLVER_FLOAT_DEFAULT_PREC      128
+#define MATHSOLVER_FLOAT_DEFAULT_PREC      256
 #define MATHSOLVER_FLOAT_DISPLAY_PREC      64
 #define MATHSOLVER_FLOAT_DISPLAY_DIGITS    20
 #define MATHSOLVER_SCI_NOTATION_POS_LIM    10
 #define MATHSOLVER_SCI_NOTATION_NEG_LIM    -5
+#define MATHSOLVER_FLOAT_DEFAULT_RND_MODE  MPFR_RNDN
 
 namespace MathSolver
 {
@@ -32,7 +33,7 @@ public:
 
     // Establishing what is "equal" is difficult. Please use comparators with caution
     inline bool operator==(const Float& other) const { return mpfr_cmp(mData, other.mData) == 0; } // Equality
-    inline bool operator!=(const Float& other) const { return mpfr_cmp(mData, other.mData) == 0; } // Inequality
+    inline bool operator!=(const Float& other) const { return mpfr_cmp(mData, other.mData) != 0; } // Inequality
     inline bool operator>=(const Float& other) const { return mpfr_cmp(mData, other.mData) >= 0; } // Greater than or equal
     inline bool operator<=(const Float& other) const { return mpfr_cmp(mData, other.mData) <= 0; } // Less than or equal
     inline bool operator>(const Float& other) const { return mpfr_cmp(mData, other.mData) > 0; } // Greater than

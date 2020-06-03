@@ -14,7 +14,7 @@ Float::Float()
 Float::Float(const Float& other)
 {
     mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
-    mRoundDir = mpfr_set(mData, other.mData, MPFR_RNDN);
+    mRoundDir = mpfr_set(mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
 }
 
 Float::Float(Float&& other)
@@ -48,7 +48,7 @@ Float::~Float()
 Float& Float::operator=(const Float& other)
 {
     mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
-    mRoundDir = mpfr_set(mData, other.mData, MPFR_RNDN);
+    mRoundDir = mpfr_set(mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return *this;
 }
 
@@ -81,52 +81,52 @@ Float& Float::operator=(const std::string& data)
 Float Float::operator+(const Float& other) const
 {
     Float res;
-    res.mRoundDir = mpfr_add(res.mData, mData, other.mData, MPFR_RNDN);
+    res.mRoundDir = mpfr_add(res.mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return res;
 }
 
 Float Float::operator-(const Float& other) const 
 {
     Float res;
-    res.mRoundDir = mpfr_sub(res.mData, mData, other.mData, MPFR_RNDN);
+    res.mRoundDir = mpfr_sub(res.mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return res;
 }
 
 Float Float::operator*(const Float& other) const
 {
     Float res;
-    res.mRoundDir = mpfr_mul(res.mData, mData, other.mData, MPFR_RNDN);
+    res.mRoundDir = mpfr_mul(res.mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return res;
 }
 
 Float Float::operator/(const Float& other) const
 {
     Float res;
-    res.mRoundDir = mpfr_div(res.mData, mData, other.mData, MPFR_RNDN);
+    res.mRoundDir = mpfr_div(res.mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return res;
 }
 
 Float& Float::operator+=(const Float& other)
 {
-    mRoundDir = mpfr_add(mData, mData, other.mData, MPFR_RNDN);
+    mRoundDir = mpfr_add(mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return *this;
 }
 
 Float& Float::operator-=(const Float& other)
 {
-    mRoundDir = mpfr_sub(mData, mData, other.mData, MPFR_RNDN);
+    mRoundDir = mpfr_sub(mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return *this;
 }
 
 Float& Float::operator*=(const Float& other)
 {
-    mRoundDir = mpfr_mul(mData, mData, other.mData, MPFR_RNDN);
+    mRoundDir = mpfr_mul(mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return *this;
 }
 
 Float& Float::operator/=(const Float& other)
 {
-    mRoundDir = mpfr_div(mData, mData, other.mData, MPFR_RNDN);
+    mRoundDir = mpfr_div(mData, mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     return *this;
 }
 
@@ -160,7 +160,7 @@ std::string Float::toString() const
 std::string Float::toExactString() const
 {
     mpfr_exp_t e;
-    char* c = mpfr_get_str(NULL, &e, 10, 0, mData, MPFR_RNDN);
+    char* c = mpfr_get_str(NULL, &e, 10, 0, mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
 
     std::string s(c);
     mpfr_free_str(c);
@@ -197,7 +197,7 @@ std::string Float::toExactString() const
  void Float::fromString(const char* str)
  {
     char* end;
-    int t = mpfr_strtofr(mData, str, &end, 0, MPFR_RNDN);
+    int t = mpfr_strtofr(mData, str, &end, 0, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
     if (end[0] != '\0')  gErrorManager.log("Failed conversion from \"" + std::string(str) + "\" to Float", ErrorManager::WARNING);
     if (t != 0)          gErrorManager.log("Rounding occurred when converting \"" + std::string(str) + "\" to a Float", ErrorManager::MESSAGE);
  }

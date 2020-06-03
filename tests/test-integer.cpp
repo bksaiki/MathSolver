@@ -865,13 +865,13 @@ int main()
 
 	Integer inf("inf");
 	Integer ninf("-inf");
-	Integer u("undef");
+	Integer u("nan");
 	Integer n("1");
 
 	{
-		tests.reset("inf/undef (construct, compare)");
+		tests.reset("inf/nan (construct, compare)");
 		
-		tests.runTest(u.toString(), "undef");
+		tests.runTest(u.toString(), "nan");
 		tests.runTest(inf.toString(), "inf");
 		tests.runTest(ninf.toString(), "-inf");
 
@@ -899,12 +899,12 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef +");
+		tests.reset("inf/nan +");
 
-		tests.runTest((u + u).toString(), "undef");
-		tests.runTest((n + u).toString(), "undef");
+		tests.runTest((u + u).toString(), "nan");
+		tests.runTest((n + u).toString(), "nan");
 		tests.runTest((inf + inf).toString(), "inf");
-		tests.runTest((inf + ninf).toString(), "undef");
+		tests.runTest((inf + ninf).toString(), "nan");
 		tests.runTest((inf + n).toString(), "inf");
 		tests.runTest((n + ninf).toString(), "-inf");
 	}
@@ -912,11 +912,11 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef -");
+		tests.reset("inf/nan -");
 
-		tests.runTest((u - u).toString(), "undef");
-		tests.runTest((n - u).toString(), "undef");
-		tests.runTest((inf - inf).toString(), "undef");
+		tests.runTest((u - u).toString(), "nan");
+		tests.runTest((n - u).toString(), "nan");
+		tests.runTest((inf - inf).toString(), "nan");
 		tests.runTest((inf - ninf).toString(), "inf");
 		tests.runTest((inf - n).toString(), "inf");
 		tests.runTest((n - ninf).toString(), "inf");
@@ -925,10 +925,10 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef *");
+		tests.reset("inf/nan *");
 
-		tests.runTest((u * u).toString(), "undef");
-		tests.runTest((n * u).toString(), "undef");
+		tests.runTest((u * u).toString(), "nan");
+		tests.runTest((n * u).toString(), "nan");
 		tests.runTest((inf * inf).toString(), "inf");
 		tests.runTest((inf * ninf).toString(), "-inf");
 		tests.runTest((inf * n).toString(), "inf");
@@ -938,12 +938,12 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef /");
+		tests.reset("inf/nan /");
 
-		tests.runTest((u / u).toString(), "undef");
-		tests.runTest((n / u).toString(), "undef");
-		tests.runTest((inf / inf).toString(), "undef");
-		tests.runTest((inf / ninf).toString(), "undef");
+		tests.runTest((u / u).toString(), "nan");
+		tests.runTest((n / u).toString(), "nan");
+		tests.runTest((inf / inf).toString(), "nan");
+		tests.runTest((inf / ninf).toString(), "nan");
 		tests.runTest((inf / n).toString(), "inf");
 		tests.runTest((n / ninf).toString(), "0");
 	}
@@ -951,20 +951,20 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef %");
+		tests.reset("inf/nan %");
 
-		tests.runTest((u % u).toString(), "undef");
-		tests.runTest((n % u).toString(), "undef");
-		tests.runTest((inf % inf).toString(), "undef");
-		tests.runTest((inf % ninf).toString(), "undef");
-		tests.runTest((inf % n).toString(), "undef");
-		tests.runTest((n % ninf).toString(), "undef");
+		tests.runTest((u % u).toString(), "nan");
+		tests.runTest((n % u).toString(), "nan");
+		tests.runTest((inf % inf).toString(), "nan");
+		tests.runTest((inf % ninf).toString(), "nan");
+		tests.runTest((inf % n).toString(), "nan");
+		tests.runTest((n % ninf).toString(), "nan");
 	}
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef +=");
+		tests.reset("inf/nan +=");
 
 		Integer r1 = u;
 		Integer r2 = n;
@@ -980,10 +980,10 @@ int main()
 		r5 += n;
 		r6 += ninf;
 
-		tests.runTest(r1.toString(), "undef");
-		tests.runTest(r2.toString(), "undef");
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
 		tests.runTest(r3.toString(), "inf");
-		tests.runTest(r4.toString(), "undef");
+		tests.runTest(r4.toString(), "nan");
 		tests.runTest(r5.toString(), "inf");
 		tests.runTest(r6.toString(), "-inf");
 	}
@@ -991,7 +991,7 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef -=");
+		tests.reset("inf/nan -=");
 
 		Integer r1 = u;
 		Integer r2 = n;
@@ -1007,9 +1007,9 @@ int main()
 		r5 -= n;
 		r6 -= ninf;
 
-		tests.runTest(r1.toString(), "undef");
-		tests.runTest(r2.toString(), "undef");
-		tests.runTest(r3.toString(), "undef");
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "nan");
 		tests.runTest(r4.toString(), "inf");
 		tests.runTest(r5.toString(), "inf");
 		tests.runTest(r6.toString(), "inf");
@@ -1018,7 +1018,7 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef *=");
+		tests.reset("inf/nan *=");
 
 		Integer r1 = u;
 		Integer r2 = n;
@@ -1034,8 +1034,8 @@ int main()
 		r5 *= n;
 		r6 *= ninf;
 
-		tests.runTest(r1.toString(), "undef");
-		tests.runTest(r2.toString(), "undef");
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
 		tests.runTest(r3.toString(), "inf");
 		tests.runTest(r4.toString(), "-inf");
 		tests.runTest(r5.toString(), "inf");
@@ -1045,7 +1045,7 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef *=");
+		tests.reset("inf/nan *=");
 
 		Integer r1 = u;
 		Integer r2 = n;
@@ -1061,10 +1061,10 @@ int main()
 		r5 /= n;
 		r6 /= ninf;
 
-		tests.runTest(r1.toString(), "undef");
-		tests.runTest(r2.toString(), "undef");
-		tests.runTest(r3.toString(), "undef");
-		tests.runTest(r4.toString(), "undef");
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "nan");
+		tests.runTest(r4.toString(), "nan");
 		tests.runTest(r5.toString(), "inf");
 		tests.runTest(r6.toString(), "0");
 	}
@@ -1072,7 +1072,7 @@ int main()
 	status &= tests.status();
 
 	{
-		tests.reset("inf/undef %=");
+		tests.reset("inf/nan %=");
 
 		Integer r1 = u;
 		Integer r2 = n;
@@ -1088,12 +1088,12 @@ int main()
 		r5 %= n;
 		r6 %= ninf;
 
-		tests.runTest(r1.toString(), "undef");
-		tests.runTest(r2.toString(), "undef");
-		tests.runTest(r3.toString(), "undef");
-		tests.runTest(r4.toString(), "undef");
-		tests.runTest(r5.toString(), "undef");
-		tests.runTest(r6.toString(), "undef");
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "nan");
+		tests.runTest(r4.toString(), "nan");
+		tests.runTest(r5.toString(), "nan");
+		tests.runTest(r6.toString(), "nan");
 	}
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();

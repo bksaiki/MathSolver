@@ -57,6 +57,9 @@ test-float: build/test-float
 test-integermath: build/test-integermath
 	$(TEST_DIR)/test.sh build/test-integermath
 
+test-floatmath: build/test-floatmath
+	$(TEST_DIR)/test.sh build/test-floatmath
+
 test-parser: build/test-parser
 	$(TEST_DIR)/test.sh build/test-parser
 

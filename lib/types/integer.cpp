@@ -108,13 +108,13 @@ Integer Integer::operator+(const Integer& other) const
 {
     if (isUndef() || other.isUndef())
     {
-        return Integer("undef");
+        return Integer("nan");
     }
     else if (isInf() || other.isInf())
     {
         if (isInf() && other.isInf())
         {
-            if (mSign != other.mSign) return Integer("undef"); // +inf + -inf = ?
+            if (mSign != other.mSign) return Integer("nan"); // +inf + -inf = ?
             else                      return Integer(*this);
         }       
         else if (isInf())
@@ -148,12 +148,12 @@ Integer Integer::operator+(const Integer& other) const
 
 Integer Integer::operator-(const Integer& other) const
 {
-    if (isUndef() || other.isUndef())   return Integer("undef");
+    if (isUndef() || other.isUndef())   return Integer("nan");
     if (isInf() || other.isInf())
     {
         if (isInf() && other.isInf())
         {
-            if (mSign == other.mSign) return Integer("undef"); // +inf + -inf = ?
+            if (mSign == other.mSign) return Integer("nan"); // +inf + -inf = ?
             else                      return Integer(*this);
         }       
         else if (isInf())
@@ -188,7 +188,7 @@ Integer Integer::operator-(const Integer& other) const
 
 Integer Integer::operator*(const Integer& other) const
 {
-    if (isUndef() || other.isUndef())     return Integer("undef");
+    if (isUndef() || other.isUndef())     return Integer("nan");
     if (isInf() || other.isInf())
     {
         Integer inf("inf");
@@ -204,14 +204,14 @@ Integer Integer::operator/(const Integer& other) const
 {
     Integer quo;
 
-    if (isUndef() || other.isUndef())   return Integer("undef");
-    if (isInf() && other.isInf())       return Integer("undef");
+    if (isUndef() || other.isUndef())   return Integer("nan");
+    if (isInf() && other.isInf())       return Integer("nan");
     if (isInf())                        return Integer(*this); 
     if (other.isInf())                  return Integer(); 
 
     if (other.isZero())  
     {
-        quo.mFlags = MATHSOLVER_INT_UNDEF;
+        quo.mFlags = MATHSOLVER_INT_NAN;
         return quo;
     }   
              
@@ -223,14 +223,14 @@ Integer Integer::operator/(const Integer& other) const
 Integer Integer::operator%(const Integer& other) const
 {
     if (isUndef() || other.isUndef() || isInf() || other.isInf())
-        return Integer("undef");
+        return Integer("nan");
 
     Integer quo;
     Integer rem;
 
     if (other.isZero()) 
     {
-        rem.mFlags = MATHSOLVER_INT_UNDEF;
+        rem.mFlags = MATHSOLVER_INT_NAN;
     }
     else                
     {
@@ -245,11 +245,11 @@ Integer& Integer::operator+=(const Integer& other)
 {
     if (isUndef() || other.isUndef())
     {
-        fromString("undef");
+        fromString("nan");
     }
     else if (isInf() || other.isInf())
     {
-        if (isInf() && other.isInf() && mSign != other.mSign)   fromString("undef"); // else, unchanged      
+        if (isInf() && other.isInf() && mSign != other.mSign)   fromString("nan"); // else, unchanged      
         else if (other.isInf())                                 *this = other;
     }
     else if(mSign == other.mSign)
@@ -278,11 +278,11 @@ Integer& Integer::operator-=(const Integer& other)
 {
     if (isUndef() || other.isUndef())
     {
-        fromString("undef");
+        fromString("nan");
     }
     else if (isInf() || other.isInf())
     {
-        if (isInf() && other.isInf() && mSign == other.mSign)   fromString("undef"); // else, unchanged      
+        if (isInf() && other.isInf() && mSign == other.mSign)   fromString("nan"); // else, unchanged      
         else if (other.isInf())                                 *this = -other;
     }
     else if(mSign == other.mSign)
@@ -308,7 +308,7 @@ Integer& Integer::operator-=(const Integer& other)
 
 Integer& Integer::operator*=(const Integer& other)
 {
-    if (isUndef() || other.isUndef())     fromString("undef");
+    if (isUndef() || other.isUndef())     fromString("nan");
     else if (isInf() || other.isInf())
     {
         bool sign = mSign ^ other.mSign;
@@ -327,12 +327,12 @@ Integer& Integer::operator*=(const Integer& other)
 
 Integer& Integer::operator/=(const Integer& other)
 {
-    if (isUndef() || other.isUndef())   fromString("undef");
-    else if (isInf() && other.isInf())  fromString("undef");
+    if (isUndef() || other.isUndef())   fromString("nan");
+    else if (isInf() && other.isInf())  fromString("nan");
     else if (other.isInf())             *this = Integer(0);
     else if (other.isZero()) 
     {
-        mFlags = MATHSOLVER_INT_UNDEF;
+        mFlags = MATHSOLVER_INT_NAN;
     }
     else        
     {
@@ -347,7 +347,7 @@ Integer& Integer::operator%=(const Integer& other)
 {
     if (isUndef() || other.isUndef() || isInf() || other.isInf())
     {
-        *this = "undef";
+        *this = "nan";
     }
     else
     {    
@@ -521,9 +521,9 @@ int Integer::toInt() const
 
 std::string Integer::toString() const
 {
-    if (mFlags & MATHSOLVER_INT_UNDEF)
+    if (mFlags & MATHSOLVER_INT_NAN)
     {
-        return "undef";
+        return "nan";
     }
     else if (mFlags & MATHSOLVER_INT_INF)
     {
@@ -697,10 +697,10 @@ void Integer::divAssignAndRem(const Integer& other, Integer& rem)
 
 void Integer::fromStringNoCheck(const std::string& str)
 {
-    if (str == "undef")
+    if (str == "nan")
     {
         setZero(MATHSOLVER_DEFAULT_INT_WIDTH);
-        mFlags = MATHSOLVER_INT_UNDEF;
+        mFlags = MATHSOLVER_INT_NAN;
     }
     else if (str == "inf" || str == "-inf")
     {

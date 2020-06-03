@@ -9,8 +9,8 @@
 #define MATHSOLVER_DEFAULT_INT_WIDTH    4
 #define MATHSOLVER_MAX_INT_WIDTH        65536
 
-#define MATHSOLVER_INT_UNDEF    0x01
-#define MATHSOLVER_INT_INF      0x02
+#define MATHSOLVER_INT_NAN    0x01
+#define MATHSOLVER_INT_INF    0x02
 
 namespace MathSolver
 {
@@ -177,7 +177,7 @@ public:
     inline bool isOdd() const { return (mData[0] & 0x1); }
 
     // Returns true if this Integer is inf
-    inline bool isUndef() const { return (mFlags & MATHSOLVER_INT_UNDEF); }
+    inline bool isUndef() const { return (mFlags & MATHSOLVER_INT_NAN); }
 
     // Returns true if this Integer is zero
     inline bool isZero() const { return rangeIsEmpty(mData, &mData[mSize]); }

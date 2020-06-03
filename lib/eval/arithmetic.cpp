@@ -158,6 +158,7 @@ ExprNode* numericSub(ExprNode* op)
             ((IntNode*)res)->value() -= ((IntNode*)*e)->value();
     }
     
+    res->setParent(op->parent());
     freeExpression(op);
     return res;
 }
@@ -184,6 +185,7 @@ ExprNode* numericMul(ExprNode* op)
             ((IntNode*)res)->value() *= ((IntNode*)*e)->value();
     }
 
+    res->setParent(op->parent());
     freeExpression(op);
     return res;
 }

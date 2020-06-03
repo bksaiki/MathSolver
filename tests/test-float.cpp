@@ -1,8 +1,14 @@
 #include <iostream>
+#include <string>
 #include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
 
 using namespace MathSolver;
+
+std::string bool_to_string(bool x)
+{
+	return std::string((x ? "true" : "false"));
+}
 
 int main()
 {
@@ -165,6 +171,82 @@ int main()
         TestModule tests("- (unary)", verbosity);
         tests.runTest((-f1).toString(), "-1");
         tests.runTest((-f2).toString(), "1"); 
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
+        Float f1 = "1.0";
+        Float f2 = "-1.0";
+
+        TestModule tests("==", verbosity);
+        tests.runTest(bool_to_string(f1 == f1), "true");
+        tests.runTest(bool_to_string(f1 == f2), "false");
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
+        Float f1 = "1.0";
+        Float f2 = "-1.0";
+
+        TestModule tests("!=", verbosity);
+        tests.runTest(bool_to_string(f1 != f1), "false");
+        tests.runTest(bool_to_string(f1 != f2), "true");
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
+        Float f1 = "1.0";
+        Float f2 = "-1.0";
+
+        TestModule tests(">", verbosity);
+        tests.runTest(bool_to_string(f1 > f2), "true");
+        tests.runTest(bool_to_string(f1 > f1), "false");
+        tests.runTest(bool_to_string(f2 > f1), "false");
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
+        Float f1 = "1.0";
+        Float f2 = "-1.0";
+
+        TestModule tests("<", verbosity);
+        tests.runTest(bool_to_string(f1 < f2), "false");
+        tests.runTest(bool_to_string(f1 < f1), "false");
+        tests.runTest(bool_to_string(f2 < f1), "true");
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
+        Float f1 = "1.0";
+        Float f2 = "-1.0";
+
+        TestModule tests(">=", verbosity);
+        tests.runTest(bool_to_string(f1 >= f2), "true");
+        tests.runTest(bool_to_string(f1 >= f1), "true");
+        tests.runTest(bool_to_string(f2 >= f1), "false");
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
+        Float f1 = "1.0";
+        Float f2 = "-1.0";
+
+        TestModule tests("<=", verbosity);
+        tests.runTest(bool_to_string(f1 <= f2), "false");
+        tests.runTest(bool_to_string(f1 <= f1), "true");
+        tests.runTest(bool_to_string(f2 <= f1), "true");
 
         std::cout << tests.result() << std::endl;
         status &= tests.status();
