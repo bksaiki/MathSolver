@@ -317,8 +317,9 @@ class FloatNode : public ExprNode
 {
 public:
 
-    // Default constructor 
-    FloatNode(const Float& data = "0.0", ExprNode* parent = nullptr);
+    // Constructors
+    FloatNode(const Float& data = Float("0"), ExprNode* parent = nullptr);
+    FloatNode(Float&& data, ExprNode* parent = nullptr);
 
     // Destructor
     ~FloatNode() {}
@@ -397,11 +398,13 @@ ExprNode* moveNode(ExprNode* dest, ExprNode* src);
 
 // Replaces dest from the parent's list of children with src. Assumes dest is an invalid
 // pointer that needs updating.
-std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos);
+std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos, bool remove = false);
 
 // Removes this expression from the parent's list of children. Assumes another pointer is tracking this node,
 // else data will be lost.
 void releaseChild(ExprNode* node);
+
+
 
 }
 

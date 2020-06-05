@@ -329,5 +329,6 @@ int main()
 		status &= tests.status();
     }
 
+    mpfr_free_cache();
     return (bool)(!status);
 }

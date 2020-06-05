@@ -1,8 +1,8 @@
 #ifndef _MATHSOLVER_FLOAT_H_
 #define _MATHSOLVER_FLOAT_H_
 
-#include <mpfr.h>
 #include "../common/base.h"
+#include <mpfr.h>
 
 #define MATHSOLVER_FLOAT_DEFAULT_PREC      256
 #define MATHSOLVER_FLOAT_DISPLAY_PREC      64
@@ -23,12 +23,10 @@ public:
     Float(const char* data);            // Constructor from C string
     Float(const std::string& data);     // Constructor from std::string
     Float(const Float& other);          // Copy constructor
-    Float(Float&& other);               // Move contructor
     ~Float();                           // Destructor
 
     Float& operator=(const Float& other);       // Copy assignment
-    Float& operator=(Float&& other);            // Move assignment
-    Float& operator=(const char* data);  // Assignment from c string
+    Float& operator=(const char* data);         // Assignment from c string
     Float& operator=(const std::string& data);  // Assignment from std::string
 
     // Establishing what is "equal" is difficult. Please use comparators with caution
@@ -79,8 +77,8 @@ private:
     void fromString(const char* str); 
 
 private:
-    mpfr_t mData;
-    int    mRoundDir;
+    mpfr_t  mData;
+    int     mRoundDir;
 };
 
 }

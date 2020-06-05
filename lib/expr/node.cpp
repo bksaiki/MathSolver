@@ -63,6 +63,13 @@ FloatNode::FloatNode(const Float& data, ExprNode* parent)
     mPrec = 0;
 }
 
+FloatNode::FloatNode(Float&& data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+
 const char* OPERATOR_CHARS = "+-*/%^!=><|";
 
 const size_t PREDEF_FUNC_COUNT = 5;
@@ -158,12 +165,14 @@ ExprNode* moveNode(ExprNode* dest, ExprNode* src)
     return src;
 }
 
-std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos)
+std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos, bool remove)
 {
-    if (parent != nullptr)
+    if (parent != nullptr && src != *pos)
     {       
-        auto it = parent->children().insert(pos, src);
+        if (remove) delete *pos;
+        auto it = parent->children().insert(pos, src);      
         parent->children().erase(pos);
+        src->setParent(parent);
         return it;
     }
 

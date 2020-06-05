@@ -117,15 +117,68 @@ ExprNode* numericAdd(ExprNode* op)
     ExprNode* res;
     if (std::any_of(op->children().begin(), op->children().end(), [](ExprNode* x) { return x->type() == ExprNode::FLOAT; }))
     {
+        for (auto it = op->children().begin(); it != op->children().end(); ++it)
+        {
+            if ((*it)->type() == ExprNode::INTEGER)
+                it = replaceChild(op, new FloatNode(((IntNode*)*it)->value().toString()), it, true); // TODO: naive conversion
+        }
+
+        auto it = op->children().begin();
+        while (it != op->children().end())
+        {
+            auto it2 = std::next(it);
+            bool match = false;
+            while (it2 != op->children().end())
+            {
+                if (((FloatNode*)*it)->value() == -((FloatNode*)*it2)->value())
+                {
+                    delete *it;
+                    delete *it2;
+                    op->children().erase(it2);
+                    it = op->children().erase(it);
+                    match = true;
+                    break;
+                }
+                else
+                {
+                    ++it2;
+                }
+            }
+
+            if (!match) ++it;
+        }
+
         res = new FloatNode();
         for (auto e : op->children())
-        {
-            if (e->type() == ExprNode::FLOAT) ((FloatNode*)res)->value() += ((FloatNode*)e)->value();
-            else                              ((FloatNode*)res)->value() += Float(((IntNode*)e)->value().toString()); // TODO: this conversion is naive
-        }
+            ((FloatNode*)res)->value() += ((FloatNode*)e)->value();
     }
     else
     {
+        auto it = op->children().begin();
+        while (it != op->children().end())
+        {
+            auto it2 = std::next(it);
+            bool match = false;
+            while (it2 != op->children().end())
+            {
+                if (((IntNode*)*it)->value() == -((IntNode*)*it2)->value())
+                {
+                    delete *it;
+                    delete *it2;
+                    op->children().erase(it2);
+                    it = op->children().erase(it);
+                    match = true;
+                    break;
+                }
+                else
+                {
+                    ++it2;
+                }
+            }
+
+            if (!match) ++it;
+        }
+
         res = new IntNode();
         for (auto e : op->children())
             ((IntNode*)res)->value() += ((IntNode*)e)->value();
@@ -139,28 +192,10 @@ ExprNode* numericAdd(ExprNode* op)
 // Evaluates "(- <num>...)"
 ExprNode* numericSub(ExprNode* op)
 {
-    ExprNode* res;
-    if (std::any_of(op->children().begin(), op->children().end(), [](ExprNode* x) { return x->type() == ExprNode::FLOAT; }))
-    {
-        Float first = ((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
-                                                                             Float(((IntNode*)op->children().front())->value().toString()));
-        res = new FloatNode(first, op->parent());
-        for (auto e = std::next(op->children().begin()); e != op->children().end(); ++e)
-        {
-            if ((*e)->type() == ExprNode::FLOAT) ((FloatNode*)res)->value() -= ((FloatNode*)*e)->value();
-            else                                 ((FloatNode*)res)->value() -= Float(((IntNode*)*e)->value().toString()); // TODO: this conversion is naive
-        }
-    }
-    else
-    {
-        res = new IntNode(((IntNode*)op->children().front())->value(), op->parent());
-        for (auto e = std::next(op->children().begin()); e != op->children().end(); ++e)
-            ((IntNode*)res)->value() -= ((IntNode*)*e)->value();
-    }
-    
-    res->setParent(op->parent());
-    freeExpression(op);
-    return res;
+    arithmeticRewrite(op);
+    for (auto it = op->children().begin(); it != op->children().end(); ++it)
+        it = replaceChild(op, evaluateArithmetic(*it), it);
+    return evaluateArithmetic(op);
 }
 
 // Evaluates "(* <num>...)" or "(** <num>...)"
@@ -171,7 +206,7 @@ ExprNode* numericMul(ExprNode* op)
     {
         Float first = ((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
                                                                              Float(((IntNode*)op->children().front())->value().toString()));
-        res = new FloatNode(first, op->parent());
+       res = new FloatNode(first, op->parent());
         for (auto e = std::next(op->children().begin()); e != op->children().end(); ++e)
         {
             if ((*e)->type() == ExprNode::FLOAT) ((FloatNode*)res)->value() *= ((FloatNode*)*e)->value();

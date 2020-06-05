@@ -17,17 +17,6 @@ Float::Float(const Float& other)
     mRoundDir = mpfr_set(mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
 }
 
-Float::Float(Float&& other)
-{
-    mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
-    mData->_mpfr_sign = other.mData->_mpfr_sign;
-    mData->_mpfr_prec = other.mData->_mpfr_prec;
-    mData->_mpfr_exp = other.mData->_mpfr_exp;
-    mData->_mpfr_d = other.mData->_mpfr_d;
-    mRoundDir = other.mRoundDir;
-    other.mData->_mpfr_d = NULL;
-}
-
 Float::Float(const char* data)
 {
     mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
@@ -47,33 +36,21 @@ Float::~Float()
 
 Float& Float::operator=(const Float& other)
 {
-    mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
+    if (mData->_mpfr_d == NULL) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
     mRoundDir = mpfr_set(mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
-    return *this;
-}
-
-Float& Float::operator=(Float&& other)
-{
-    mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
-    mData->_mpfr_sign = other.mData->_mpfr_sign;
-    mData->_mpfr_prec = other.mData->_mpfr_prec;
-    mData->_mpfr_exp = other.mData->_mpfr_exp;
-    mData->_mpfr_d = other.mData->_mpfr_d;
-    mRoundDir = other.mRoundDir;
-    other.mData->_mpfr_d = NULL;
     return *this;
 }
 
 Float& Float::operator=(const char* data)
 {
-    mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
+    if (mData->_mpfr_d == NULL) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
     fromString(data);
     return *this;
 }
 
 Float& Float::operator=(const std::string& data)
 {
-    mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
+    if (mData->_mpfr_d == NULL) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
     fromString(data.c_str());
     return *this;
 }

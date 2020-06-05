@@ -34,6 +34,10 @@ ExprNode* getPowBase(ExprNode* op);
 // latter case, a new expression node is created.
 ExprNode* getPowExp(ExprNode* op);
 
+// Applies arithmetic rewrite rules to make evaluation easier
+//   (- a b c ...) ==> (+ a (- b) (- c) ...)
+void arithmeticRewrite(ExprNode* op);
+
 }
 
 #endif
