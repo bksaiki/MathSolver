@@ -57,10 +57,14 @@ public:
     // Returns true if the float stored is exact.
     inline bool exact() const { return mRoundDir; }
 
+    // Returns true if the float stored is +inf or -inf.
+    inline bool isInf() const { return mpfr_inf_p(mData) != 0; }
+
+    // Returns true if the float stored is NaN.
+    inline bool isNaN() const { return mpfr_nan_p(mData) != 0; }
+
     // Returns true if the float stored is zero.
     inline bool isZero() const { return mpfr_zero_p(mData) != 0; }
-
-    inline bool isNaN() const { return mpfr_nan_p(mData) != 0; }
 
     // Returns true if the float is negative.
     inline bool sign() const { return mpfr_signbit(mData); }

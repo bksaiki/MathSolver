@@ -1,6 +1,7 @@
+#include <iostream>
 #include <string>
-#include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
+#include "../lib/math/float-math.h"
 
 using namespace MathSolver;
 

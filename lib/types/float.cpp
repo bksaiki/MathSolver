@@ -51,7 +51,7 @@ Float& Float::operator=(const char* data)
 Float& Float::operator=(const std::string& data)
 {
     if (mData->_mpfr_d == NULL) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
-    fromString(data.c_str());
+    fromString(data.c_str()); 
     return *this;
 }
 

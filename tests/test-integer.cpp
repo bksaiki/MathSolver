@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
-#include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
+#include "../lib/types/integer.h"
 
 using namespace MathSolver;
 

@@ -1,0 +1,88 @@
+#ifndef _MATHSOLVER_RANGE_H_
+#define _MATHSOLVER_RANGE_H_
+
+#include <list>
+#include <string>
+#include "../common/base.h"
+#include "float.h"
+
+namespace MathSolver
+{
+
+// Represents a single interval low < x < high
+struct interval_t
+{  
+    Float lower;
+    Float upper;
+    bool lowerClosed;
+    bool upperClosed;
+};
+
+// Returns true if 'val' is contained within the interval. Assumes the range is valid.
+bool contains(const interval_t& ival, const Float& val);
+
+// Returns true if 'test' is completely contained within the interval
+bool contains(const interval_t& ival, const interval_t& test);
+
+// Returns true if the interval is valid.
+bool isValidInterval(const interval_t& ival);
+
+// Returns true if there exists an intersection between the two intervals.
+bool isIntersecting(const interval_t& lhs, const interval_t& rhs);
+
+// Returns a std::string representation of the interval.
+std::string toString(const interval_t& ival);
+
+extern const interval_t INTERVAL_REALS;
+
+// Represents a single continuous range or multiple discontinous ranges
+class Range
+{
+public:
+
+    // Default constructor
+    Range();   
+
+    // Single interval
+    Range(const Float& lower, const Float& upper, bool lclosed, bool uclosed); 
+
+    // Single interval (interval_t)
+    inline Range(const interval_t ival) { mIntervals.push_back(ival); }
+
+    // Copy constructor
+    Range(const Range& other);
+
+    // Move constructor
+    Range(Range&& other);
+
+    // Copy assignment
+    Range& operator=(const Range& other);
+
+    // Move assignment
+    Range& operator=(Range&& other);
+
+    // Assignment from interval_t.
+    Range& operator=(const interval_t& ival);
+
+    // Returns the conjunction (intersection) of this Range and another.
+    Range conjoin(const Range& other) const;
+
+    // Returns true if the value is contained within this Range.
+    bool contains(const Float& val) const;
+
+    // Returns the disjunction (union) of this Range and another.
+    Range disjoin(const Range& other) const;
+
+    // Returns true if there exists an intersection between this Range with another.
+    bool intersectsWith(const Range& other) const;
+
+    // Returns a string representation of this Range.
+    std::string toString() const;
+
+private:
+    std::list<interval_t> mIntervals;
+};
+
+}
+
+#endif
