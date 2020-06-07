@@ -23,6 +23,9 @@ ExprNode* evaluateExprR(ExprNode* expr, bool firstPass)
 
 ExprNode* evaluateExpr(ExprNode* expr)
 { 
+    if (expr == nullptr)
+        return expr;
+
     ExprNode* simplified = evaluateExprR(expr, true);
     if (containsType(simplified, ExprNode::FLOAT))
         return evaluateExprR(simplified, false);

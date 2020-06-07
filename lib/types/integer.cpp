@@ -14,8 +14,8 @@ Integer::Integer(const Integer& other)
 {
     mData = new uint8_t[other.mSize];
     mSize = other.mSize;
-    mSign = other.mSign;
     mFlags = other.mFlags;
+    mSign = other.mSign;
     memcpy(mData, other.mData, other.mSize);
 }
 
@@ -28,16 +28,16 @@ Integer::Integer(uint8_t* arr, size_t len, bool sign)
 {
     mData = arr;
     mSize = len;
-    mSign = sign;
     mFlags = 0;
+    mSign = sign;
 }
 
 Integer::Integer(unsigned int x)
 {
     mData = new uint8_t[4];
     mSize = 4;
-    mSign = false;
     mFlags = 0;
+    mSign = false;
     memcpy(mData, &x, 4);
 }
 
@@ -54,8 +54,8 @@ Integer::Integer(signed x)
     }
     
     mData = new uint8_t[4];
-    mSize = 4;
     mFlags = 0;
+    mSize = 4;   
     memcpy(mData, &x, 4);
 }
 
@@ -78,8 +78,8 @@ Integer& Integer::operator=(const Integer& other)
         delete[] mData;
         mData = new uint8_t[other.mSize];
         mSize = other.mSize;
-        mSign = other.mSign;
         mFlags = other.mFlags;
+        mSign = other.mSign;
         memcpy(mData, other.mData, other.mSize);
     }
 
@@ -500,8 +500,8 @@ void Integer::set(uint8_t* arr, size_t len, bool sign)
     delete[] mData;
     mData = arr;
     mSize = len;
-    mSign = sign;
     mFlags = 0;
+    mSign = sign;  
 }
 
 int Integer::toInt() const
@@ -739,8 +739,8 @@ void Integer::move(Integer& other)
 {
     mData = other.mData;
     mSize = other.mSize;
-    mSign = other.mSign;
     mFlags = other.mFlags;
+    mSign = other.mSign;  
     other.mData = nullptr;
 }
 
@@ -798,8 +798,8 @@ void Integer::setZero(size_t len)
 {
     mData = new uint8_t[len];
     mSize = len;
-    mSign = false;
     mFlags = 0;
+    mSign = false;
     memset(mData, 0, len);
 }
 

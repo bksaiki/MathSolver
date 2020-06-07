@@ -70,6 +70,20 @@ FloatNode::FloatNode(Float&& data, ExprNode* parent)
     mPrec = 0;
 }
 
+RangeNode::RangeNode(const Range& data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+    
+RangeNode::RangeNode(Range&& data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+
 const char* OPERATOR_CHARS = "+-*/%^!=><|";
 
 const size_t PREDEF_FUNC_COUNT = 5;

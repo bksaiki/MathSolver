@@ -255,8 +255,8 @@ private:
     
     uint8_t*    mData;
     size_t      mSize;
-    bool        mSign;
     uint8_t     mFlags;
+    bool        mSign;
 };
 
 

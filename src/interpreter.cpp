@@ -14,6 +14,7 @@ int parseLine(const std::string& line)
 
     if (gErrorManager.hasError())
     {   
+        std::cout << gErrorManager.toString();
         for (ExprNode* e : tokens)  delete e;
         return 0;
     }

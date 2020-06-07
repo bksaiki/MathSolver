@@ -104,9 +104,12 @@ void flattenExpr(ExprNode* expr)
 
 void freeExpression(ExprNode* expr)
 {
-	for (ExprNode* child : expr->children())
-		freeExpression(child);
-	delete expr;	
+	if (expr != nullptr)
+	{
+		for (ExprNode* child : expr->children())
+			freeExpression(child);
+		delete expr;	
+	}
 }
 
 std::string toInfixString(ExprNode* expr)

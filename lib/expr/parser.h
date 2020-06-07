@@ -9,15 +9,21 @@
 namespace MathSolver
 {
 
-// Parses a mathematic expression and returns a vector of tokens
-// in order.
-std::list<ExprNode*> tokenizeStr(const std::string& expr);
-
 // Corrects a vector of tokens by expanding implied operations.
 void expandTokens(std::list<ExprNode*>& tokens);
 
-// Builds an expression tree from a vector of tokens.
-ExprNode* parseTokens(const std::list<ExprNode*>& tokens);
+// Converts an expression string to an expression tree. Handles errors. Use this function unless you want to
+// inspect the tokens.
+ExprNode* parseString(const std::string& expr);
+
+// Builds an expression tree from a vector of tokens. The list will be consumed.
+ExprNode* parseTokens(std::list<ExprNode*>& tokens);
+
+// Parses a mathematic expression and returns a vector of tokens in order.
+std::list<ExprNode*> tokenizeStr(const std::string& expr);
+
+// Returns a list of tokens as a string.
+std::string toString(const std::list<ExprNode*>& list);
 
 }
 
