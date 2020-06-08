@@ -713,35 +713,23 @@ ExprNode* symbolicMul(ExprNode* op)
         auto it2 = std::next(it);
         while (it2 != op->children().end())
         {
-            if (eqvExpr(getPowBase(*it), getPowBase(*it2))) // (* (^ a n) ... (^ a m)) ==> (* (^ a (+ n m)) ... )
+            if (eqvExpr(peekPowBase(*it), peekPowBase(*it2))) // (* (^ a n) ... (^ a m)) ==> (* (^ a (+ n m)) ... )
             {
-                ExprNode* add = new OpNode("+");             
-                add->children().push_back(getPowExp(*it));
-                add->children().push_back(getPowExp(*it2));
+                ExprNode* pow = new OpNode("^", op);
+                ExprNode* add = new OpNode("+", pow);  
+
+                add->children().push_back(extractPowExp(*it));
+                add->children().push_back(extractPowExp(*it2));
                 add = evaluateArithmetic(add);
 
-                if (!(*it)->isOperator()) // (* a ... (^ a n)) ==> (* (^ a (+ n 1)) ... ) or (* a ... a) ==> (* (^ a 2) ... )
-                { 
-                    ExprNode* pow = new OpNode("^", op);
-                    pow->children().push_back(*it);
-                    pow->children().push_back(add); 
-                    add->setParent(pow);    
-                    pow = evaluateArithmetic(pow);
-                    it = replaceChild(op, pow, it);      // (* a ... ) R=> (* (^ a n) ... )
-                }
-                else
-                {
-                    add->setParent(*it);
-                    *it = evaluateArithmetic(*it);
-                    (*it)->children().erase(std::prev((*it)->children().end()));
-                    (*it)->children().push_back(add);
-                }               
+                pow->children().push_back(extractPowBase(*it));
+                pow->children().push_back(add);
+                pow = evaluateArithmetic(pow);
 
-                if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "^") // if second arg is x^m, release m
-                    (*it2)->children().erase(std::prev((*it2)->children().end()));
-
+                freeExpression(*it);
                 freeExpression(*it2);
                 it2 = op->children().erase(it2);
+                it = replaceChild(op, pow, it);              
             }  
             else
             {
@@ -890,11 +878,27 @@ ExprNode* symbolicDiv(OpNode* op)
     ExprNode* num = op->children().front();
     ExprNode* den = op->children().back();
 
-    if ((den->type() == ExprNode::INTEGER && ((IntNode*)den)->value().isZero()) ||
+    if ((den->type() == ExprNode::INTEGER && ((IntNode*)den)->value().isZero()) || // (/ x 0) ==> undef
         (den->type() == ExprNode::FLOAT && ((FloatNode*)den)->value().isZero()))
     {
         ExprNode* ret = new ConstNode("undef", op->parent());
         gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
+        freeExpression(op);
+        return ret;
+    }
+
+    if ((den->type() == ExprNode::INTEGER && ((IntNode*)den)->value() == Integer(1)) || // (/ x 1) ==> x
+        (den->type() == ExprNode::FLOAT && ((FloatNode*)den)->value() == Float("1.0")))
+    {
+        num->setParent(op->parent());
+        op->children().pop_front();      
+        freeExpression(op);
+        return num;
+    }
+
+    if (eqvExpr(num, den)) // (/ x x) ==> 1
+    {
+        ExprNode* ret = new IntNode(1, op->parent());
         freeExpression(op);
         return ret;
     }
@@ -965,12 +969,59 @@ ExprNode* symbolicDiv(OpNode* op)
         {
             for (auto it2 = den->children().begin(); it2 != den->children().end(); ++it2)
             {
-                if (eqvExpr(*it, *it2))
+                if (eqvExpr(peekPowBase(*it), peekPowBase(*it2)))
                 {
-                    freeExpression(*it);
-                    freeExpression(*it2);
-                    num->children().erase(it--);
-                    den->children().erase(it2);
+                    ExprNode* sub = new OpNode("-");
+                    sub->children().push_back(extractPowExp(*it));
+                    sub->children().push_back(extractPowExp(*it2));
+                    sub = evaluateArithmetic(sub);
+
+                    if (sub->type() == ExprNode::INTEGER && ((IntNode*)sub)->value().isZero())
+                    {
+                        freeExpression(*it);
+                        freeExpression(*it2);
+                        num->children().erase(it--);
+                        den->children().erase(it2);
+                        freeExpression(sub);
+                    }
+                    else if ((sub->isOperator() && ((OpNode*)sub)->name() == "-*") ||
+                             (sub->type() == ExprNode::INTEGER && ((IntNode*)sub)->value().sign()))
+                    {
+                        ExprNode* pow = new OpNode("^", den);
+                        ExprNode* neg = new OpNode("-*", pow);
+
+                        neg->children().push_back(sub);
+                        sub->setParent(neg);
+                        neg = evaluateArithmetic(neg);
+
+                        pow->children().push_back(extractPowBase(*it));
+                        pow->children().push_back(neg);
+                        pow = evaluateArithmetic(pow);
+
+                        freeExpression(*it);
+                        freeExpression(*it2);
+                        num->children().erase(it--);
+                        replaceChild(den, pow, it2);   
+                    }
+                    else if (sub->isOperator() || sub->type() == ExprNode::INTEGER)
+                    {
+                        ExprNode* pow = new OpNode("^", den);
+                        sub->setParent(pow);
+                        pow->children().push_back(extractPowBase(*it));
+                        pow->children().push_back(sub);
+                        pow = evaluateArithmetic(pow);
+
+                        freeExpression(*it);
+                        freeExpression(*it2);
+                        it = replaceChild(num, pow, it);
+                        den->children().erase(it2);
+                    }
+                    else // TODO: remove once this operation is sound
+                    { 
+                        gErrorManager.log("Should not have reached this point", ErrorManager::FATAL, __FILE__, __LINE__);
+                        freeExpression(sub);
+                        return op;
+                    }
                     changed = true;
                     break;
                 }
@@ -996,11 +1047,22 @@ ExprNode* symbolicDiv(OpNode* op)
         ((OpNode*)num)->setName("**");
         for (auto it = num->children().begin(); it != num->children().end(); ++it)
         {
-            if (eqvExpr(*it, den))
+            if (eqvExpr(peekPowBase(*it), peekPowBase(den)))
             {
+                ExprNode* pow = new OpNode("^", num);
+                ExprNode* sub = new OpNode("-", pow);
+
+                sub->children().push_back(extractPowExp(*it));
+                sub->children().push_back(extractPowExp(den));
+                sub = evaluateArithmetic(sub);
+
+                pow->children().push_back(extractPowBase(*it));
+                pow->children().push_back(sub);
+                pow = evaluateArithmetic(pow);
+
                 freeExpression(*it);
                 freeExpression(den);
-                num->children().erase(it);
+                it = replaceChild(num, pow, it);
                 op->children().erase(std::prev(op->children().end()));
                 num = evaluateArithmetic(num); // simplify numerator
                 replaceChild(op, num, op->children().begin());
@@ -1013,13 +1075,25 @@ ExprNode* symbolicDiv(OpNode* op)
         ((OpNode*)den)->setName("**");
         for (auto it = den->children().begin(); it != den->children().end(); ++it)
         {
-            if (eqvExpr(*it, num))
+            if (eqvExpr(peekPowBase(num), peekPowBase(*it)))
             {
-                num = moveNode(num, new IntNode(Integer(1)));
+                ExprNode* pow = new OpNode("^", den);
+                ExprNode* sub = new OpNode("-", pow);
+
+                sub->children().push_back(extractPowExp(*it));
+                sub->children().push_back(extractPowExp(num));
+                sub = evaluateArithmetic(sub);
+  
+                pow->children().push_back(extractPowBase(*it));
+                pow->children().push_back(sub);
+                pow = evaluateArithmetic(pow);
+
+                freeExpression(num);
                 freeExpression(*it);
-                den->children().erase(it);
+                num = new IntNode(Integer(1), op);
+                it = replaceChild(den, pow, it);
                 den = evaluateArithmetic(den); // simplify denominator
-                replaceChild(op, num, (op->children().begin()));
+                replaceChild(op, num, op->children().begin());
                 replaceChild(op, den, std::next(op->children().begin()));
                 break;
             }
@@ -1090,7 +1164,7 @@ ExprNode* symbolicMod(ExprNode* op)
 }
 
 // Evalutes "(^ <arg0> <arg1>)"
-ExprNode* symbolicPow(OpNode* op)
+ExprNode* symbolicPow(ExprNode* op)
 {
     if (op->children().size() != 2)     
     {
@@ -1098,24 +1172,42 @@ ExprNode* symbolicPow(OpNode* op)
         return op;
     }
 
-    if (op->children().front()->isOperator() && ((OpNode*)op->children().front())->name() == "^") // (^ (^ x n) m) ==> (^ x (* n m))
+    ExprNode* base = op->children().front();
+    ExprNode* ex = op->children().back();
+
+    if ((ex->type() == ExprNode::INTEGER && ((IntNode*)ex)->value().isZero()) || // (^ x 0) ==> 1
+        (ex->type() == ExprNode::FLOAT && ((FloatNode*)ex)->value().isZero()))
     {
-        ExprNode* base = op->children().front()->children().front();
+        ExprNode* ret = new IntNode(1, op->parent());
+        freeExpression(op);
+        return ret;
+    }
+    else if ((ex->type() == ExprNode::INTEGER && ((IntNode*)ex)->value() == Integer(1)) || // (^ x 1) ==> x
+             (ex->type() == ExprNode::FLOAT && ((FloatNode*)ex)->value() == Float("1.0")))
+    {
+        base->setParent(op->parent());
+        op->children().pop_front();      
+        freeExpression(op);
+        op = base;
+    }
+    else if (base->isOperator() && ((OpNode*)base)->name() == "^") // (^ (^ x n) m) ==> (^ x (* n m))
+    {
+        ExprNode* base2 = base->children().front();
         ExprNode* mul = new OpNode("**", op);
 
-        mul->children().push_back(op->children().front()->children().back());
-        mul->children().push_back(op->children().back());
+        mul->children().push_back(base->children().back());
+        mul->children().push_back(ex);
         mul->children().front()->setParent(mul);
         mul->children().back()->setParent(mul);
         mul = evaluateArithmetic(mul);
 
-        op->children().front()->children().clear();
-        delete op->children().front();
+        base->children().clear();
+        delete base;
         
         op->children().clear();
-        op->children().push_back(base);
+        op->children().push_back(base2);
         op->children().push_back(mul);
-        base->setParent(op);
+        base2->setParent(op);
     }
 
     return op;

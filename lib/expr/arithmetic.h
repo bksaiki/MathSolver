@@ -26,13 +26,17 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2);
 // Finds the coefficient of an expression given a base term.
 std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term);
 
-// Assumes the expression is in the form x^n or x and returns x, the base that is being
-// raised to the power of n or 1, respectively.
-ExprNode* getPowBase(ExprNode* op);
+// Assumes the expression is in the form x^n or x and returns a copy of x,
+ExprNode* extractPowBase(ExprNode* op);
 
-// Assumes the expression is in the form x^n or x and returns n or 1, respectively. If it is the
-// latter case, a new expression node is created.
-ExprNode* getPowExp(ExprNode* op);
+// Assumes the expression is in the form x^n or x and returns a copy of n or 1, respectively.
+ExprNode* extractPowExp(ExprNode* op);
+
+// Assumes the expression is in the form x^n or x and returns x directly.
+ExprNode* peekPowBase(ExprNode* op);
+
+// Assumes the expression is in the form x^n or x and returns n or 1 directly.
+ExprNode* peekPowExp(ExprNode* op);
 
 // Applies arithmetic rewrite rules to make evaluation easier
 //   (- a b c ...) ==> (+ a (- b) (- c) ...)

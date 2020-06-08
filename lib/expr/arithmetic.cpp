@@ -91,16 +91,30 @@ std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term)
     return coeff;
 }
 
-ExprNode* getPowBase(ExprNode* op)
+
+ExprNode* extractPowBase(ExprNode* op)
 {
-    if (op->isOperator() && ((OpNode*)op)->name() == "^")       return op->children().front();
-    else                                                        return op;
+    if (op->isOperator() && ((OpNode*)op)->name() == "^")    return copyOf(op->children().front());
+    else                                                     return copyOf(op);
 }
 
-ExprNode* getPowExp(ExprNode* op)
+ExprNode* extractPowExp(ExprNode* op)
 {
+    if (op->isOperator() && ((OpNode*)op)->name() == "^")    return copyOf(op->children().back());
+    else                                                     return new IntNode(1);
+}
+
+ExprNode* peekPowBase(ExprNode* op)
+{
+    if (op->isOperator() && ((OpNode*)op)->name() == "^")    return op->children().front();
+    else                                                     return op;
+}
+
+ExprNode* peekPowExp(ExprNode* op)
+{
+    static IntNode one = IntNode(1); // TODO: definitely bad
     if (op->isOperator() && ((OpNode*)op)->name() == "^")       return op->children().back();
-    else                                                        return new IntNode(1);
+    else                                                        return &one;
 }
 
 void arithmeticRewrite(ExprNode* op)
