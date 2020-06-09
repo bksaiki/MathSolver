@@ -63,7 +63,7 @@ int main()
         TestModule tests("contains (interval_t, interval_t)", verbose);
         tests.runTest(bool_to_string(contains(ival1, ival2)), "false");
         tests.runTest(bool_to_string(contains(ival1, ival3)), "false");
-        tests.runTest(bool_to_string(contains(ival1, ival4)), "false");
+        tests.runTest(bool_to_string(contains(ival1, ival4)), "true");
         tests.runTest(bool_to_string(contains(ival1, ival5)), "true");
         tests.runTest(bool_to_string(contains(ival1, ival6)), "true");
 

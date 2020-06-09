@@ -19,10 +19,8 @@ bool nodeIsArithmetic(ExprNode* node)
                 op->name() == "*" || op->name() == "/" || op->name() == "%" || op->name() == "mod" || 
                 op->name() == "^" || op->name() == "!");
     }
-    else
-    {
-        return true;
-    }
+
+    return node->isNumber() || node->type() == ExprNode::VARIABLE;
 }
 
 std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)

@@ -145,9 +145,9 @@ std::string toInfixString(ExprNode* expr)
 		{
 			return toInfixString(op->children().front()) + "^" + toInfixString(op->children().back());
 		}
-		else if (op->name() == "mod")
+		else if (op->name() == "mod" || op->name() == "or" || op->name() == "and")
 		{
-			return toInfixString(op->children().front()) + " mod " + toInfixString(op->children().back());
+			return toInfixString(op->children().front()) + " " + op->name() + " " + toInfixString(op->children().back());
 		}
 		else if (op->name() == "-*" && op->children().size() == 1)
 		{

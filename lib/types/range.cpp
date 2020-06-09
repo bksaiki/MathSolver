@@ -46,8 +46,8 @@ bool contains(const interval_t& ival, const Float& val)
 bool contains(const interval_t& ival, const interval_t& test)
 {
     if (test.lower < ival.lower || test.upper > ival.upper)                         return false;
-    if ((test.lower == ival.lower && !(test.lowerClosed && ival.lowerClosed)) ||
-        (test.upper == ival.upper && !(test.upperClosed && ival.upperClosed)))      return false;
+    if ((test.lower == ival.lower && test.lowerClosed && !ival.lowerClosed) ||
+        (test.upper == ival.upper && test.upperClosed && !ival.upperClosed))      return false;
     return true;
 }
 
@@ -91,28 +91,48 @@ Range::Range(const std::initializer_list<interval_t>& ivals)
 Range::Range(const Range& other)
 {
     for (auto e : other.mIntervals)
-        mIntervals.push_back(e);
+    {
+        interval_t tmp = e;
+        mIntervals.push_back(tmp);
+    }
 }
 
 Range::Range(Range&& other)
 {
-    std::move(other.mIntervals.begin(), other.mIntervals.end(), mIntervals.begin());
+    while (!other.mIntervals.empty())
+    {
+        mIntervals.push_back(other.mIntervals.front());
+        other.mIntervals.pop_front();
+    }
 }
 
 Range& Range::operator=(const Range& other)
 {
-    if (mIntervals.empty() && !other.mIntervals.empty())
+    if (this != &other)
     {
+        mIntervals.clear();
         for (auto e : other.mIntervals)
-            mIntervals.push_back(e);
+        {
+            interval_t tmp = e;
+            mIntervals.push_back(tmp);
+        }
     }
+
     return *this;
 }
 
 Range& Range::operator=(Range&& other)
 {
-    if (mIntervals.empty() && !other.mIntervals.empty())
-        std::move(other.mIntervals.begin(), other.mIntervals.end(), mIntervals.begin());
+    if (this != &other)
+    {
+        mIntervals.clear();
+        while (!other.mIntervals.empty())
+        {
+            mIntervals.push_back(other.mIntervals.front());
+            other.mIntervals.pop_front();
+        }
+    }
+
     return *this;
 }
 
@@ -148,9 +168,9 @@ Range Range::conjoin(const Range& other) const
                 interval_t inter = MathSolver::conjoin(lhs, rhs);
                 Range sub = (Range(rhs)).subtract(Range(inter));
                 
+                it2 = tmp2.mIntervals.erase(it2);
                 if (!sub.mIntervals.empty())
                     tmp2.mIntervals.insert(it2, sub.mIntervals.begin(), sub.mIntervals.end());
-                it2 = tmp2.mIntervals.erase(it2);
                 ret.mIntervals.push_back(inter);
                 break;
             }        
@@ -233,7 +253,8 @@ Range Range::subtract(const Range& other) const
             {
                 interval_t low = { lhs.lower, rhs.lower, lhs.lowerClosed, !rhs.lowerClosed };
                 interval_t high = { rhs.upper, lhs.upper, !rhs.upperClosed, lhs.upperClosed };
-                ret.mIntervals.insert(itr, { low, high });
+                if (isValidInterval(low)) ret.mIntervals.insert(itr, low);
+                if (isValidInterval(high)) ret.mIntervals.insert(itr, high);
                 removed = true;
             }
             else

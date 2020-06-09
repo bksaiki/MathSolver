@@ -9,19 +9,22 @@ int parseLine(const std::string& line)
     if (line == "exit" || line == "quit")  
         return 1;
 
-    std::list<ExprNode*> tokens = tokenizeStr(line);
-    ExprNode* eval = parseTokens(tokens);
+    ExprNode* eval = parseString(line);
 
     if (gErrorManager.hasError())
     {   
         std::cout << gErrorManager.toString();
-        for (ExprNode* e : tokens)  delete e;
-        return 0;
+        return 1;
     }
 
     flattenExpr(eval);
     eval = evaluateExpr(eval);
-    if (gErrorManager.hasAny()) std::cout << gErrorManager.toString();
+    if (gErrorManager.hasError())
+    {   
+        std::cout << gErrorManager.toString();
+        return 1;
+    }
+    
     std::cout << toInfixString(eval) << std::endl;
     freeExpression(eval);
 

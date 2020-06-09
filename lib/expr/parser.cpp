@@ -103,14 +103,17 @@ bool bracketedExpr(std::list<ExprNode*>::const_iterator begin, std::list<ExprNod
         return false;
 
     size_t bracketLevel = 0;
-    for (auto it = begin; it != end; ++it)
+    for (auto it = begin; it != std::next(end); ++it)
     {
         if ((*it)->isSyntax() && (((SyntaxNode*)*it)->name() == "(" || ((SyntaxNode*)*it)->name() == "[" || ((SyntaxNode*)*it)->name() == "{"))
+        {
             ++bracketLevel;
+        }
         else if ((*it)->isSyntax() && (((SyntaxNode*)*it)->name() == ")" || ((SyntaxNode*)*it)->name() == "]" || ((SyntaxNode*)*it)->name() == "}"))
         {
-            if (bracketLevel <= 1 && it != end)
+            if (bracketLevel == 1 && it != end)  
                 return false;
+            --bracketLevel;
         } 
     }
 
@@ -215,7 +218,8 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
         OpNode* op = (OpNode*)node;
         if (op->name() == "+" || op->name() == "-" || op->name() == "**" || op->name() == "*" ||
             op->name() == "/" || op->name() == "%" || op->name() == "mod" || op->name() == "^" ||
-            op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "=") 
+            op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "="||
+            op->name() == "or" || op->name() == "and") 
         {         
             if (split == begin || split == end) // arity mismatch
             {
@@ -310,7 +314,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
             std::string name = expr.substr(itr, i - itr);
             ExprNode* node;
 
-            if (name == "mod")          node = new OpNode("mod");     // special case
+            if (isOperator(name))       node = new OpNode(name);     // special case
             else if (isFunction(name))  node = new FuncNode(name);
             else                        node = new VarNode(name);
             tokens.push_back(node);
@@ -368,8 +372,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
         {
             gErrorManager.log("Unknown character: \"" + expr.substr(itr, 1) + "\"", ErrorManager::ERROR);
             return tokens;
-        }
-        
+        }  
     }
 
     if (!brackets.empty())
@@ -392,7 +395,7 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
 std::string toString(const std::list<ExprNode*>& list)
 {
     std::string ret;
-	for (auto e : list) ret += e->toString();
+	for (auto e : list) ret += (" " + e->toString());
     return ret;
 }
 

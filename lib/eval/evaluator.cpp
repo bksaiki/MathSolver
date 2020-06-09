@@ -1,6 +1,7 @@
 #include "../expr/arithmetic.h"
 #include "arithmetic.h"
 #include "evaluator.h"
+#include "interval.h"
 
 namespace MathSolver
 {
@@ -16,8 +17,10 @@ ExprNode* evaluateExprR(ExprNode* expr, bool firstPass)
         expr->children().push_back(child);
     }
   
-    if (isArithmetic(expr)) return evaluateArithmetic(expr, firstPass);
+    if (isArithmetic(expr))     return evaluateArithmetic(expr, firstPass);
+    if (isRangeExpr(expr))      return evaluateRange(expr);
 
+    gErrorManager.log("Unrecognized expression: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);
     return expr;
 }
 
