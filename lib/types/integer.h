@@ -6,7 +6,6 @@
 #include "../common/base.h"
 #include "bytes.h"
 
-#define MATHSOLVER_DEFAULT_INT_WIDTH    4
 #define MATHSOLVER_MAX_INT_WIDTH        65536
 
 #define MATHSOLVER_INT_NAN    0x01
@@ -29,13 +28,19 @@ public:
     Integer(Integer&& other);
 
     // Construts an Integer from a byte-array of a given length
-    Integer(uint8_t* arr, size_t len, bool sign = false);
+    Integer(uint32_t* arr, size_t len, bool sign = false);
 
-    // Constructs an Integer from a 32-bit unsigned integer.
-    Integer(unsigned int x);
+    // Constructs an Integer from a 64-bit unsigned integer.
+    Integer(uint64_t x);
+
+    // Constructs an Integer from a 64-bit signed integer.
+    Integer(int64_t x);
 
     // Constructs an Integer from a 32-bit signed integer.
-    Integer(signed int x);
+    Integer(uint32_t x);
+
+    // Constructs an Integer from a 32-bit signed integer.
+    Integer(int x);
 
     // Constructs an Integer from a std::string.
     Integer(const std::string& str);
@@ -158,7 +163,7 @@ public:
     int compare(const Integer& other) const;
 
     // Returns a pointer to the byte array.
-    inline uint8_t* data() const { return mData; }
+    inline uint32_t* data() const { return mData; }
 
     // Returns the result of dividing this Integer by another and stores
     // the remainder at rem.
@@ -183,7 +188,7 @@ public:
     inline bool isZero() const { return rangeIsEmpty(mData, &mData[mSize]); }
 
     // Sets the data of this Integer using a byte array of a specified length.
-    void set(uint8_t* arr, size_t len, bool sign);
+    void set(uint32_t* arr, size_t len, bool sign);
 
     // Returns true if this integer is negative.
     inline bool sign() const { return mSign; }
@@ -253,9 +258,9 @@ private:
 
 private:
     
-    uint8_t*    mData;
+    uint32_t*    mData;
     size_t      mSize;
-    uint8_t     mFlags;
+    uint32_t     mFlags;
     bool        mSign;
 };
 
