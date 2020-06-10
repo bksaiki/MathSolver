@@ -9,17 +9,6 @@ namespace MathSolver
 const size_t FLATTENABLE_OP_COUNT = 4;
 const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**" };
 
-bool containsType(ExprNode* expr, ExprNode::Type type)
-{
-	for (auto e : expr->children())
-	{
-		if (containsType(e, type))
-			return true;
-	}
-
-	return (expr->type() == type);
-}
-
 ExprNode* copyOf(ExprNode* expr)
 {
 	ExprNode* cp;
@@ -115,25 +104,12 @@ void flattenExpr(ExprNode* expr)
 
 void freeExpression(ExprNode* expr)
 {
-	for (ExprNode* child : expr->children())
-		freeExpression(child);
-	delete expr;	
-}
-
-bool isNumerical(ExprNode* expr)
-{
-	if (expr->type() == ExprNode::FUNCTION || expr->isOperator())
+	if (expr != nullptr)
 	{
-		for (auto child : expr->children())
-		{
-			if (!child->isNumber())
-				return false;
-		}
-
-		return true;
+		for (ExprNode* child : expr->children())
+			freeExpression(child);
+		delete expr;	
 	}
-
-	return expr->isNumber();
 }
 
 std::string toInfixString(ExprNode* expr)
@@ -169,9 +145,9 @@ std::string toInfixString(ExprNode* expr)
 		{
 			return toInfixString(op->children().front()) + "^" + toInfixString(op->children().back());
 		}
-		else if (op->name() == "mod")
+		else if (op->name() == "mod" || op->name() == "or" || op->name() == "and")
 		{
-			return toInfixString(op->children().front()) + " mod " + toInfixString(op->children().back());
+			return toInfixString(op->children().front()) + " " + op->name() + " " + toInfixString(op->children().back());
 		}
 		else if (op->name() == "-*" && op->children().size() == 1)
 		{

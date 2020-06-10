@@ -19,7 +19,7 @@ branches:
     is-release-branch: true
     pre-release-weight: 1000
   feature:
-    regex: ^([a-z0-9])+
+    regex: ^([A-Za-z0-9\-_])+
     mode: ContinuousDeployment
     tag: rev
     increment: None

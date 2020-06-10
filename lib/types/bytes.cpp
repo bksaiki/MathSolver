@@ -4,21 +4,21 @@
 namespace MathSolver
 {
 
-uint8_t addByte2(uint8_t* res, uint8_t a, uint8_t b)
+uint32_t addByte2(uint32_t* res, uint32_t a, uint32_t b)
 {
-    uint16_t r = (uint16_t)a + (uint16_t)b;
-    *res = r & 0x00FF;
-    return (r >> 8);
+    uint64_t r = (uint64_t)a + (uint64_t)b;
+    *res = r & (uint64_t)0xFFFFFFFF;
+    return (r >> 32);
 }
 
-uint8_t addByte3(uint8_t* res, uint8_t a, uint8_t b, uint8_t c)
+uint32_t addByte3(uint32_t* res, uint32_t a, uint32_t b, uint32_t c)
 {
-    uint16_t r = (uint16_t)a + (uint16_t)b + (uint16_t)c;
-    *res = r & 0x00FF;
-    return (r >> 8);
+    uint64_t r = (uint64_t)a + (uint64_t)b + (uint64_t)c;
+    *res = r & (uint64_t)0xFFFFFFFF;
+    return (r >> 32);
 }
 
-int cmpBytes(uint8_t* a, size_t alen, uint8_t* b, size_t blen)
+int cmpBytes(uint32_t* a, size_t alen, uint32_t* b, size_t blen)
 {
     size_t low;
     if (alen > blen) // check extra bytes
@@ -40,7 +40,7 @@ int cmpBytes(uint8_t* a, size_t alen, uint8_t* b, size_t blen)
     
     for (size_t i = low - 1; i < low; --i)
     {   
-        int16_t d = (int16_t)a[i] - (int16_t)b[i];
+        int64_t d = (int64_t)a[i] - (int64_t)b[i];
         if (d > 0)      return 1;
         else if (d < 0) return -1;
     }
@@ -48,54 +48,41 @@ int cmpBytes(uint8_t* a, size_t alen, uint8_t* b, size_t blen)
     return 0;
 }
 
-uint8_t getBit(uint8_t* x, size_t len, size_t bit)
+uint32_t getBit(uint32_t* x, size_t len, size_t bit)
 {
-    assert(bit <= 8 * len);
-    size_t byteOffset = bit / 8;
-    size_t bitOffset = bit % 8;
-    
-    if (bitOffset == 0)         return x[byteOffset] & 0x01;
-    else if (bitOffset == 1)    return (x[byteOffset] >> 1) & 0x01;
-    else if (bitOffset == 2)    return (x[byteOffset] >> 2) & 0x01;
-    else if (bitOffset == 3)    return (x[byteOffset] >> 3) & 0x01;
-    else if (bitOffset == 4)    return (x[byteOffset] >> 4) & 0x01;
-    else if (bitOffset == 5)    return (x[byteOffset] >> 5) & 0x01;
-    else if (bitOffset == 6)    return (x[byteOffset] >> 6) & 0x01;
-    else                        return (x[byteOffset] >> 7) & 0x01;
+    assert(bit <= 32 * len);
+    size_t byteOffset = bit / 32;
+    size_t bitOffset = bit % 32;
+    return (x[byteOffset] >> bitOffset) & 0x1;
 }
 
-size_t highestNonZeroBit(uint8_t* x, size_t len)
+size_t highestNonZeroBit(uint32_t* x, size_t len)
 {
     for (size_t i = len - 1; i < len; --i)
     {
-        if (x[i] & 0x80)        return (8 * i) + 8;
-        else if (x[i] & 0x40)   return (8 * i) + 7;
-        else if (x[i] & 0x20)   return (8 * i) + 6;
-        else if (x[i] & 0x10)   return (8 * i) + 5;
-        else if (x[i] & 0x08)   return (8 * i) + 4;
-        else if (x[i] & 0x04)   return (8 * i) + 3;
-        else if (x[i] & 0x02)   return (8 * i) + 2;
-        else if (x[i] & 0x01)   return (8 * i) + 1;
+        size_t mul = 0x80000000;
+        for (size_t j = 31; j < 32; --j, mul /= 2)
+        {
+            if (x[i] & mul)
+                return (32 * i) + j + 1;
+        }
+
     }
 
     return 0;
 }
 
-size_t highestNonZeroByte(uint8_t* x, size_t len)
+size_t highestNonZeroByte(uint32_t* x, size_t len)
 {
     for (size_t i = len - 1; i < len; --i)
-    {
-        if (x[i])
-            return i + 1;
-    }
-
+        if (x[i]) return i + 1;
     return 0;
 }
 
-bool rangeIsEmpty(uint8_t* low, uint8_t* high)
+bool rangeIsEmpty(uint32_t* low, uint32_t* high)
 {
     assert(high >= low);
-    for (uint8_t* it = low; it != high; ++it)
+    for (uint32_t* it = low; it != high; ++it)
     {
         if (*it != 0)
             return false;
@@ -104,15 +91,15 @@ bool rangeIsEmpty(uint8_t* low, uint8_t* high)
     return true;
 }
 
-void setBit(uint8_t* x, size_t len, size_t bit, bool value)
+void setBit(uint32_t* x, size_t len, size_t bit, bool value)
 {
-    assert(bit <= 8 * len);
-    size_t byteOffset = bit / 8;
-    size_t bitOffset = bit % 8;
-    size_t invBitOffset = 8 - bitOffset;
-    uint8_t highMask = 0xFF << (bitOffset + 1);
-    uint8_t lowMask = 0xFF >> invBitOffset;
-    x[byteOffset] = (x[byteOffset] & highMask) | ((uint8_t)value << bitOffset) | (x[byteOffset] & lowMask);
+    assert(bit <= 32 * len);
+    uint32_t byteOffset = bit / 32;
+    uint32_t bitOffset = bit % 32;
+    uint32_t invBitOffset = 32 - bitOffset;
+    uint32_t highMask = ((bitOffset == 31) ? 0x7FFFFFFF : (0xFFFFFFFF << (bitOffset + 1)));
+    uint32_t lowMask = ((invBitOffset == 32) ? 0 : (0xFFFFFFFF >> invBitOffset));
+    x[byteOffset] = (x[byteOffset] & highMask) | ((uint32_t)value << bitOffset) | (x[byteOffset] & lowMask);
 }
 
 } // END MathSolver namespace

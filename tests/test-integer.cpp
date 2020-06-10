@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
-#include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
+#include "../lib/types/integer.h"
 
 using namespace MathSolver;
 
@@ -67,15 +67,6 @@ int main()
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
 	
-	tests.reset("Constructor (C-string)");
-	for (size_t i = 0; i < TEST_COUNT; ++i)
-	{
-		Integer tmp(strs[i].c_str());
-		tests.runTest(tmp.toString(), strs[i]);
-	}
-	std::cout << tests.result() << std::endl;
-	status &= tests.status();
-	
 	tests.reset("Assignment (int)");
 	for (size_t i = 0; i < TEST_COUNT; ++i)
 	{
@@ -89,15 +80,6 @@ int main()
 	for (size_t i = 0; i < TEST_COUNT; ++i)
 	{
 		cints[i] = strs[i];
-		tests.runTest(cints[i].toString(), strs[i]);
-	}
-	std::cout << tests.result() << std::endl;
-	status &= tests.status();
-	
-	tests.reset("Assignment (C-string)");
-	for (size_t i = 0; i < TEST_COUNT; ++i)
-	{
-		cints[i] = strs[i].c_str();
 		tests.runTest(cints[i].toString(), strs[i]);
 	}
 	std::cout << tests.result() << std::endl;
@@ -516,16 +498,16 @@ int main()
 		r68 %= cints[8];
 		r07 %= cints[7];
 
-		tests.runTest(r01.toString(), "-1773273743103461260925877823936");
-		tests.runTest(r23.toString(), "-1129409795571040706");
-		tests.runTest(r45.toString(), "-1693718277");
-		tests.runTest(r67.toString(), "-310237");
-		tests.runTest(r89.toString(), "-124");
+		tests.runTest(r01.toString(), "7817571355697357692875402758499");
+		tests.runTest(r23.toString(), "104713639049421634");
+		tests.runTest(r45.toString(), "648623046");
+		tests.runTest(r67.toString(), "43214");
+		tests.runTest(r89.toString(), "25");
 		tests.runTest(r13.toString(), "-1095703636533614875");
-		tests.runTest(r25.toString(), "-1008389444");
-		tests.runTest(r49.toString(), "-29");
+		tests.runTest(r25.toString(), "1333951879");
+		tests.runTest(r49.toString(), "120");
 		tests.runTest(r68.toString(), "14");
-		tests.runTest(r07.toString(), "-120504");
+		tests.runTest(r07.toString(), "232947");
 
 		std::cout << tests.result() << std::endl;
 		status &= tests.status();
@@ -545,16 +527,16 @@ int main()
 		Integer r68 = cints[6] % cints[8];
 		Integer r07 = cints[0] % cints[7];
 
-		tests.runTest(r01.toString(), "-1773273743103461260925877823936");
-		tests.runTest(r23.toString(), "-1129409795571040706");
-		tests.runTest(r45.toString(), "-1693718277");
-		tests.runTest(r67.toString(), "-310237");
-		tests.runTest(r89.toString(), "-124");
+		tests.runTest(r01.toString(), "7817571355697357692875402758499");
+		tests.runTest(r23.toString(), "104713639049421634");
+		tests.runTest(r45.toString(), "648623046");
+		tests.runTest(r67.toString(), "43214");
+		tests.runTest(r89.toString(), "25");
 		tests.runTest(r13.toString(), "-1095703636533614875");
-		tests.runTest(r25.toString(), "-1008389444");
-		tests.runTest(r49.toString(), "-29");
+		tests.runTest(r25.toString(), "1333951879");
+		tests.runTest(r49.toString(), "120");
 		tests.runTest(r68.toString(), "14");
-		tests.runTest(r07.toString(), "-120504");
+		tests.runTest(r07.toString(), "232947");
 
 		std::cout << tests.result() << std::endl;
 		status &= tests.status();
@@ -880,6 +862,241 @@ int main()
 	}
 	std::cout << tests.result() << std::endl;
 	status &= tests.status();
-	
+
+	Integer inf("inf");
+	Integer ninf("-inf");
+	Integer u("nan");
+	Integer n("1");
+
+	{
+		tests.reset("inf/nan (construct, compare)");
+		
+		tests.runTest(u.toString(), "nan");
+		tests.runTest(inf.toString(), "inf");
+		tests.runTest(ninf.toString(), "-inf");
+
+		tests.runTest(bool_to_string(u == u), "false");
+		tests.runTest(bool_to_string(inf == inf), "true");
+		tests.runTest(bool_to_string(ninf == ninf), "true");
+
+		tests.runTest(bool_to_string(u > u), "false");
+		tests.runTest(bool_to_string(inf > ninf), "true");
+		tests.runTest(bool_to_string(ninf > inf), "false");
+
+		tests.runTest(bool_to_string(u < u), "false");
+		tests.runTest(bool_to_string(inf < ninf), "false");
+		tests.runTest(bool_to_string(ninf < inf), "true");
+
+		tests.runTest(bool_to_string(u >= u), "false");
+		tests.runTest(bool_to_string(inf >= inf), "true");
+		tests.runTest(bool_to_string(ninf >= ninf), "true");
+
+		tests.runTest(bool_to_string(u <= u), "false");
+		tests.runTest(bool_to_string(inf <= inf), "true");
+		tests.runTest(bool_to_string(ninf <= ninf), "true");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan +");
+
+		tests.runTest((u + u).toString(), "nan");
+		tests.runTest((n + u).toString(), "nan");
+		tests.runTest((inf + inf).toString(), "inf");
+		tests.runTest((inf + ninf).toString(), "nan");
+		tests.runTest((inf + n).toString(), "inf");
+		tests.runTest((n + ninf).toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan -");
+
+		tests.runTest((u - u).toString(), "nan");
+		tests.runTest((n - u).toString(), "nan");
+		tests.runTest((inf - inf).toString(), "nan");
+		tests.runTest((inf - ninf).toString(), "inf");
+		tests.runTest((inf - n).toString(), "inf");
+		tests.runTest((n - ninf).toString(), "inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan *");
+
+		tests.runTest((u * u).toString(), "nan");
+		tests.runTest((n * u).toString(), "nan");
+		tests.runTest((inf * inf).toString(), "inf");
+		tests.runTest((inf * ninf).toString(), "-inf");
+		tests.runTest((inf * n).toString(), "inf");
+		tests.runTest((n * ninf).toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan /");
+
+		tests.runTest((u / u).toString(), "nan");
+		tests.runTest((n / u).toString(), "nan");
+		tests.runTest((inf / inf).toString(), "nan");
+		tests.runTest((inf / ninf).toString(), "nan");
+		tests.runTest((inf / n).toString(), "inf");
+		tests.runTest((n / ninf).toString(), "0");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan %");
+
+		tests.runTest((u % u).toString(), "nan");
+		tests.runTest((n % u).toString(), "nan");
+		tests.runTest((inf % inf).toString(), "nan");
+		tests.runTest((inf % ninf).toString(), "nan");
+		tests.runTest((inf % n).toString(), "nan");
+		tests.runTest((n % ninf).toString(), "nan");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan +=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 += u;
+		r2 += u;
+		r3 += inf;
+		r4 += ninf;
+		r5 += n;
+		r6 += ninf;
+
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "inf");
+		tests.runTest(r4.toString(), "nan");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan -=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 -= u;
+		r2 -= u;
+		r3 -= inf;
+		r4 -= ninf;
+		r5 -= n;
+		r6 -= ninf;
+
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "nan");
+		tests.runTest(r4.toString(), "inf");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan *=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 *= u;
+		r2 *= u;
+		r3 *= inf;
+		r4 *= ninf;
+		r5 *= n;
+		r6 *= ninf;
+
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "inf");
+		tests.runTest(r4.toString(), "-inf");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "-inf");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan *=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 /= u;
+		r2 /= u;
+		r3 /= inf;
+		r4 /= ninf;
+		r5 /= n;
+		r6 /= ninf;
+
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "nan");
+		tests.runTest(r4.toString(), "nan");
+		tests.runTest(r5.toString(), "inf");
+		tests.runTest(r6.toString(), "0");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
+	{
+		tests.reset("inf/nan %=");
+
+		Integer r1 = u;
+		Integer r2 = n;
+		Integer r3 = inf;
+		Integer r4 = inf;
+		Integer r5 = inf;
+		Integer r6 = n;
+
+		r1 %= u;
+		r2 %= u;
+		r3 %= inf;
+		r4 %= ninf;
+		r5 %= n;
+		r6 %= ninf;
+
+		tests.runTest(r1.toString(), "nan");
+		tests.runTest(r2.toString(), "nan");
+		tests.runTest(r3.toString(), "nan");
+		tests.runTest(r4.toString(), "nan");
+		tests.runTest(r5.toString(), "nan");
+		tests.runTest(r6.toString(), "nan");
+	}
+	std::cout << tests.result() << std::endl;
+	status &= tests.status();
+
 	return (int)(!status);
 }

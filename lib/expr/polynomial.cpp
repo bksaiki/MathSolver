@@ -5,7 +5,7 @@ namespace MathSolver
 
 bool isMonomialBasis(ExprNode* expr)
 {
-    return (containsType(expr, ExprNode::VARIABLE)) ||     // x or x^n
+    return (expr->type() == ExprNode::VARIABLE) ||     // x or x^n
            (expr->isOperator() && ((OpNode*)expr)->name() == "^" && containsType(expr->children().front(), ExprNode::VARIABLE) &&
             expr->children().back()->type() == ExprNode::INTEGER && !((IntNode*)expr->children().back())->value().sign());
         
@@ -13,8 +13,11 @@ bool isMonomialBasis(ExprNode* expr)
 
 bool isMonomialEqv(ExprNode* expr)
 {
-    if (!expr->isOperator() || (((OpNode*)expr)->name() != "*" && ((OpNode*)expr)->name() != "**")) // single value
+    if (!expr->isOperator() || !(((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" || ((OpNode*)expr)->name() == "/")) // single value
         return expr->isValue() || isMonomialBasis(expr);
+
+    if (expr->isOperator() && ((OpNode*)expr)->name() == "/")
+        return isMonomialEqv(expr->children().front()) && isMonomialEqv(expr->children().back());
 
     for (auto e : expr->children())
     {
@@ -42,8 +45,11 @@ bool isPolynomialEqv(ExprNode* expr)
 
 bool isMonomial(ExprNode* expr)
 {
-    if (!expr->isOperator() || (((OpNode*)expr)->name() != "*" && ((OpNode*)expr)->name() != "**")) // single value
+    if (!expr->isOperator() || !(((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" || ((OpNode*)expr)->name() == "/")) // single value
         return expr->isValue() || isMonomialBasis(expr);
+
+    if (expr->isOperator() && ((OpNode*)expr)->name() == "/")
+        return isMonomial(expr->children().front()) && isMonomial(expr->children().back());
 
     if (!(expr->children().front()->isValue() || isMonomialBasis(expr->children().front())))  // the first operand may optionally be a number
         return false;    
@@ -64,8 +70,7 @@ bool isPolynomial(ExprNode* expr)
 
     for (auto e : expr->children())
     {
-        if (((((OpNode*)e)->name() == "+" || ((OpNode*)e)->name() == "-") && !isPolynomial(e)) || // unflattened polynomial
-            !isMonomial(e))     // monomial term
+        if (!isMonomial(e) && !isPolynomial(e)) // unflattened polynomial
             return false;
     }
 
@@ -90,8 +95,11 @@ int monomialOrder(ExprNode* expr)
     }
 #endif
 
-    if (!expr->isOperator() || (((OpNode*)expr)->name() != "*" && ((OpNode*)expr)->name() != "**"))
+    if (!expr->isOperator() || !(((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" || ((OpNode*)expr)->name() == "/"))
         return monomialBasisOrder(expr);
+
+    if (expr->isOperator() && ((OpNode*)expr)->name() == "/")
+        return monomialOrder(expr->children().front()) - monomialOrder(expr->children().back());
 
     int order = 0;
     for (auto e : expr->children())

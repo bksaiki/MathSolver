@@ -56,7 +56,28 @@ IntNode::IntNode(const Integer& data, ExprNode* parent)
     mPrec = 0;
 }
 
-FloatNode::FloatNode(double data, ExprNode* parent)
+FloatNode::FloatNode(const Float& data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+
+FloatNode::FloatNode(Float&& data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+
+RangeNode::RangeNode(const Range& data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+    
+RangeNode::RangeNode(Range&& data, ExprNode* parent)
 {
     mData = data;
     mParent = parent;
@@ -72,13 +93,14 @@ const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] =
 	"sin", "cos", "tan"
 };
 
-const size_t OPERATOR_COUNT = 15;
+const size_t OPERATOR_COUNT = 17;
 const std::string OPERATORS[OPERATOR_COUNT] = 
 {
-	"+", "-", "*", "/", "%", "mod"
-    "-*", "**"
+	"+", "-", "*", "/", "%", "mod",
+    "-*", "**",
 	"^", "!",
-	">", "<", ">=", "<=", "="
+	">", "<", ">=", "<=", "=",
+    "or", "and"
 };
 
 bool isOperator(char c)
@@ -131,6 +153,7 @@ int opPrec(const std::string& str)
 	else if (str == "+" || str == "-")					    return 7;
 	else if (str == ">" || str == ">=" || str == "=" ||
 			 str == "<" || str == "<=")					    return 8;
+    else if (str == "or" || str == "and")                   return 9;
 	else												    return 0;
 }
 
@@ -158,12 +181,14 @@ ExprNode* moveNode(ExprNode* dest, ExprNode* src)
     return src;
 }
 
-std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos)
+std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos, bool remove)
 {
-    if (parent != nullptr)
+    if (parent != nullptr && src != *pos)
     {       
-        auto it = parent->children().insert(pos, src);
+        if (remove) delete *pos;
+        auto it = parent->children().insert(pos, src);      
         parent->children().erase(pos);
+        src->setParent(parent);
         return it;
     }
 

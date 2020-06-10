@@ -1,10 +1,24 @@
 #include <iostream>
 #include <list>
 #include <string>
-#include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
+#include "../lib/expr/parser.h"
 
 using namespace MathSolver;
+
+bool parseExpr(TestModule& tester, const std::string exprs[], size_t count)
+{
+	for (size_t i = 0; i < count; ++i)
+	{
+		ExprNode* expr = parseString(exprs[2 * i]);
+		flattenExpr(expr);
+		tester.runTest(toPrefixString(expr), exprs[2 * i + 1]);
+		freeExpression(expr);
+	}
+
+	std::cout << tester.result() << std::endl;
+	return tester.status();
+}
 
 int main()
 {
@@ -15,7 +29,6 @@ int main()
 	// Single operations
 	//
 
-	TestModule tests("Parser - (negate)", verbose);
 	{
 		const size_t COUNT = 4;
 		const std::string exprs[COUNT * 2] = 
@@ -26,359 +39,105 @@ int main()
 			"x--y",		"(- x (-* y))"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser - (negate)", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
-	tests.reset("Parser +");
 	{
-		const size_t COUNT = 2;
+		const size_t COUNT = 4;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"x+y",		"(+ x y)",
-			"x+y+z",	"(+ x y z)"
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser -");
-	{
-		const size_t COUNT = 2;
-		const std::string exprs[COUNT * 2] = 
-		{ 
+			"x+y+z",	"(+ x y z)",
 			"x-y",		"(- x y)",
 			"x-y-z",	"(- x y z)"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser +,-", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
-	tests.reset("Parser *");
 	{
-		const size_t COUNT = 4;
+		const size_t COUNT = 6;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"x*y",		"(* x y)",
 			"x*y*z",	"(* x y z)",
 			"x(y)",		"(** x y)",
-			"x(y)(z)",	"(** x y z)"
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser /");
-	{
-		const size_t COUNT = 1;
-		const std::string exprs[COUNT * 2] = 
-		{ 
-			"x/y", 		"(/ x y)"
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser %");
-	{
-		const size_t COUNT = 1;
-		const std::string exprs[COUNT * 2] = 
-		{ 
+			"x(y)(z)",	"(** x y z)",
+			"x/y", 		"(/ x y)",
 			"x%y", 		"(% x y)"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser *,/,%", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
-	tests.reset("Parser ^");
 	{
-		const size_t COUNT = 2;
+		const size_t COUNT = 4;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"x^y", 		"(^ x y)",
-			"x^y^z",	"(^ x (^ y z))"
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser !");
-	{
-		const size_t COUNT = 2;
-		const std::string exprs[COUNT * 2] = 
-		{ 
+			"x^y^z",	"(^ x (^ y z))",
 			"x!", 		"(! x)",
 			"(x!)!",	"(! (! x))"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser ^,!", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
-	tests.reset("Parser =");
 	{
-		const size_t COUNT = 1;
+		const size_t COUNT = 5;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"x=y", 		"(= x y)",
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser >");
-	{
-		const size_t COUNT = 1;
-		const std::string exprs[COUNT * 2] = 
-		{ 
 			"x>y", 		"(> x y)",
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser <");
-	{
-		const size_t COUNT = 1;
-		const std::string exprs[COUNT * 2] = 
-		{ 
 			"x<y", 		"(< x y)",
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser >=");
-	{
-		const size_t COUNT = 1;
-		const std::string exprs[COUNT * 2] = 
-		{ 
 			"x>=y", 	"(>= x y)",
+			"x<=y", 	"(<= x y)"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser =,>,<,>=,<=", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
-	tests.reset("Parser <=");
 	{
-		const size_t COUNT = 1;
-		const std::string exprs[COUNT * 2] = 
-		{ 
-			"x<=y", 		"(<= x y)",
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser exp");
-	{
-		const size_t COUNT = 2;
+		const size_t COUNT = 5;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"exp x",		"(exp x)",
-			"exp(x)",		"(exp x)"
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser log");
-	{
-		const size_t COUNT = 3;
-		const std::string exprs[COUNT * 2] = 
-		{ 
+			"exp(x)",		"(exp x)",
 			"log x",		"(log x)",
 			"log(x)",		"(log x)",
 			"log(b, x)",	"(log b x)"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser exp, log", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
-	tests.reset("Parser sin");
 	{
-		const size_t COUNT = 2;
+		const size_t COUNT = 7;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"sin x",		"(sin x)",
-			"sin(x)",		"(sin x)"
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser cos");
-	{
-		const size_t COUNT = 2;
-		const std::string exprs[COUNT * 2] = 
-		{ 
+			"sin(x)",		"(sin x)",
 			"cos x",		"(cos x)",
-			"cos(x)",		"(cos x)"
-		};
-
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
-	}
-
-	tests.reset("Parser tan");
-	{
-		const size_t COUNT = 3;
-		const std::string exprs[COUNT * 2] = 
-		{ 
+			"cos(x)",		"(cos x)",
 			"tan x",		"(tan x)",
 			"tan(x)",		"(tan x)",
 			"tan(x, y)",	"(tan x y)"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser sin, cos, tan", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
 	//
 	//	Multiple operations
 	//
 
-	tests.reset("Parser +,-,*,/,^,!,exp,log,sin,cos,tan");
 	{
 		const size_t COUNT = 10;
 		const std::string exprs[COUNT * 2] = 
@@ -395,15 +154,22 @@ int main()
 			"log(a%b,tan(x,exp y))", 	"(log (% a b) (tan x (exp y)))"
 		};
 
-		for (size_t i = 0; i < COUNT; ++i)
-		{
-			ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
-			flattenExpr(expr);
-			tests.runTest(toPrefixString(expr), exprs[2 * i + 1]);
-			freeExpression(expr);
-		}
-		std::cout << tests.result() << std::endl;
-		status &= tests.status();
+		TestModule tests("Parser +,-,*,/,^,!,exp,log,sin,cos,tan", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
+	}
+
+	{
+		const size_t COUNT = 4;
+		const std::string exprs[COUNT * 2] = 
+		{ 
+			"(0, 1)",	"(0, 1)",
+			"(0, 1]",	"(0, 1]",
+			"[0, 1)",	"[0, 1)",
+			"[0, 1]",	"[0, 1]"
+		};
+
+		TestModule tests("Parser range", verbose);
+		status &= parseExpr(tests, exprs, COUNT);
 	}
 
 	return (int)!status;

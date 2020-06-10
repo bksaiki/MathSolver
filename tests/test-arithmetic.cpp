@@ -10,7 +10,7 @@ bool evalExpr(TestModule& tester, const std::string exprs[], size_t count)
 {
 	for (size_t i = 0; i < count; ++i)
 	{
-		ExprNode* expr = parseTokens(tokenizeStr(exprs[2 * i]));
+		ExprNode* expr = parseString(exprs[2 * i]);
 		flattenExpr(expr);
 		expr = evaluateExpr(expr);
 		tester.runTest(toInfixString(expr), exprs[2 * i + 1]);
@@ -141,8 +141,8 @@ int main()
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"10%3",				"1",
-			"10%-3",			"-2",
-			"-10%3",			"2",
+			"10%-3",			"1",
+			"-10%3",			"-1",
 			"-10%-3", 			"-1",
 			"(a%n)%n",			"a%n",
 			"(n^2)%n",			"0",

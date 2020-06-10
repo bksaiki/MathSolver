@@ -11,8 +11,26 @@ namespace MathSolver
 //  Expression operations
 //
 
+// Returns true if every node in the expression satisfies the given predicate.
+template <typename Pred>
+bool containsAll(ExprNode* expr, Pred pred)
+{
+    for (auto e : expr->children())
+        if (!containsAll(e, pred)) return false;
+    return pred(expr);
+}
+
+// Returns true if the expression contains at least one node satisfying the given predicate.
+template <typename Pred>
+bool containsOnce(ExprNode* expr, Pred pred)
+{
+    for (auto e : expr->children())
+        if (containsOnce(e, pred)) return true;
+    return pred(expr);
+}
+
 // Returns true if the expression contains at least one instance of a certain type
-bool containsType(ExprNode* expr, ExprNode::Type type);
+inline bool containsType(ExprNode* expr, ExprNode::Type type) { return containsOnce(expr, [&](ExprNode* node) { return node->type() == type; }); }
 
 // Returns a copy of the given expression tree.
 ExprNode* copyOf(ExprNode* expr);
@@ -28,7 +46,10 @@ void flattenExpr(ExprNode* expr);
 void freeExpression(ExprNode* expr);
 
 // Returns true if the expression only contains numerical operands (Non-symbolic expression).
-bool isNumerical(ExprNode* expr);
+inline bool isNumerical(ExprNode* expr)
+{ 
+    return containsAll(expr, [](ExprNode* node) { return node->isNumber() || node->isOperator() || node->type() == ExprNode::FUNCTION; }); 
+}
 
 // Returns the number of nodes in the expression tree.
 size_t nodeCount(ExprNode* expr);

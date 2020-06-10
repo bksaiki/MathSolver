@@ -4,7 +4,9 @@
 #include <list>
 #include <string>
 #include "../common/base.h"
+#include "../types/float.h"
 #include "../types/integer.h"
+#include "../types/range.h"
 
 namespace MathSolver
 {
@@ -22,6 +24,7 @@ public:
         CONSTANT,
         INTEGER,
         FLOAT,
+        RANGE,
         SYNTAX
     };
 
@@ -34,7 +37,7 @@ public:
     inline std::list<ExprNode*>& children() { return mChildren; }
     inline const std::list<ExprNode*>& children() const { return mChildren; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
+    // Returns true if this node is a number (i.e. Integer or Float type).
     virtual bool isNumber() const = 0;
 
     // Returns true if this node is an operator (i.e. not a value).
@@ -76,35 +79,21 @@ class SyntaxNode : public ExprNode
 {
 public:
 
-    // Default constructor 
     SyntaxNode(const std::string& data = "", ExprNode* parent = nullptr);
-
-    // Destructor
     ~SyntaxNode() {}
 
-    // Returns the data stored at this node.
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return false; }
-
-    // Returns true if this node is an operator (i.e. not a value).
     inline bool isOperator() const { return false; }
-
-    // Returns true if this node is syntax (i.e. bracket, comma, etc.).
     inline bool isSyntax() const { return true; }
-
-    // Returns true if this node is a value (i.e. not an operator).
     inline bool isValue() const { return false; }
 
-    // Sets the data at this node.
     inline void setName(const std::string& str);
 
-    // Returns a string representation of this node.
     inline std::string toString() const { return mData; }
  
-    // Returns the type of this node.
     inline Type type() const { return SYNTAX; }
 
 private:
@@ -116,35 +105,21 @@ class OpNode : public ExprNode
 {
 public:
 
-    // Default constructor 
     OpNode(const std::string& data = "", ExprNode* parent = nullptr);
-
-    // Destructor
     ~OpNode() {}
 
-    // Returns the data stored at this node.
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return false; }
-
-    // Returns true if this node is an operator (i.e. not a value).
     inline bool isOperator() const { return true; }
-
-    // Returns true if this node is syntax (i.e. bracket, comma, etc.).
     inline bool isSyntax() const { return false; }
-
-    // Returns true if this node is a value (i.e. not an operator).
     inline bool isValue() const { return false; }
 
-    // Sets the data at this node.
     void setName(const std::string& str);
 
-    // Returns a string representation of this node.
     inline std::string toString() const { return mData; }
  
-    // Returns the type of this node.
     inline Type type() const { return OPERATOR; }
 
 private:
@@ -156,35 +131,21 @@ class FuncNode : public ExprNode
 {
 public:
 
-    // Default constructor 
     FuncNode(const std::string& data = "", ExprNode* parent = nullptr);
-
-    // Destructor
     ~FuncNode() {}
 
-    // Returns the data stored at this node.
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return false; }
-
-    // Returns true if this node is an operator (i.e. not a value).
     inline bool isOperator() const { return false; }
-
-    // Returns true if this node is syntax (i.e. bracket, comma, etc.).
     inline bool isSyntax() const { return false; }
-
-    // Returns true if this node is a value (i.e. not an operator).
     inline bool isValue() const { return false; }
 
-    // Sets the data at this node.
     inline void setName(const std::string& str) { mData = str; }
 
-    // Returns a string representation of this node.
     inline std::string toString() const { return mData; }
- 
-    // Returns the type of this node.
+
     inline Type type() const { return FUNCTION; }
 
 private:
@@ -196,35 +157,21 @@ class VarNode : public ExprNode
 {
 public:
 
-    // Default constructor 
     VarNode(const std::string& data = "", ExprNode* parent = nullptr);
-
-    // Destructor
     ~VarNode() {}
 
-    // Returns the data stored at this node.
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return false; }
-
-    // Returns true if this node is an operator (i.e. not a value).
     inline bool isOperator() const { return false; }
-
-    // Returns true if this node is syntax (i.e. bracket, comma, etc.).
     inline bool isSyntax() const { return false; }
-
-    // Returns true if this node is a value (i.e. not an operator).
     inline bool isValue() const { return true; }
 
-    // Sets the data at this node.
     inline void setName(const std::string& str) { mData = str; }
 
-    // Returns a string representation of this node.
     inline std::string toString() const { return mData; }
  
-    // Returns the type of this node.
     inline Type type() const { return VARIABLE; }
 
 private:
@@ -236,35 +183,22 @@ class ConstNode : public ExprNode
 {
 public:
 
-    // Default constructor 
     ConstNode(const std::string& data = "", ExprNode* parent = nullptr);
-
-    // Destructor
     ~ConstNode() {}
 
-    // Returns the data stored at this node.
     inline std::string& name() { return mData; }
     inline const std::string& name() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return false; }
-
-    // Returns true if this node is an operator (i.e. not a value).
     inline bool isOperator() const { return false; }
-
-    // Returns true if this node is syntax (i.e. bracket, comma, etc.).
     inline bool isSyntax() const { return false; }
-
-    // Returns true if this node is a value (i.e. not an operator).
     inline bool isValue() const { return true; }
 
-    // Sets the data at this node.
     inline void setName(const std::string& str) { mData = str; }
 
-    // Returns a string representation of this node.
     inline std::string toString() const { return mData; }
  
-    // Returns the type of this node.
+
     inline Type type() const { return CONSTANT; }
 
 private:
@@ -276,35 +210,21 @@ class IntNode : public ExprNode
 {
 public:
 
-    // Default constructor 
     IntNode(const Integer& data = Integer(), ExprNode* parent = nullptr);
-
-    // Destructor
     ~IntNode() {}
 
-    // Returns the data stored at this node.
     inline Integer& value() { return mData; }
     inline const Integer& value() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return true; }
-
-    // Returns true if this node is an operator (i.e. not a value).
     inline bool isOperator() const { return false; }
-
-    // Returns true if this node is syntax (i.e. bracket, comma, etc.).
     inline bool isSyntax() const { return false; }
-
-    // Returns true if this node is a value (i.e. not an operator).
     inline bool isValue() const { return true; }
 
-    // Sets the data at this node.
     inline void setValue(const Integer& i) { mData = i; }
 
-    // Returns a string representation of this node.
     inline std::string toString() const { return mData.toString(); }
- 
-    // Returns the type of this node.
+
     inline Type type() const { return INTEGER; }
 
 private:
@@ -316,38 +236,53 @@ class FloatNode : public ExprNode
 {
 public:
 
-    // Default constructor 
-    FloatNode(double data = 0.0, ExprNode* parent = nullptr);
-
-    // Destructor
+    FloatNode(const Float& data = Float("0"), ExprNode* parent = nullptr);
+    FloatNode(Float&& data, ExprNode* parent = nullptr);
     ~FloatNode() {}
 
-    // Returns the data stored at this node.
-    inline double value() const { return mData; }
+    inline Float& value() { return mData; }
+    inline const Float& value() const { return mData; }
 
-    // Returns true if this node is a number (i.e. Integer of float type).
     inline bool isNumber() const { return true; }
-
-    // Returns true if this node is an operator (i.e. not a value).
     inline bool isOperator() const { return false; }
-
-    // Returns true if this node is syntax (i.e. bracket, comma, etc.).
     inline bool isSyntax() const { return false; }
-
-    // Returns true if this node is a value (i.e. not an operator).
     inline bool isValue() const { return true; }
 
-    // Sets the data at this node.
-    inline void setValue(double d) { mData = d; }
+    inline void setValue(const Float& d) { mData = d; }
 
-    // Returns a string representation of this node.
-    inline std::string toString() const { return std::to_string(mData); }
+    inline std::string toString() const { return mData.toString(); }
  
-    // Returns the type of this node.
     inline Type type() const { return FLOAT; }
 
 private:
-    double mData;
+    Float mData;
+};
+
+// Range node
+class RangeNode : public ExprNode
+{
+public:
+
+    RangeNode(const Range& data = Range(), ExprNode* parent = nullptr);
+    RangeNode(Range&& data, ExprNode* parent = nullptr);
+    ~RangeNode() {}
+
+    inline Range& value() { return mData; }
+    inline const Range& value() const { return mData; }
+
+    inline bool isNumber() const { return false; }
+    inline bool isOperator() const { return false; }
+    inline bool isSyntax() const { return false; }
+    inline bool isValue() const { return false; }
+
+    inline void setValue(const Range& d) { mData = d; }
+
+    inline std::string toString() const { return mData.toString(); }
+ 
+    inline Type type() const { return RANGE; }
+
+private:
+    Range mData;
 };
 
 //
@@ -395,11 +330,13 @@ ExprNode* moveNode(ExprNode* dest, ExprNode* src);
 
 // Replaces dest from the parent's list of children with src. Assumes dest is an invalid
 // pointer that needs updating.
-std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos);
+std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std::list<ExprNode*>::iterator pos, bool remove = false);
 
 // Removes this expression from the parent's list of children. Assumes another pointer is tracking this node,
 // else data will be lost.
 void releaseChild(ExprNode* node);
+
+
 
 }
 

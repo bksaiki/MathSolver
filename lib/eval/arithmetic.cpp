@@ -1,7 +1,8 @@
-#include <cstring>
+#include <algorithm>
 #include "arithmetic.h"
 #include "../expr/arithmetic.h"
 #include "../expr/polynomial.h"
+#include "../math/float-math.h"
 #include "../math/integer-math.h"
 
 namespace MathSolver
@@ -10,6 +11,88 @@ namespace MathSolver
 //
 //  Numerical arithmetic evaluators
 //
+
+ExprNode* numericExp(ExprNode* op)
+{
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    Float v = exp((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
+                                                                        Float(((IntNode*)op->children().front())->value().toString()));
+    ExprNode* res = new FloatNode(v, op->parent());
+    freeExpression(op);
+    return res;
+}
+
+ExprNode* numericLog(ExprNode* op)
+{
+    if (op->children().size() != 1 && op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 or 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    if (op->children().size() != 1)    // TODO
+    {
+        gErrorManager.log("Log of base " + op->children().front()->toString() + " unimplemented", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    // TODO log(x, n)
+    Float v = log((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
+                                                                        Float(((IntNode*)op->children().front())->value().toString()));
+    ExprNode* res = new FloatNode(v, op->parent());
+    freeExpression(op);
+    return res;
+}
+
+ExprNode* numericSin(ExprNode* op)
+{
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    Float v = sin((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
+                                                                        Float(((IntNode*)op->children().front())->value().toString()));
+    ExprNode* res = new FloatNode(v, op->parent());
+    freeExpression(op);
+    return res;
+}
+
+ExprNode* numericCos(ExprNode* op)
+{
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    Float v = cos((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
+                                                                        Float(((IntNode*)op->children().front())->value().toString()));
+    ExprNode* res = new FloatNode(v, op->parent());
+    freeExpression(op);
+    return res;
+}
+
+ExprNode* numericTan(ExprNode* op)
+{
+    if (op->children().size() != 1)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    Float v = tan((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
+                                                                        Float(((IntNode*)op->children().front())->value().toString()));
+    ExprNode* res = new FloatNode(v, op->parent());
+    freeExpression(op);
+    return res;
+}
 
 // Evalutes "(-* <num>)"
 ExprNode* numericNeg(ExprNode* op)
@@ -31,67 +114,115 @@ ExprNode* numericNeg(ExprNode* op)
 // Evaluates "(+ <num>...)"
 ExprNode* numericAdd(ExprNode* op)
 {
-    ExprNode* acc;
-    if (op->children().front()->type() == ExprNode::INTEGER)  
-        acc = new IntNode(((IntNode*)op->children().front())->value());
-    else                                                      
-        acc = new FloatNode(((FloatNode*)op->children().front())->value());
-    delete op->children().front();
-
-    for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
+    ExprNode* res;
+    if (std::any_of(op->children().begin(), op->children().end(), [](ExprNode* x) { return x->type() == ExprNode::FLOAT; }))
     {
-        if (acc->type() == ExprNode::INTEGER && (*it)->type() == ExprNode::INTEGER) // <exact> += <exact>
-            ((IntNode*)acc)->value() += ((IntNode*)*it)->value();
-        // TODO: inexact
-        
-        delete *it;
-    }
+        for (auto it = op->children().begin(); it != op->children().end(); ++it)
+        {
+            if ((*it)->type() == ExprNode::INTEGER)
+                it = replaceChild(op, new FloatNode(((IntNode*)*it)->value().toString()), it, true); // TODO: naive conversion
+        }
 
-    return moveNode(op, acc);
+        auto it = op->children().begin();
+        while (it != op->children().end())
+        {
+            auto it2 = std::next(it);
+            bool match = false;
+            while (it2 != op->children().end())
+            {
+                if (((FloatNode*)*it)->value() == -((FloatNode*)*it2)->value())
+                {
+                    delete *it;
+                    delete *it2;
+                    op->children().erase(it2);
+                    it = op->children().erase(it);
+                    match = true;
+                    break;
+                }
+                else
+                {
+                    ++it2;
+                }
+            }
+
+            if (!match) ++it;
+        }
+
+        res = new FloatNode();
+        for (auto e : op->children())
+            ((FloatNode*)res)->value() += ((FloatNode*)e)->value();
+    }
+    else
+    {
+        auto it = op->children().begin();
+        while (it != op->children().end())
+        {
+            auto it2 = std::next(it);
+            bool match = false;
+            while (it2 != op->children().end())
+            {
+                if (((IntNode*)*it)->value() == -((IntNode*)*it2)->value())
+                {
+                    delete *it;
+                    delete *it2;
+                    op->children().erase(it2);
+                    it = op->children().erase(it);
+                    match = true;
+                    break;
+                }
+                else
+                {
+                    ++it2;
+                }
+            }
+
+            if (!match) ++it;
+        }
+
+        res = new IntNode();
+        for (auto e : op->children())
+            ((IntNode*)res)->value() += ((IntNode*)e)->value();
+    }
+    
+    res->setParent(op->parent());
+    freeExpression(op);
+    return res;
 }
 
 // Evaluates "(- <num>...)"
 ExprNode* numericSub(ExprNode* op)
 {
-    ExprNode* acc;
-    if (op->children().front()->type() == ExprNode::INTEGER)  
-        acc = new IntNode(((IntNode*)op->children().front())->value());
-    else                                                      
-        acc = new FloatNode(((FloatNode*)op->children().front())->value());
-    delete op->children().front();
-
-    for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
-    {
-        if (acc->type() == ExprNode::INTEGER && (*it)->type() == ExprNode::INTEGER) // <exact> -= <exact>
-            ((IntNode*)acc)->value() -= ((IntNode*)*it)->value();
-        // TODO: inexact
-        
-        delete *it;
-    }
-
-    return moveNode(op, acc);
+    arithmeticRewrite(op);
+    for (auto it = op->children().begin(); it != op->children().end(); ++it)
+        it = replaceChild(op, evaluateArithmetic(*it), it);
+    return evaluateArithmetic(op);
 }
 
 // Evaluates "(* <num>...)" or "(** <num>...)"
 ExprNode* numericMul(ExprNode* op)
 {
-    ExprNode* acc;
-    if (op->children().front()->type() == ExprNode::INTEGER)  
-        acc = new IntNode(((IntNode*)op->children().front())->value());
-    else                                                      
-        acc = new FloatNode(((FloatNode*)op->children().front())->value());
-    delete op->children().front();
-
-    for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
+    ExprNode* res;
+    if (std::any_of(op->children().begin(), op->children().end(), [](ExprNode* x) { return x->type() == ExprNode::FLOAT; }))
     {
-        if (acc->type() == ExprNode::INTEGER && (*it)->type() == ExprNode::INTEGER) // <exact> *= <exact>
-            ((IntNode*)acc)->value() *= ((IntNode*)*it)->value();
-        // TODO: inexact
-        
-        delete *it;
+        Float first = ((op->children().front()->type() == ExprNode::FLOAT) ? ((FloatNode*)op->children().front())->value() : 
+                                                                             Float(((IntNode*)op->children().front())->value().toString()));
+       res = new FloatNode(first, op->parent());
+        for (auto e = std::next(op->children().begin()); e != op->children().end(); ++e)
+        {
+            if ((*e)->type() == ExprNode::FLOAT) ((FloatNode*)res)->value() *= ((FloatNode*)*e)->value();
+            else                                 ((FloatNode*)res)->value() *= Float(((IntNode*)*e)->value().toString()); // TODO: this conversion is naive
+        }
     }
- 
-    return moveNode(op, acc);
+    else
+    {
+        res = new IntNode(((IntNode*)op->children().front())->value(), op->parent());
+        for (auto e = std::next(op->children().begin()); e != op->children().end(); ++e)
+            ((IntNode*)res)->value() *= ((IntNode*)*e)->value();
+    }
+
+    res->setParent(op->parent());
+    freeExpression(op);
+    return res;
 }
 
 // Evaluates "(/ <num> <num>)"
@@ -107,7 +238,7 @@ ExprNode* numericDiv(ExprNode* op)
     ExprNode* rhs = op->children().back();
 
     if ((rhs->type() == ExprNode::INTEGER && ((IntNode*)rhs)->value().isZero()) ||
-        (rhs->type() == ExprNode::FLOAT && ((FloatNode*)rhs)->value() == 0.0))
+        (rhs->type() == ExprNode::FLOAT && ((FloatNode*)rhs)->value().isZero()))
     {
         ExprNode* ret = new ConstNode("undef", op->parent());
         gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
@@ -132,8 +263,14 @@ ExprNode* numericDiv(ExprNode* op)
 
         return op; // no exact numerical division: a/b --> a/b
     }
-
-    return op;
+    else
+    {
+        Float n = ((lhs->type() == ExprNode::FLOAT) ? ((FloatNode*)lhs)->value() : Float(((IntNode*)lhs)->value().toString()));
+        Float d = ((rhs->type() == ExprNode::FLOAT) ? ((FloatNode*)rhs)->value() : Float(((IntNode*)rhs)->value().toString()));
+        ExprNode* res = new FloatNode(n / d, op->parent());
+        freeExpression(op);
+        return res;
+    }
 }
 
 // Evaluates (% <num> <num>)
@@ -145,7 +282,20 @@ ExprNode* numericMod(ExprNode* op)
         return op;
     } 
 
-    ExprNode* res = new IntNode(((IntNode*)op->children().front())->value() % ((IntNode*)op->children().back())->value(), op->parent());
+    ExprNode* lhs = op->children().front();
+    ExprNode* rhs = op->children().back();
+    ExprNode* res;
+    if (lhs->type() == ExprNode::INTEGER && rhs->type() == ExprNode::INTEGER) // <exact> mod <exact>
+    {
+        res = new IntNode(((IntNode*)op->children().front())->value() % ((IntNode*)op->children().back())->value(), op->parent());
+    }
+    else
+    {
+        Float n = ((lhs->type() == ExprNode::FLOAT) ? ((FloatNode*)lhs)->value() : Float(((IntNode*)lhs)->value().toString()));
+        Float d = ((rhs->type() == ExprNode::FLOAT) ? ((FloatNode*)rhs)->value() : Float(((IntNode*)rhs)->value().toString()));
+        res = new FloatNode(mod(n, d), op->parent());
+    }
+    
     freeExpression(op);
     return res;
 }
@@ -159,17 +309,29 @@ ExprNode* numericPow(ExprNode* op)
         return op;
     }
 
-    if (((IntNode*)op->children().back())->value().sign())  // (^ x -n)
+    ExprNode* lhs = op->children().front();
+    ExprNode* rhs = op->children().back();
+    if (lhs->type() == ExprNode::INTEGER && rhs->type() == ExprNode::INTEGER)
     {
-        ((OpNode*)op)->setName("/");
-        ((IntNode*)op->children().back())->setValue(pow(((IntNode*)op->children().front())->value(), 
-                                                        -((IntNode*)op->children().back())->value()));
-        ((IntNode*)op->children().front())->setValue(Integer(1));
-        return op;                                 
+        if (((IntNode*)rhs)->value().sign())  // (^ x -n)
+        {
+            ((OpNode*)op)->setName("/");
+            ((IntNode*)rhs)->setValue(pow(((IntNode*)lhs)->value(), -((IntNode*)rhs)->value()));
+            ((IntNode*)lhs)->setValue(Integer(1));
+            return op;                                 
+        }
+        else
+        {
+            ExprNode* res = new IntNode(pow(((IntNode*)op->children().front())->value(), ((IntNode*)op->children().back())->value()), op->parent());
+            freeExpression(op);
+            return res;
+        }
     }
     else
     {
-        ExprNode* res = new IntNode(pow(((IntNode*)op->children().front())->value(), ((IntNode*)op->children().back())->value()), op->parent());
+        Float x = ((lhs->type() == ExprNode::FLOAT) ? ((FloatNode*)lhs)->value() : Float(((IntNode*)lhs)->value().toString()));
+        Float y = ((rhs->type() == ExprNode::FLOAT) ? ((FloatNode*)rhs)->value() : Float(((IntNode*)rhs)->value().toString()));
+        ExprNode* res = new FloatNode(pow(x, y), op->parent());
         freeExpression(op);
         return res;
     }
@@ -211,34 +373,37 @@ ExprNode* symbolicExp(ExprNode* op)
         return op;
     }
 
-    if (op->children().front()->isOperator() && // (exp (log x)) --> x
-        ((OpNode*)op->children().front())->name() == "log" && op->children().front()->children().size() == 1) 
+    ExprNode* arg = op->children().front();
+    if (arg->type() == ExprNode::FUNCTION && ((FuncNode*)arg)->name() == "log" && arg->children().size() == 1) // (exp (log x)) --> x
     {
-        ExprNode* ln = op->children().front();
-        op = moveNode(op, ln->children().front());
-        delete ln;
+        op = moveNode(op, arg->children().front());
+        delete arg;
     }
 
     // TODO: more simplifications
-
     return op;
 }
 
 // Evaluates "(log x) or (log b x)"
 ExprNode* symbolicLog(ExprNode* op)
 {
-    if (op->children().size() != 1 || op->children().size() != 2)     
+    if (op->children().size() != 1 && op->children().size() != 2)     
     {
         gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 or 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
         return op;
     }
 
-    if (op->children().front()->isOperator() && // (log (exp x)) --> x
-        ((OpNode*)op->children().front())->name() == "exp" && op->children().front()->children().size() == 1) 
+    if (op->children().size() != 1)    // TODO
     {
-        ExprNode* ln = op->children().front();
-        op = moveNode(op, ln->children().front());
-        delete ln;
+        gErrorManager.log("Log of base " + op->children().front()->toString() + " unimplemented", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    ExprNode* arg = op->children().front();
+    if (arg->type() == ExprNode::FUNCTION && ((FuncNode*)arg)->name() == "exp" && arg->children().size() == 1) // (log (exp x)) --> x
+    {
+        op = moveNode(op, arg->children().front());
+        delete arg;
     }
 
     // TODO: more simplifications
@@ -325,7 +490,7 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
             ExprNode* tmp = new OpNode(((OpNode*)op)->name(), op);
             tmp->children().push_back(*i);
             tmp->children().push_back(*j);
-            if (strcmp(str, "+") == 0)          tmp = numericAdd(tmp);
+            if (std::string(str) == "+")        tmp = numericAdd(tmp);
             else /* name == "-" */              tmp = numericSub(tmp);
             i = op->children().erase(i, std::next(j));
             i = op->children().insert(i, tmp); 
@@ -591,19 +756,19 @@ ExprNode* symbolicMul(ExprNode* op)
     {
         auto it2 = std::next(it);
         if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value().isZero()) || // (* 0 a ...) ==> 0
-            ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == 0.0))
+            ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value().isZero()))
         {
             for (auto c : op->children()) freeExpression(c);
             return moveNode(op, new IntNode());
         }
         else if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value() == Integer(1)) || // (* 1 a ...) ==> (* a ...)
-                ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == 1.0))
+                ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == Float("1.0")))
         {
             delete *it;
             it = op->children().erase(it);
         }
         else if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value() == Integer(-1)) || // (* -1 a ...) ==> (-* (* a ...))
-                 ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == -1.0))
+                 ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == Float("-1.0")))
         {
             if (op->children().size() == 2) // specific: (* -1 a) ==> (-* a)
             {
@@ -726,7 +891,7 @@ ExprNode* symbolicDiv(OpNode* op)
     ExprNode* den = op->children().back();
 
     if ((den->type() == ExprNode::INTEGER && ((IntNode*)den)->value().isZero()) ||
-        (den->type() == ExprNode::FLOAT && ((FloatNode*)den)->value() == 0.0))
+        (den->type() == ExprNode::FLOAT && ((FloatNode*)den)->value().isZero()))
     {
         ExprNode* ret = new ConstNode("undef", op->parent());
         gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
@@ -960,17 +1125,17 @@ ExprNode* symbolicPow(OpNode* op)
 // Arithmetic evaluator
 //
 
-ExprNode* evaluateArithmetic(ExprNode* expr)
+ExprNode* evaluateArithmetic(ExprNode* expr, bool firstPass)
 {
     if (expr->isNumber())                         return expr;
     if (expr->type() == ExprNode::CONSTANT)       return expr;    // TODO: constant table
     if (expr->type() == ExprNode::VARIABLE)       return expr;
     
-    if (isNumerical(expr))
+    if (expr->type() == ExprNode::OPERATOR)
     {
-        if (expr->type() == ExprNode::OPERATOR)
+        OpNode* op = (OpNode*)expr;                  
+        if (isNumerical(expr))
         {
-            OpNode* op = (OpNode*)expr;                  
             if (op->name() == "-*")                             return numericNeg(op);
             else if (op->name() == "+")                         return numericAdd(op);
             else if (op->name() == "-")                         return numericSub(op);
@@ -982,19 +1147,6 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
         }
         else
         {
-            FuncNode* func = (FuncNode*)expr; 
-            if (func->name() == "exp")              return expr;   // Unsupported: numerical exp
-            else if (func->name() == "log")         return expr;   // Unsupported: numerical log
-            else if (func->name() == "sin")         return expr;   // Unsupported: numerical sin
-            else if (func->name() == "cos")         return expr;   // Unsupported: numerical cos
-            else if (func->name() == "tan")         return expr;   // Unsupported: numerical tan
-        }
-    }
-    else // symbolic
-    {
-        if (expr->type() == ExprNode::OPERATOR)
-        {
-            OpNode* op = (OpNode*)expr; 
             if (op->name() == "-*")                             return symbolicNeg(op);
             else if (op->name() == "+")                         return symbolicAdd(op);
             else if (op->name() == "-")                         return symbolicSub(op);
@@ -1003,16 +1155,27 @@ ExprNode* evaluateArithmetic(ExprNode* expr)
             else if (op->name() == "%" || op->name() == "mod")  return symbolicMod(op);
             else if (op->name() == "^")                         return symbolicPow(op);
             else if (op->name() == "!")                         return expr;    // No simplification needed?
+        }     
+    }
+    else
+    {
+        FuncNode* func = (FuncNode*)expr; 
+        if (!firstPass && isNumerical(expr))
+        {
+            if (func->name() == "exp")              return numericExp(expr);
+            else if (func->name() == "log")         return numericExp(expr);
+            else if (func->name() == "sin")         return numericSin(expr);
+            else if (func->name() == "cos")         return numericCos(expr);
+            else if (func->name() == "tan")         return numericTan(expr);
         }
         else
         {
-            FuncNode* func = (FuncNode*)expr; 
             if (func->name() == "exp")              return symbolicExp(func);
             else if (func->name() == "log")         return symbolicLog(func);
             else if (func->name() == "sin")         return symbolicSin(func);
             else if (func->name() == "cos")         return symbolicCos(func);
-            else if (func->name() == "tan")         return symbolicTan(func);    
-        }                                     
+            else if (func->name() == "tan")         return symbolicTan(func); 
+        }
     }
 
     gErrorManager.log("Unimpemented operation: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);

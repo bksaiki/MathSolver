@@ -3,32 +3,24 @@
 namespace MathSolver
 {
 
-bool isArithmetic(ExprNode* expr)
+bool nodeIsArithmetic(ExprNode* node)
 {
-    for (ExprNode* child : expr->children())
+    if (node->type() == ExprNode::FUNCTION)
     {
-        if (!isArithmetic(child))
-            return false;
-    }
-
-    if (expr->type() == ExprNode::FUNCTION)
-    {
-        FuncNode* func = (FuncNode*)expr;
+        FuncNode* func = (FuncNode*)node;
         return (func->name() == "exp" || func->name() == "log" ||
                 func->name() == "sin" || func->name() == "cos" || func->name() == "tan");
     }
-    else if (expr->isOperator())
+    else if (node->isOperator())
     {
-        OpNode* op = (OpNode*)expr;
+        OpNode* op = (OpNode*)node;
         return (op->name() == "-*" ||
                 op->name() == "+" || op->name() == "-" || op->name() == "**" ||
                 op->name() == "*" || op->name() == "/" || op->name() == "%" || op->name() == "mod" || 
                 op->name() == "^" || op->name() == "!");
     }
-    else
-    {
-        return true;
-    }
+
+    return node->isNumber() || node->type() == ExprNode::VARIABLE;
 }
 
 std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)
@@ -109,6 +101,22 @@ ExprNode* getPowExp(ExprNode* op)
 {
     if (op->isOperator() && ((OpNode*)op)->name() == "^")       return op->children().back();
     else                                                        return new IntNode(1);
+}
+
+void arithmeticRewrite(ExprNode* op)
+{
+    if (op->isOperator() && ((OpNode*)op)->name() == "-")
+    {
+        ((OpNode*)op)->setName("+");
+        for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
+        {
+            ExprNode* neg = new OpNode("-*", op);
+            neg->children().push_back(*it);
+            (*it)->setParent(neg);
+            it = replaceChild(op, neg, it);
+        }
+        flattenExpr(op);
+    }
 }
 
 }
