@@ -286,7 +286,19 @@ private:
 };
 
 //
-// Parsing
+//  Special nodes
+//
+
+// Returns true if the expression node represents a zero value in the context
+// of the type.
+bool isZeroNode(ExprNode* expr);
+
+// Returns true if the expression node represents a one, identity, or unit value
+// depending on the context of the type.
+bool isIdentityNode(ExprNode* expr);
+
+//
+// Parsing (TODO: move to parsing?)
 //
 
 // Returns true if the character is an operator.
@@ -319,6 +331,8 @@ bool isOperator(const std::string& op);
 // Returns the precedence of the string
 int opPrec(const std::string& str);
 
+
+
 //
 // Node manipulation
 //
@@ -335,7 +349,6 @@ std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std
 // Removes this expression from the parent's list of children. Assumes another pointer is tracking this node,
 // else data will be lost.
 void releaseChild(ExprNode* node);
-
 
 
 }

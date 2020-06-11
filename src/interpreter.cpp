@@ -18,7 +18,7 @@ int parseLine(const std::string& line)
     }
 
     flattenExpr(eval);
-    eval = evaluateExpr(eval);
+    eval = rrAndEvalExpr(eval);
     if (gErrorManager.hasError())
     {   
         std::cout << gErrorManager.toString();

@@ -12,7 +12,7 @@ bool evalExpr(TestModule& tester, const std::string exprs[], size_t count)
 	{
 		ExprNode* expr = parseString(exprs[2 * i]);
 		flattenExpr(expr);
-		expr = evaluateExpr(expr);
+		expr = rrAndEvalExpr(expr);
 		tester.runTest(toInfixString(expr), exprs[2 * i + 1]);
 		freeExpression(expr);
 	}
@@ -76,7 +76,7 @@ int main()
 			"100-1000",			"-900",
 			"500-600-200",		"-300",
 			"5z-2z-9-6",		"3z-15",
-			"2x-y-3x",			"-x-y"
+			"2x-y-3x",			"-(x+y)"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

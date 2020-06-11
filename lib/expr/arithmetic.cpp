@@ -25,6 +25,14 @@ bool nodeIsArithmetic(ExprNode* node)
 
 std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)
 {
+    if (expr1->isOperator() && expr2->isOperator() && 
+        ((OpNode*)expr1)->name() == "-*" && ((OpNode*)expr2)->name() == "-*")
+        return commonTerm(expr1->children().front(), expr2->children().front());
+    if (expr1->isOperator() && ((OpNode*)expr1)->name() == "-*")
+        return commonTerm(expr1->children().front(), expr2);
+    if (expr2->isOperator() && ((OpNode*)expr2)->name() == "-*")
+        return commonTerm(expr1, expr2->children().front());
+
     std::list<ExprNode*> common;
     if (expr1->isOperator() && expr2->isOperator() && 
         (((OpNode*)expr1)->name() == "*" || ((OpNode*)expr1)->name() == "**") && 
@@ -70,9 +78,14 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2)
 std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term)
 {
     std::list<ExprNode*> coeff;
-    if (expr->isOperator() && term->isOperator() &&
-        (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**") && 
-        (((OpNode*)term)->name() == "*" || ((OpNode*)term)->name() == "**"))
+    if (expr->isOperator() && ((OpNode*)expr)->name() == "-*")
+    {
+        coeff = coeffTerm(expr->children().front(), term);
+        coeff.push_front(new IntNode(-1));
+    }
+    else if (expr->isOperator() && term->isOperator() &&
+             (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**") && 
+             (((OpNode*)term)->name() == "*" || ((OpNode*)term)->name() == "**"))
     {
         for (auto i = expr->children().begin(); i != expr->children().end(); ++i)
         {
@@ -88,9 +101,33 @@ std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term)
         }
     }
 
+    if (coeff.empty())  coeff.push_back(new IntNode(1));
     return coeff;
 }
 
+void removeTerm(ExprNode* expr, const std::list<ExprNode*>& terms)
+{
+    for (auto e : terms)
+    {
+        auto it = expr->children().begin();
+        while (it != expr->children().end())
+        {
+            if ((*it)->isOperator() && ((OpNode*)*it)->name() == "-*")
+            {
+                removeTerm(*it, terms);
+            }
+            else if (eqvExpr(*it, e))
+            {
+                delete *it;
+                it = expr->children().erase(it);
+            }
+            else
+            {
+                ++it;
+            }          
+        }
+    }
+}
 
 ExprNode* extractPowBase(ExprNode* op)
 {

@@ -26,6 +26,9 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2);
 // Finds the coefficient of an expression given a base term.
 std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term);
 
+// Removes a list of term from an expression
+void removeTerm(ExprNode* expr, const std::list<ExprNode*>& terms);
+
 // Assumes the expression is in the form x^n or x and returns a copy of x,
 ExprNode* extractPowBase(ExprNode* op);
 

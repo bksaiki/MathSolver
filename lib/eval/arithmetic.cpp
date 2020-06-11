@@ -373,13 +373,6 @@ ExprNode* symbolicExp(ExprNode* op)
         return op;
     }
 
-    ExprNode* arg = op->children().front();
-    if (arg->type() == ExprNode::FUNCTION && ((FuncNode*)arg)->name() == "log" && arg->children().size() == 1) // (exp (log x)) --> x
-    {
-        op = moveNode(op, arg->children().front());
-        delete arg;
-    }
-
     // TODO: more simplifications
     return op;
 }
@@ -391,19 +384,6 @@ ExprNode* symbolicLog(ExprNode* op)
     {
         gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 or 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
         return op;
-    }
-
-    if (op->children().size() != 1)    // TODO
-    {
-        gErrorManager.log("Log of base " + op->children().front()->toString() + " unimplemented", ErrorManager::ERROR, __FILE__, __LINE__); 
-        return op;
-    }
-
-    ExprNode* arg = op->children().front();
-    if (arg->type() == ExprNode::FUNCTION && ((FuncNode*)arg)->name() == "exp" && arg->children().size() == 1) // (log (exp x)) --> x
-    {
-        op = moveNode(op, arg->children().front());
-        delete arg;
     }
 
     // TODO: more simplifications
@@ -453,30 +433,9 @@ ExprNode* symbolicTan(ExprNode* op)
     return op;
 }
 
-// Evalutes "(-* x)"
-ExprNode* symbolicNeg(ExprNode* op)
-{
-    if (op->children().size() != 1)     
-    {
-        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 1 argument", ErrorManager::ERROR, __FILE__, __LINE__); 
-        return op;
-    }
-
-    ExprNode* arg = op->children().front();
-    if (arg->isOperator() && ((OpNode*)arg)->name() == "-*") // (- (- x)) ==> x
-    {
-        op = moveNode(op, arg->children().front());
-        delete arg;
-    }
-    
-    return op;
-}
-
 // Shared evaluator for symbolic + and -
 ExprNode* symbolicAddSub(ExprNode* op, const char* str)
 {
-    if (isPolynomial(op))   reorderPolynomial(op);
-
     auto i = op->children().begin();
     while (std::next(i) != op->children().end())
     {       
@@ -512,11 +471,7 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                 std::list<ExprNode*> coeff_rhs = coeffTerm(*j, co);
                 ExprNode *lhs, *rhs;
                 
-                if (coeff_lhs.size() == 0) // coeff = 1
-                {
-                    lhs = new IntNode(Integer(1));
-                }
-                else if (coeff_lhs.size() == 1)
+                if (coeff_lhs.size() == 1)
                 {
                     lhs = coeff_lhs.front();
                 }
@@ -526,13 +481,10 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                     lhs->children() = coeff_lhs;
                     for (ExprNode* child : lhs->children())
                         child->setParent(lhs);
+                    lhs = evaluateArithmetic(lhs);
                 }
 
-                if (coeff_rhs.size() == 0) // coeff = 1
-                {
-                    rhs = new IntNode(Integer(1));
-                }
-                else if (coeff_rhs.size() == 1)
+                if (coeff_rhs.size() == 1)
                 {
                     rhs = coeff_rhs.front();
                 }
@@ -542,6 +494,7 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                     rhs->children() = coeff_rhs;
                     for (ExprNode* child : rhs->children())
                         child->setParent(rhs);
+                    rhs = evaluateArithmetic(rhs);
                 }
 
                 if (co->children().size() == 1) // correct: (* x) => x
@@ -551,36 +504,8 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
                     common.push_front(co);
                 }
 
-                for (ExprNode* itr : common) // delete common terms in *i and *j
-                {
-                    auto ichild = (*i)->children().begin();
-                    while (ichild != (*i)->children().end())
-                    {
-                        if (eqvExpr(*ichild, itr))
-                        {
-                            delete *ichild;
-                            ichild = (*i)->children().erase(ichild);
-                        }
-                        else
-                        {
-                            ++ichild;
-                        }           
-                    }
-                    
-                    auto jchild = (*j)->children().begin();
-                    while (jchild != (*j)->children().end())
-                    {
-                        if (eqvExpr(*jchild, itr))
-                        {
-                            delete *jchild;
-                            jchild = (*j)->children().erase(jchild);
-                        }
-                        else
-                        {
-                            ++jchild;
-                        }           
-                    }
-                }
+                removeTerm(*i, common);
+                removeTerm(*j, common);
 
                 ExprNode* add = new OpNode(str); // (coeff_a +- coeff_b)
                 add->children().push_back(lhs);
@@ -1239,7 +1164,7 @@ ExprNode* evaluateArithmetic(ExprNode* expr, bool firstPass)
         }
         else
         {
-            if (op->name() == "-*")                             return symbolicNeg(op);
+            if (op->name() == "-*")                             return expr;    // handles in 'rewrite'
             else if (op->name() == "+")                         return symbolicAdd(op);
             else if (op->name() == "-")                         return symbolicSub(op);
             else if (op->name() == "*" || op->name() == "**")   return symbolicMul(op);

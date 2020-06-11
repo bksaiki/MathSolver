@@ -7,8 +7,14 @@
 namespace MathSolver
 {
 
-// Evaluates a mathematical expression. Returns true on success and false otherwise.
+// Evaluates a mathematical expression and returns the result.
 ExprNode* evaluateExpr(ExprNode* expr);
+
+// Simplifies an expression through rewrite rules.
+ExprNode* rewriteExpr(ExprNode* expr);
+
+// Rewrites and then evaluates. This should be called unless you want the rewrite result.
+inline ExprNode* rrAndEvalExpr(ExprNode* expr) { return evaluateExpr(rewriteExpr(expr)); }
 
 }
 

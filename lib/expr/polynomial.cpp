@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "polynomial.h"
 
 namespace MathSolver
@@ -16,8 +17,8 @@ bool isMonomialEqv(ExprNode* expr)
     if (!expr->isOperator() || !(((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" || ((OpNode*)expr)->name() == "/")) // single value
         return expr->isValue() || isMonomialBasis(expr);
 
-    if (expr->isOperator() && ((OpNode*)expr)->name() == "/")
-        return isMonomialEqv(expr->children().front()) && isMonomialEqv(expr->children().back());
+    if (expr->isOperator() && (((OpNode*)expr)->name() == "/" || ((OpNode*)expr)->name() == "-*")) // for '/' or '-*', check children
+        return std::all_of(expr->children().begin(), expr->children().end(), isMonomialEqv);
 
     for (auto e : expr->children())
     {
@@ -45,22 +46,24 @@ bool isPolynomialEqv(ExprNode* expr)
 
 bool isMonomial(ExprNode* expr)
 {
-    if (!expr->isOperator() || !(((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" || ((OpNode*)expr)->name() == "/")) // single value
-        return expr->isValue() || isMonomialBasis(expr);
+    if (expr->isOperator() && (((OpNode*)expr)->name() == "/" || ((OpNode*)expr)->name() == "-*")) // for '/' or '-*', check children
+        return std::all_of(expr->children().begin(), expr->children().end(), isMonomial);
 
-    if (expr->isOperator() && ((OpNode*)expr)->name() == "/")
-        return isMonomial(expr->children().front()) && isMonomial(expr->children().back());
-
-    if (!(expr->children().front()->isValue() || isMonomialBasis(expr->children().front())))  // the first operand may optionally be a number
-        return false;    
-
-    for (auto e = std::next(expr->children().begin()); e != expr->children().end(); ++e)    // all others must be monomial basis
+    if (expr->isOperator() || (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**"))
     {
-        if (!isMonomialBasis(*e))
-            return false;
+        if (!(expr->children().front()->isValue() || isMonomialBasis(expr->children().front())))  // the first operand may optionally be a number
+            return false;    
+
+        for (auto e = std::next(expr->children().begin()); e != expr->children().end(); ++e)    // all others must be monomial basis
+        {
+            if (!isMonomialBasis(*e))
+                return false;
+        }
+
+        return true;
     }
 
-    return true;
+    return expr->isValue() || isMonomialBasis(expr);
 }
 
 bool isPolynomial(ExprNode* expr)
@@ -100,6 +103,9 @@ int monomialOrder(ExprNode* expr)
 
     if (expr->isOperator() && ((OpNode*)expr)->name() == "/")
         return monomialOrder(expr->children().front()) - monomialOrder(expr->children().back());
+
+    if (expr->isOperator() && ((OpNode*)expr)->name() == "-*")
+        return monomialOrder(expr->children().front());
 
     int order = 0;
     for (auto e : expr->children())

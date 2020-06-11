@@ -84,6 +84,19 @@ RangeNode::RangeNode(Range&& data, ExprNode* parent)
     mPrec = 0;
 }
 
+bool isZeroNode(ExprNode* expr)
+{
+    return ((expr->type() == ExprNode::INTEGER && ((IntNode*)expr)->value().isZero()) || 
+            (expr->type() == ExprNode::FLOAT && ((FloatNode*)expr)->value().isZero()));
+}
+
+bool isIdentityNode(ExprNode* expr)
+{
+    return ((expr->type() == ExprNode::INTEGER && ((IntNode*)expr)->value() == Integer(1)) || 
+            (expr->type() == ExprNode::FLOAT && ((FloatNode*)expr)->value() == Float("1.0")));
+}
+
+
 const char* OPERATOR_CHARS = "+-*/%^!=><|";
 
 const size_t PREDEF_FUNC_COUNT = 5;
