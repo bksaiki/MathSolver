@@ -17,7 +17,8 @@ ExprNode* rewriteExp(ExprNode* op);
 ExprNode* rewriteLog(ExprNode* op);
 
 // Rewrites an expression through rearranging and removing redudant expressions.
-ExprNode* rewriteArithmetic(ExprNode* expr);
+// Second argument is ignored.
+ExprNode* rewriteArithmetic(ExprNode* expr, int data = 0);
 
 }
 

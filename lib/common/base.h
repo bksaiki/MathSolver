@@ -2,6 +2,7 @@
 #define _MATHSOLVER_BASE_H_
 
 #include "error-manager.h"
+#include "util.h"
 
 #define MATHSOLVER_VERSION_STR "0.1.6"
 

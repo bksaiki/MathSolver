@@ -7,7 +7,6 @@ std::string TestModule::result() const
 {
     std::string results;
     std::string totalStr = std::to_string(mResults.size());
-    std::string other = gErrorManager.toString();
     size_t i = 1;
     for (const std::string& s : mResults)
     {
@@ -16,25 +15,20 @@ std::string TestModule::result() const
         ++i;
     }
 
-    if (!other.empty()) other = "\n" + other;
-    gErrorManager.clear();
-    return std::to_string(mPassed) + "/" + totalStr + " \"" + mName + "\"" + results + other;
+    return std::to_string(mPassed) + "/" + totalStr + " \"" + mName + "\"" + results;
 }
 
 void TestModule::runTest(const std::string& test, const std::string& expected)
 {
-    std::string result;
-    if (test == expected)
+    std::string result = std::string((test == expected) ? "PASS" : "FAIL") + "\tExpected: " + expected + "\tActual: " + test;
+    if (test == expected)    ++mPassed;
+    if (gErrorManager.hasAny())
     {
-        result += "PASS";
-        ++mPassed;
-    }
-    else
-    {
-        result += "FAIL";
+        result += ("\n" + gErrorManager.toString());
+        gErrorManager.clear();
     }
 
-    mResults.push_back(result + "\tExpected: " + expected + "\tActual: " + test);
+    mResults.push_back(result);
 }
 
 void TestModule::reset(const std::string& name)

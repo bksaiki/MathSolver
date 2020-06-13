@@ -7,57 +7,22 @@
 namespace MathSolver
 {
 
-ExprNode* evaluateExprR(ExprNode* expr, bool firstPass)
-{   
-    size_t childCount = expr->children().size();
-    for (size_t i = 0; i < childCount; ++i)
-    {
-        ExprNode* child = expr->children().front();
-        expr->children().pop_front();
-        child = evaluateExprR(child, firstPass);
-        expr->children().push_back(child);
-    }
-  
-    if (isArithmetic(expr))     return evaluateArithmetic(expr, firstPass);
-    if (isRangeExpr(expr))      return evaluateRange(expr);
-
-    gErrorManager.log("Unrecognized expression: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);
-    return expr;
-}
-
 ExprNode* evaluateExpr(ExprNode* expr)
 { 
-    if (expr == nullptr)
-        return expr;
-
-    ExprNode* eval = evaluateExprR(expr, true);
-    return evaluateExprR(eval, false);
-}
-
-ExprNode* rewriteExprR(ExprNode* expr)
-{   
-    size_t childCount = expr->children().size();
-    for (size_t i = 0; i < childCount; ++i)
+    if (expr == nullptr)        return expr;
+    
+    if (isArithmetic(expr))
     {
-        ExprNode* child = expr->children().front();
-        expr->children().pop_front();
-        child = rewriteExprR(child);
-        expr->children().push_back(child);
+        expr = evaluateExprLayer(expr, rewriteArithmetic, 0);
+        expr = evaluateExprLayer(expr, evaluateArithmetic, true);
+        return evaluateExprLayer(expr, evaluateArithmetic, false);
     }
-  
-    if (isArithmetic(expr))     return rewriteArithmetic(expr);
-    if (isRangeExpr(expr))      return expr;
+
+    if (isRangeExpr(expr))  return evaluateRange(expr);
+    if (isUndef(expr))      return expr;
 
     gErrorManager.log("Unrecognized expression: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);
     return expr;
-}
-
-ExprNode* rewriteExpr(ExprNode* expr)
-{ 
-    if (expr == nullptr)
-        return expr;
-
-    return rewriteExprR(expr);
 }
 
 }

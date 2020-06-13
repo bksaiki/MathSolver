@@ -13,15 +13,15 @@ int parseLine(const std::string& line)
 
     if (gErrorManager.hasError())
     {   
-        std::cout << gErrorManager.toString();
+        std::cout << gErrorManager.toString() << std::endl;
         return 1;
     }
 
     flattenExpr(eval);
-    eval = rrAndEvalExpr(eval);
+    eval = evaluateExpr(eval);
     if (gErrorManager.hasError())
     {   
-        std::cout << gErrorManager.toString();
+        std::cout << gErrorManager.toString() << std::endl;
         return 1;
     }
     

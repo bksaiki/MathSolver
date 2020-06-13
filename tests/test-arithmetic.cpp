@@ -12,7 +12,7 @@ bool evalExpr(TestModule& tester, const std::string exprs[], size_t count)
 	{
 		ExprNode* expr = parseString(exprs[2 * i]);
 		flattenExpr(expr);
-		expr = rrAndEvalExpr(expr);
+		expr = evaluateExpr(expr);
 		tester.runTest(toInfixString(expr), exprs[2 * i + 1]);
 		freeExpression(expr);
 	}
@@ -172,13 +172,17 @@ int main()
 
 	tests.reset("*,^ mixed");
 	{
-		const size_t COUNT = 4;
+		const size_t COUNT = 8;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"x*x",		"x^2",
 			"x*x^2",	"x^3",
 			"x^2*x",	"x^3",
-			"x^2*x^2",	"x^4"
+			"x^2*x^2",	"x^4",
+			"x^5/x",	"x^4",
+			"x/x^5",	"1/x^4",
+			"x^5/x^3",	"x^2",
+			"x^3/x^5", 	"x^-2"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

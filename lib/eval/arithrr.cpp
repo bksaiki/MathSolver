@@ -288,7 +288,7 @@ ExprNode* rewriteLog(ExprNode* op)
     return op;
 }
 
-ExprNode* rewriteArithmetic(ExprNode* expr)
+ExprNode* rewriteArithmetic(ExprNode* expr, int data)
 {
     if (expr->isNumber())                       return expr;
     if (expr->type() == ExprNode::CONSTANT)     return expr;

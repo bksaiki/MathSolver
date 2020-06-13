@@ -804,17 +804,14 @@ ExprNode* symbolicDiv(OpNode* op)
     ExprNode* num = op->children().front();
     ExprNode* den = op->children().back();
 
-    if ((den->type() == ExprNode::INTEGER && ((IntNode*)den)->value().isZero()) || // (/ x 0) ==> undef
-        (den->type() == ExprNode::FLOAT && ((FloatNode*)den)->value().isZero()))
+    if (isZeroNode(den)) // (/ x 0) ==> undef
     {
-        ExprNode* ret = new ConstNode("undef", op->parent());
-        gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
+        ExprNode* ret = new ConstNode("undef", op->parent());   
         freeExpression(op);
         return ret;
     }
 
-    if ((den->type() == ExprNode::INTEGER && ((IntNode*)den)->value() == Integer(1)) || // (/ x 1) ==> x
-        (den->type() == ExprNode::FLOAT && ((FloatNode*)den)->value() == Float("1.0")))
+    if (isIdentityNode(den)) // (/ x 1) ==> x
     {
         num->setParent(op->parent());
         op->children().pop_front();      
@@ -827,6 +824,56 @@ ExprNode* symbolicDiv(OpNode* op)
         ExprNode* ret = new IntNode(1, op->parent());
         freeExpression(op);
         return ret;
+    }
+    
+    if (num->isOperator() && den->isOperator() &&       // (/ (^ x n) (^ x m)) ==> (^ x (- n m))
+        ((OpNode*)num)->name() == "^" && ((OpNode*)den)->name() == "^" && 
+        eqvExpr(peekPowBase(num), peekPowBase(den)))    
+    {
+        ExprNode* sub = new OpNode("-", num);
+        sub->children().push_back(num->children().back());
+        sub->children().push_back(den->children().back());
+        num->children().back()->setParent(sub);
+        den->children().back()->setParent(sub);
+        num->children().pop_back();
+        den->children().pop_back();
+        sub = evaluateArithmetic(sub);
+
+        num->children().push_back(sub);
+        freeExpression(den);
+        return moveNode(op, num);
+    }
+
+    if (num->isOperator() && ((OpNode*)num)->name() == "^" && den->isValue() && // (/ (^ x n) x) ==> (^ x (- n 1))
+        eqvExpr(peekPowBase(num), peekPowBase(den)))    
+    {
+        ExprNode* sub = new OpNode("-", num);
+        sub->children().push_back(num->children().back());
+        sub->children().push_back(new IntNode(1, sub));
+        num->children().back()->setParent(sub);
+        num->children().pop_back();
+        sub = evaluateArithmetic(sub);
+
+        num->children().push_back(sub);
+        freeExpression(den);
+        return moveNode(op, num);
+    }
+    
+    if (num->isValue() && den->isOperator() && ((OpNode*)den)->name() == "^" && // (/ x (^ x n)) ==> (/ 1 (^ x (- n 1))
+        eqvExpr(peekPowBase(num), peekPowBase(den)))    
+    {
+        ExprNode* sub = new OpNode("-", den);
+        sub->children().push_back(den->children().back());
+        sub->children().push_back(new IntNode(1, sub));
+        den->children().back()->setParent(sub);
+        den->children().pop_back();
+        sub = evaluateArithmetic(sub);
+
+        den->children().push_back(sub);
+        freeExpression(num);
+        op->children().pop_front();
+        op->children().push_front(new IntNode(1, op));
+        return op;
     }
     
     if (num->isOperator() && den->isOperator() &&  // (/ (/ a b) (/ c d)) ==> (/ (* a d) (* b c))
