@@ -98,6 +98,7 @@ bool isIdentityNode(ExprNode* expr)
 
 
 const char* OPERATOR_CHARS = "+-*/%^!=><|";
+const char* SYNTAX_CHARS = "(){}[]|,";
 
 const size_t PREDEF_FUNC_COUNT = 5;
 const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] = 
@@ -127,10 +128,31 @@ bool isOperator(char c)
 	return false;
 }
 
+bool isSyntax(char c)
+{
+	for (size_t i = 0; SYNTAX_CHARS[i]; ++i)
+	{
+		if (c == SYNTAX_CHARS[i])
+			return true;
+	}
+
+	return false;
+}
+
 bool isBracket(char c)
 {
 	return (c == '(' || c == '{' || c == '[' ||
 			c == ')' || c == '}' || c == ']');
+}
+
+bool isClosingBracket(const std::string& str)
+{
+    return (str == ")" || str == "}" || str == "]");
+}
+
+bool isOpeningBracket(const std::string& str)
+{
+    return (str == "(" || str == "{" || str == "[");
 }
 
 bool isFunction(const std::string& func)

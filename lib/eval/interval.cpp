@@ -37,7 +37,7 @@ ExprNode* rangeAnd(ExprNode* op)
     return ret;
 }
 
-ExprNode* evaluateRange(ExprNode* expr)
+ExprNode* evaluateRange(ExprNode* expr, int data)
 {
     if (expr->type() == ExprNode::RANGE)        return expr;
 

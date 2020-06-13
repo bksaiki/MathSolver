@@ -12,6 +12,7 @@ ExprNode* rewriteAdd(ExprNode* op);
 ExprNode* rewriteSub(ExprNode* op);
 ExprNode* rewriteMul(ExprNode* op);
 ExprNode* rewriteDiv(ExprNode* op);
+ExprNode* rewritePow(ExprNode* op);
 
 ExprNode* rewriteExp(ExprNode* op);
 ExprNode* rewriteLog(ExprNode* op);

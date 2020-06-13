@@ -246,6 +246,35 @@ ExprNode* rewriteDiv(ExprNode* op)
     return op;
 }
 
+ExprNode* rewritePow(ExprNode* op)
+{
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    ExprNode* base = op->children().front();
+    ExprNode* ex = op->children().back();
+
+    if (isZeroNode(ex))   // (^ x 0) ==> 1
+    {
+        ExprNode* one = new IntNode(1, op->parent());
+        freeExpression(op);
+        return one;
+    }
+
+    if (isZeroNode(ex))   // (^ x 1) ==> x
+    {
+        base->setParent(op->parent());
+        op->children().pop_front();
+        freeExpression(op);
+        return base;
+    }
+
+    return op;
+}
+
 ExprNode* rewriteExp(ExprNode* op)
 {
     if (op->children().size() != 1)     
@@ -303,7 +332,7 @@ ExprNode* rewriteArithmetic(ExprNode* expr, int data)
         if (op->name() == "*" || op->name() == "**")    return rewriteMul(op);
         if (op->name() == "/")                          return rewriteDiv(op);
         if (op->name() == "%" || op->name() == "mod")   return expr; // no rewrite rules
-        if (op->name() == "^")                          return expr; // no rewrite rules
+        if (op->name() == "^")                          return rewritePow(op);
         if (op->name() == "!")                          return expr; // no rewrite rules
     }
     else if (expr->type() == ExprNode::FUNCTION)

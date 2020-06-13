@@ -44,10 +44,6 @@ ExprNode* peekPowBase(ExprNode* op);
 // Assumes the expression is in the form x^n or x and returns n or 1 directly.
 ExprNode* peekPowExp(ExprNode* op);
 
-// Applies arithmetic rewrite rules to make evaluation easier
-//   (- a b c ...) ==> (+ a (- b) (- c) ...)
-void arithmeticRewrite(ExprNode* op);
-
 }
 
 #endif

@@ -8,7 +8,7 @@ namespace MathSolver
 {
 
 // Evaluates the given Range expression and returns the result.
-ExprNode* evaluateRange(ExprNode* expr);
+ExprNode* evaluateRange(ExprNode* expr, int data = 0);
 
 // Returns true if the node is:
 //  (i) a Range type

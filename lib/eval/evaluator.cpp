@@ -18,7 +18,7 @@ ExprNode* evaluateExpr(ExprNode* expr)
         return evaluateExprLayer(expr, evaluateArithmetic, false);
     }
 
-    if (isRangeExpr(expr))  return evaluateRange(expr);
+    if (isRangeExpr(expr))  return evaluateExprLayer(expr, evaluateRange, 0);
     if (isUndef(expr))      return expr;
 
     gErrorManager.log("Unrecognized expression: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);

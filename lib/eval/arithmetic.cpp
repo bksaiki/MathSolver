@@ -193,9 +193,16 @@ ExprNode* numericAdd(ExprNode* op)
 // Evaluates "(- <num>...)"
 ExprNode* numericSub(ExprNode* op)
 {
-    arithmeticRewrite(op);
-    for (auto it = op->children().begin(); it != op->children().end(); ++it)
-        it = replaceChild(op, evaluateArithmetic(*it), it);
+    ((OpNode*)op)->setName("+");
+    for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it) // (- a b c ...) ==> (+ a (-* b) (-* c) ...)
+    {
+        ExprNode* neg = new OpNode("-*", op);
+        neg->children().push_back(*it);
+        (*it)->setParent(neg);
+        neg = evaluateArithmetic(neg);
+        it = replaceChild(op, neg, it);
+    }
+
     return evaluateArithmetic(op);
 }
 
@@ -238,8 +245,7 @@ ExprNode* numericDiv(ExprNode* op)
     ExprNode* lhs = op->children().front();
     ExprNode* rhs = op->children().back();
 
-    if ((rhs->type() == ExprNode::INTEGER && ((IntNode*)rhs)->value().isZero()) ||
-        (rhs->type() == ExprNode::FLOAT && ((FloatNode*)rhs)->value().isZero()))
+    if (isZeroNode(rhs)) // (/ x 0) ==> undef
     {
         ExprNode* ret = new ConstNode("undef", op->parent());
         gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
@@ -669,14 +675,12 @@ ExprNode* symbolicMul(ExprNode* op)
     while (it != op->children().end())
     {
         auto it2 = std::next(it);
-        if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value().isZero()) || // (* 0 a ...) ==> 0
-            ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value().isZero()))
+        if (isZeroNode(*it)) // (* 0 a ...) ==> 0
         {
             for (auto c : op->children()) freeExpression(c);
             return moveNode(op, new IntNode());
         }
-        else if (((*it)->type() == ExprNode::INTEGER && ((IntNode*)*it)->value() == Integer(1)) || // (* 1 a ...) ==> (* a ...)
-                ((*it)->type() == ExprNode::FLOAT && ((FloatNode*)*it)->value() == Float("1.0")))
+        else if (isIdentityNode(*it)) // (* 1 a ...) ==> (* a ...)
         {
             delete *it;
             it = op->children().erase(it);
@@ -1148,15 +1152,13 @@ ExprNode* symbolicPow(ExprNode* op)
     ExprNode* base = op->children().front();
     ExprNode* ex = op->children().back();
 
-    if ((ex->type() == ExprNode::INTEGER && ((IntNode*)ex)->value().isZero()) || // (^ x 0) ==> 1
-        (ex->type() == ExprNode::FLOAT && ((FloatNode*)ex)->value().isZero()))
+    if (isZeroNode(ex)) // (^ x 0) ==> 1
     {
         ExprNode* ret = new IntNode(1, op->parent());
         freeExpression(op);
         return ret;
     }
-    else if ((ex->type() == ExprNode::INTEGER && ((IntNode*)ex)->value() == Integer(1)) || // (^ x 1) ==> x
-             (ex->type() == ExprNode::FLOAT && ((FloatNode*)ex)->value() == Float("1.0")))
+    else if (isIdentityNode(ex))// (^ x 1) ==> x
     {
         base->setParent(op->parent());
         op->children().pop_front();      

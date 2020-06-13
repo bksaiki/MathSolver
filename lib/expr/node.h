@@ -304,8 +304,17 @@ bool isIdentityNode(ExprNode* expr);
 // Returns true if the character is an operator.
 bool isOperator(char c);
 
+// Returns true if the character is syntax
+bool isSyntax(char c);
+
 // Returns true if the character is a bracket: (), {}, [].
 bool isBracket(char c);
+
+// Returns true if the string is a bracket: ),},]
+bool isClosingBracket(const std::string& str);
+
+// Returns true if the string is a bracket: (,{,[
+bool isOpeningBracket(const std::string& str);
 
 // Returns true if the string is a predefined or user-defined function.
 bool isFunction(const std::string& func);
@@ -330,8 +339,6 @@ bool isOperator(const std::string& op);
 
 // Returns the precedence of the string
 int opPrec(const std::string& str);
-
-
 
 //
 // Node manipulation

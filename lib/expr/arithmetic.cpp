@@ -154,20 +154,4 @@ ExprNode* peekPowExp(ExprNode* op)
     else                                                        return &one;
 }
 
-void arithmeticRewrite(ExprNode* op)
-{
-    if (op->isOperator() && ((OpNode*)op)->name() == "-")
-    {
-        ((OpNode*)op)->setName("+");
-        for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
-        {
-            ExprNode* neg = new OpNode("-*", op);
-            neg->children().push_back(*it);
-            (*it)->setParent(neg);
-            it = replaceChild(op, neg, it);
-        }
-        flattenExpr(op);
-    }
-}
-
 }
