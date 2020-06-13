@@ -31,17 +31,9 @@ ExprNode* rewriteNeg(ExprNode* op)
     return op;
 }
 
-ExprNode* rewriteAdd(ExprNode* op)
-{   
-    if (op->children().size() < 2)     
-    {
-        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected at least 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
-        return op;
-    }
-
+ExprNode* rewriteAddSub(ExprNode* op)
+{
     flattenExpr(op);
-    if (isPolynomial(op))  op = reorderPolynomial(op);
-    
     auto it = op->children().begin();
     if ((*it)->isOperator() && ((OpNode*)*it)->name() == "-*")        // (+ (-* a) b c ...) ==> (+ (- b a) c ...)
     {
@@ -129,6 +121,18 @@ ExprNode* rewriteAdd(ExprNode* op)
     return op;
 }
 
+ExprNode* rewriteAdd(ExprNode* op)
+{   
+    if (op->children().size() < 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected at least 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    if (isPolynomial(op))  op = reorderPolynomial(op);
+    return rewriteAddSub(op);
+}
+
 ExprNode* rewriteSub(ExprNode* op)
 {
     if (op->children().size() < 2)     
@@ -137,17 +141,19 @@ ExprNode* rewriteSub(ExprNode* op)
         return op;
     }
 
+    if (isPolynomial(op)) op = reorderPolynomial(op);
+    
     ((OpNode*)op)->setName("+");
     for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
     {
         ExprNode* neg = new OpNode("-*", op);
+        (*it)->setParent(neg);
         neg->children().push_back(*it);
         neg = rewriteArithmetic(neg);
-        (*it)->setParent(neg);
         it = replaceChild(op, neg, it);
     }
 
-    return rewriteAdd(op);
+    return rewriteAddSub(op);
 }
 
 ExprNode* rewriteMul(ExprNode* op)
@@ -181,12 +187,30 @@ ExprNode* rewriteMul(ExprNode* op)
         if (!changed)  ++it;
     }
 
+    if (op->children().size() < 2) // Post: (* x) ==> x or (*) ==> 1
+    {
+        ExprNode* ret;
+        if (op->children().size() == 1)     
+        {
+            ret = op->children().front();
+            op->children().clear();
+        }
+        else                                
+        {
+            ret = new IntNode(1);
+        }
+
+        ret->setParent(op->parent());
+        freeExpression(op);
+        return ret;
+    } 
+
     return op;
 }
 
 ExprNode* rewriteDiv(ExprNode* op)
 {
-    if (op->children().size() == 2)     
+    if (op->children().size() != 2)     
     {
         gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
         return op;
@@ -273,7 +297,6 @@ ExprNode* rewriteArithmetic(ExprNode* expr)
     if (expr->isOperator())
     {
         OpNode* op = (OpNode*)expr;
-
         if (op->name() == "-*")                         return rewriteNeg(op);
         if (op->name() == "+")                          return rewriteAdd(op);
         if (op->name() == "-")                          return rewriteSub(op);
@@ -285,8 +308,7 @@ ExprNode* rewriteArithmetic(ExprNode* expr)
     }
     else if (expr->type() == ExprNode::FUNCTION)
     {
-        FuncNode* func = (FuncNode*)expr;
-        
+        FuncNode* func = (FuncNode*)expr;   
         if (func->name() == "exp")              return rewriteExp(expr);
         if (func->name() == "log")              return rewriteLog(expr);
         if (func->name() == "sin")              return expr;    // no rewrite rules

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "arithmetic.h"
+#include "arithrr.h"
 #include "../expr/arithmetic.h"
 #include "../expr/polynomial.h"
 #include "../math/float-math.h"

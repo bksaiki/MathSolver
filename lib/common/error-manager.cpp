@@ -29,11 +29,20 @@ void ErrorManager::log(const std::string& msg, Type type, const char* file, int 
 
 std::string ErrorManager::toString() const
 {
+    std::list<std::string> all;
     std::string ret;
-    for (auto e : mMessages)    ret += (e + "\n");
-    for (auto e : mWarnings)    ret += (e + "\n");
-    for (auto e : mErrors)      ret += (e + "\n");
-    for (auto e : mFatal)       ret += (e + "\n");
+    
+    all.insert(all.begin(), mFatal.begin(), mFatal.end());
+    all.insert(all.begin(), mErrors.begin(), mErrors.end());
+    all.insert(all.begin(), mWarnings.begin(), mWarnings.end());
+    all.insert(all.begin(), mMessages.begin(), mMessages.end());
+    
+    if (!all.empty())
+    { 
+        ret += all.front();
+        for (auto it = std::next(all.begin()); it != all.end(); ++it)
+            ret += ("\n" + *it);
+    }
 
     return ret;
 }

@@ -20,6 +20,9 @@ inline bool isArithmetic(ExprNode* expr) { return containsAll(expr, nodeIsArithm
 // Returns true if the expression contains inexact (Float) subexpressions.
 inline bool isInexact(ExprNode* expr) { return containsAll(expr, [](ExprNode* node) { return node->type() != ExprNode::FLOAT; }); }
 
+// Returns true if the expression is undefined
+inline bool isUndef(ExprNode* expr) { return expr->type() == ExprNode::CONSTANT && ((ConstNode*)expr)->name() == "undef"; }
+
 // Finds the common term between two monomial expressions.
 std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2);
 

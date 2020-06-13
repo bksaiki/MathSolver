@@ -76,7 +76,7 @@ int main()
 			"100-1000",			"-900",
 			"500-600-200",		"-300",
 			"5z-2z-9-6",		"3z-15",
-			"2x-y-3x",			"-(x+y)"
+			"2x-y-3x",			"-x-y"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);
@@ -126,7 +126,7 @@ int main()
 		const size_t COUNT = 4;
 		const std::string exprs[COUNT * 2] = 
 		{ 
-			"a+b/c*d",			"bd/c+a",
+			"a+b/c*d",			"a+bd/c",
 			"-a+b*c+d", 		"b*c-a+d",
 			"(3a+5a)/5a",		"8/5",
 			"2a/(15*a*b)",		"2/15b"

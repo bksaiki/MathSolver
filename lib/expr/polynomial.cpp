@@ -14,19 +14,21 @@ bool isMonomialBasis(ExprNode* expr)
 
 bool isMonomialEqv(ExprNode* expr)
 {
-    if (!expr->isOperator() || !(((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" || ((OpNode*)expr)->name() == "/")) // single value
-        return expr->isValue() || isMonomialBasis(expr);
-
     if (expr->isOperator() && (((OpNode*)expr)->name() == "/" || ((OpNode*)expr)->name() == "-*")) // for '/' or '-*', check children
         return std::all_of(expr->children().begin(), expr->children().end(), isMonomialEqv);
 
-    for (auto e : expr->children())
+    if (expr->isOperator() && (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**"))
     {
-        if (!(e->isValue() || isMonomialBasis(e)))
-            return false;
+        for (auto e : expr->children())
+        {
+            if (!(e->isValue() || isMonomialBasis(e)))
+                return false;
+        }
+
+        return true;
     }
 
-    return true;
+    return expr->isValue() || isMonomialBasis(expr);
 }
 
 bool isPolynomialEqv(ExprNode* expr)
@@ -49,10 +51,10 @@ bool isMonomial(ExprNode* expr)
     if (expr->isOperator() && (((OpNode*)expr)->name() == "/" || ((OpNode*)expr)->name() == "-*")) // for '/' or '-*', check children
         return std::all_of(expr->children().begin(), expr->children().end(), isMonomial);
 
-    if (expr->isOperator() || (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**"))
+    if (expr->isOperator() && (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**"))
     {
         if (!(expr->children().front()->isValue() || isMonomialBasis(expr->children().front())))  // the first operand may optionally be a number
-            return false;    
+            return false;
 
         for (auto e = std::next(expr->children().begin()); e != expr->children().end(); ++e)    // all others must be monomial basis
         {
@@ -83,7 +85,7 @@ bool isPolynomial(ExprNode* expr)
 int monomialBasisOrder(ExprNode* expr) // TODO: replace stoi with Integer->int conversion
 {
     // expr->isOperator() <===> (^ x n)
-    if (expr->isOperator()) return std::stoi(((IntNode*)expr->children().back())->value().toString());
+    if (expr->isOperator())                 return ((IntNode*)expr->children().back())->value().toInt();
     if (expr->type() == ExprNode::VARIABLE) return 1;
     return 0;
 }
@@ -98,19 +100,21 @@ int monomialOrder(ExprNode* expr)
     }
 #endif
 
-    if (!expr->isOperator() || !(((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" || ((OpNode*)expr)->name() == "/"))
-        return monomialBasisOrder(expr);
-
     if (expr->isOperator() && ((OpNode*)expr)->name() == "/")
         return monomialOrder(expr->children().front()) - monomialOrder(expr->children().back());
 
     if (expr->isOperator() && ((OpNode*)expr)->name() == "-*")
         return monomialOrder(expr->children().front());
 
-    int order = 0;
-    for (auto e : expr->children())
-        order += monomialBasisOrder(e);
-    return order;
+    if (expr->isOperator() && (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**" ))
+    {
+        int order = 0;
+        for (auto e : expr->children())
+            order += monomialBasisOrder(e);
+        return order;
+    }
+
+    return monomialBasisOrder(expr);
 }
 
 //
@@ -145,6 +149,9 @@ bool monomialBasisGt(ExprNode* lhs, ExprNode* rhs) { return (monomialBasisCmp(lh
 
 int monomialOrderCmp(ExprNode* lhs, ExprNode* rhs)
 {
+    if (lhs->isOperator() && ((OpNode*)lhs)->name() == "-*")    return monomialBasisCmp(lhs->children().front(), rhs);
+    if (rhs->isOperator() && ((OpNode*)rhs)->name() == "-*")    return monomialBasisCmp(lhs, rhs->children().front());
+
     if (lhs->children().empty() && rhs->children().empty())
     {
         if (lhs->type() == ExprNode::VARIABLE && rhs->type() != ExprNode::VARIABLE) return 1;

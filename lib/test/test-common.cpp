@@ -17,6 +17,7 @@ std::string TestModule::result() const
     }
 
     if (!other.empty()) other = "\n" + other;
+    gErrorManager.clear();
     return std::to_string(mPassed) + "/" + totalStr + " \"" + mName + "\"" + results + other;
 }
 
