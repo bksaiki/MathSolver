@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include "parser.h"
 
@@ -123,9 +124,24 @@ bool bracketedExpr(std::list<ExprNode*>::iterator begin, std::list<ExprNode*>::i
 
 ExprNode* captureDataType(std::list<ExprNode*>::iterator begin, std::list<ExprNode*>::iterator end)
 {
+    auto isBar = [](ExprNode* node) { return (node->isSyntax() && ((SyntaxNode*)node)->name() == "|"); };
+    auto barIt = std::find_if(begin, end, isBar);
+
+    if (std::find_if(std::next(barIt), end, isBar) == end)
+    {
+        ExprNode* bar = *barIt;
+        ExprNode* key = parseTokensR(begin, barIt);
+        ExprNode* val = parseTokensR(std::next(barIt), end);
+        bar->children().push_back(key);
+        bar->children().push_back(val);
+        key->setParent(bar);
+        val->setParent(bar);
+        return bar;
+    }
+
     std::list<ExprNode*> tokens;
     tokens.insert(tokens.begin(), begin, end);
-    gErrorManager.log("Unknown type: '{" + toString(tokens) + "}'", ErrorManager::ERROR);
+    gErrorManager.log("Unknown type: '{" + toString(tokens) + " }'", ErrorManager::ERROR);
     return nullptr;
 }
 

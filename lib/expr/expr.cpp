@@ -6,8 +6,8 @@
 namespace MathSolver
 {
 
-const size_t FLATTENABLE_OP_COUNT = 4;
-const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**" };
+const size_t FLATTENABLE_OP_COUNT = 8;
+const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**", ">", "<", ">=", "<=" };
 
 ExprNode* copyOf(ExprNode* expr)
 {
@@ -53,6 +53,20 @@ bool eqvExpr(ExprNode* a, ExprNode* b)
 	}
 
 	return false;
+}
+
+std::list<std::string> extractVariables(ExprNode* expr)
+{
+	std::list<std::string> ret;
+	for (auto e : expr->children())
+	{
+		std::list<std::string> sub = extractVariables(e);
+		ret.insert(ret.end(), sub.begin(), sub.end());
+	}
+
+	if (expr->type() == ExprNode::VARIABLE)
+		ret.push_back(expr->toString());
+	return ret;
 }
 
 void flattenExpr(ExprNode* expr)
@@ -166,10 +180,16 @@ std::string toInfixString(ExprNode* expr)
 		}
 		
 	}
-	else
+	else if (expr->isSyntax())
 	{
-		return expr->toString();
+		SyntaxNode* syntax = (SyntaxNode*)expr;
+		if (syntax->name() == "|")
+		{
+			return "{ " + toInfixString(expr->children().front()) + " " + syntax->name() + " " + toInfixString(expr->children().back()) + " }";
+		}
 	}
+
+	return expr->toString();
 }
 
 std::string toPrefixString(ExprNode* expr)

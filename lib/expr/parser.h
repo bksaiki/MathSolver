@@ -16,6 +16,9 @@ void expandTokens(std::list<ExprNode*>& tokens);
 // inspect the tokens.
 ExprNode* parseString(const std::string& expr);
 
+// Recursively parses and builds an expression tree.
+ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*>::iterator end);
+
 // Builds an expression tree from a vector of tokens. The list will be consumed.
 ExprNode* parseTokens(std::list<ExprNode*>& tokens);
 
