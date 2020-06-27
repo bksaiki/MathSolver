@@ -25,7 +25,8 @@ public:
         INTEGER,
         FLOAT,
         RANGE,
-        SYNTAX
+        SYNTAX,
+        BOOLEAN
     };
 
 public:
@@ -283,6 +284,30 @@ public:
 
 private:
     Range mData;
+};
+
+// Boolean node
+class BoolNode : public ExprNode
+{
+public:
+    BoolNode(bool data, ExprNode* parent = nullptr);
+    ~BoolNode() {}
+
+    inline bool value() const { return mData; }
+
+    inline bool isNumber() const { return false; }
+    inline bool isOperator() const { return false; }
+    inline bool isSyntax() const { return false; }
+    inline bool isValue() const { return true; }
+
+    inline void setValue(bool b) { mData = b; }
+
+    inline std::string toString() const { return (mData) ? "true" : "false"; }
+ 
+    inline Type type() const { return BOOLEAN; }
+
+private:
+    bool mData;
 };
 
 //

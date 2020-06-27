@@ -3,11 +3,11 @@
 namespace MathSolver
 {
 
-bool nodeIsArithmetic(ExprNode* node)
+bool isArithmeticNode(ExprNode* node)
 {
     if (node->type() == ExprNode::FUNCTION)
     {
-        FuncNode* func = (FuncNode*)node;
+        FuncNode* func = (FuncNode*)node;   // TODO: move these functions out
         return (func->name() == "exp" || func->name() == "log" ||
                 func->name() == "sin" || func->name() == "cos" || func->name() == "tan");
     }

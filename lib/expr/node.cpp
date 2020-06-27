@@ -84,6 +84,13 @@ RangeNode::RangeNode(Range&& data, ExprNode* parent)
     mPrec = 0;
 }
 
+BoolNode::BoolNode(bool data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+
 bool isZeroNode(ExprNode* expr)
 {
     return ((expr->type() == ExprNode::INTEGER && ((IntNode*)expr)->value().isZero()) || 

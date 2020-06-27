@@ -173,7 +173,7 @@ std::string toInfixString(ExprNode* expr)
 			std::string printOp = (op->name() == "**") ? "" : ((op->name() == "-*") ? "-" : op->name());
 			for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
 				sub += (printOp + toInfixString(*it));
-			if (op->parent() != nullptr && op->parent()->prec() < op->prec())
+			if (op->parent() != nullptr && !op->parent()->isSyntax() && op->parent()->prec() < op->prec())
 				return "(" + sub + ")";
 			else
 				return sub;

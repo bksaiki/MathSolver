@@ -12,10 +12,10 @@ namespace MathSolver
 //      operators: +, -, *, /, % (mod), !, ^
 //      functions: exp, log, sin, cos, tan
 // Assumes the expression is valid.
-bool nodeIsArithmetic(ExprNode* node);
+bool isArithmeticNode(ExprNode* node);
 
 // Returns true if every node in the expression is arithmetic:
-inline bool isArithmetic(ExprNode* expr) { return containsAll(expr, nodeIsArithmetic); }
+inline bool isArithmetic(ExprNode* expr) { return containsAll(expr, isArithmeticNode); }
 
 // Returns true if the expression contains inexact (Float) subexpressions.
 inline bool isInexact(ExprNode* expr) { return containsAll(expr, [](ExprNode* node) { return node->type() != ExprNode::FLOAT; }); }
