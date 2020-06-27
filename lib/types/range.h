@@ -60,7 +60,7 @@ public:
     Range(const Float& lower, const Float& upper, bool lclosed, bool uclosed); 
 
     // Single interval (interval_t)
-    inline Range(const interval_t ival) { mIntervals.push_back(ival); }
+    inline Range(const interval_t& ival) { mIntervals.push_back(ival); }
 
     // Multiple intervals (interval_t)
     Range(const std::initializer_list<interval_t>& ivals);
@@ -88,6 +88,10 @@ public:
 
     // Returns true if the value is contained within this Range.
     bool contains(const Float& val) const;
+
+    // Returns a reference to the underlying.
+    inline std::list<interval_t>& data() { return mIntervals; }
+    inline const std::list<interval_t>& data() const { return mIntervals; }
 
     // Returns the disjunction (union) of this Range and another.
     Range disjoin(const Range& other) const;

@@ -1,6 +1,7 @@
 #include "../expr/arithmetic.h"
 #include "arithmetic.h"
 #include "arithrr.h"
+#include "boolean.h"
 #include "evaluator.h"
 #include "inequality.h"
 #include "interval.h"
@@ -20,6 +21,7 @@ ExprNode* evaluateExpr(ExprNode* expr)
         return evaluateExprLayer(expr, evaluateArithmetic, false);
     }
 
+    if (isBooleanExpr(expr))    return evaluateExprLayer(expr, evaluateBooleanExpr, 0);
     if (isInequality(expr))     return evaluateExprLayer(expr, evaluateInequality, 0);
     if (isRangeExpr(expr))      return evaluateExprLayer(expr, evaluateRange, 0);
     

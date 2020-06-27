@@ -23,9 +23,11 @@ public:
     Float(const char* data);            // Constructor from C string
     Float(const std::string& data);     // Constructor from std::string
     Float(const Float& other);          // Copy constructor
+    Float(Float&& other);               // Move constructor
     ~Float();                           // Destructor
 
     Float& operator=(const Float& other);       // Copy assignment
+    Float& operator=(Float&& other);            // Move assignment
     Float& operator=(const char* data);         // Assignment from c string
     Float& operator=(const std::string& data);  // Assignment from std::string
 
@@ -84,6 +86,10 @@ private:
     mpfr_t  mData;
     int     mRoundDir;
 };
+
+extern const Float POS_INFINITY;
+extern const Float NEG_INFINITY;
+
 
 }
 

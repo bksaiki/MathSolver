@@ -5,6 +5,9 @@
 namespace MathSolver
 {
 
+const Float POS_INFINITY = Float("+inf");
+const Float NEG_INFINITY = Float("-inf");
+
 Float::Float()
 {
     mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
@@ -15,6 +18,13 @@ Float::Float(const Float& other)
 {
     mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
     mRoundDir = mpfr_set(mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
+}
+
+Float::Float(Float&& other)
+{
+    *mData = *other.mData;
+    mRoundDir = other.mRoundDir;
+    other.mData->_mpfr_d = nullptr;
 }
 
 Float::Float(const char* data)
@@ -31,26 +41,42 @@ Float::Float(const std::string& data)
 
 Float::~Float()
 {
-    mpfr_clear(mData);
+    if (mData->_mpfr_d != nullptr)
+        mpfr_clear(mData);
 }
 
 Float& Float::operator=(const Float& other)
 {
-    if (mData->_mpfr_d == NULL) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
+    if (mData->_mpfr_d != nullptr) 
+        mpfr_clear(mData);
+    
+    mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
     mRoundDir = mpfr_set(mData, other.mData, MATHSOLVER_FLOAT_DEFAULT_RND_MODE);
+    return *this;
+}
+
+Float& Float::operator=(Float&& other)
+{
+    if (mData->_mpfr_d != nullptr)
+        mpfr_clear(mData);
+    
+    *mData = *other.mData;
+    mRoundDir = other.mRoundDir;
+    other.mData->_mpfr_d = nullptr;
+
     return *this;
 }
 
 Float& Float::operator=(const char* data)
 {
-    if (mData->_mpfr_d == NULL) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
+    if (mData->_mpfr_d == nullptr) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
     fromString(data);
     return *this;
 }
 
 Float& Float::operator=(const std::string& data)
 {
-    if (mData->_mpfr_d == NULL) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
+    if (mData->_mpfr_d == nullptr) mpfr_init2(mData, MATHSOLVER_FLOAT_DEFAULT_PREC);
     fromString(data.c_str()); 
     return *this;
 }

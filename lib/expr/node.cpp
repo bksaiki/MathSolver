@@ -103,6 +103,17 @@ bool isIdentityNode(ExprNode* expr)
             (expr->type() == ExprNode::FLOAT && ((FloatNode*)expr)->value() == Float("1.0")));
 }
 
+Float toFloat(ExprNode* node)
+{
+    if (!node->isNumber())
+    {
+        gErrorManager.log("Only numerical nodes can be converted into a Float: " + node->toString(),
+                          ErrorManager::ERROR, __FILE__, __LINE__);
+        return Float();
+    }
+
+    return (node->type() == ExprNode::INTEGER) ? Float(((IntNode*)node)->value().toString()) : ((FloatNode*)node)->value();    
+}
 
 const char* OPERATOR_CHARS = "+-*/%^!=><|";
 const char* SYNTAX_CHARS = "(){}[]|,";
@@ -114,14 +125,14 @@ const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] =
 	"sin", "cos", "tan"
 };
 
-const size_t OPERATOR_COUNT = 17;
+const size_t OPERATOR_COUNT = 19;
 const std::string OPERATORS[OPERATOR_COUNT] = 
 {
 	"+", "-", "*", "/", "%", "mod",
     "-*", "**",
 	"^", "!",
 	">", "<", ">=", "<=", "=",
-    "or", "and"
+    "not", "or", "xor", "and"
 };
 
 bool isOperator(char c)
@@ -195,7 +206,8 @@ int opPrec(const std::string& str)
 	else if (str == "+" || str == "-")					    return 7;
 	else if (str == ">" || str == ">=" || str == "=" ||
 			 str == "<" || str == "<=")					    return 8;
-    else if (str == "or" || str == "and")                   return 9;
+    else if (str == "not" || str == "and" ||
+             str == "or" ||  str == "xor")                  return 9;
 	else												    return 0;
 }
 

@@ -322,6 +322,9 @@ bool isZeroNode(ExprNode* expr);
 // depending on the context of the type.
 bool isIdentityNode(ExprNode* expr);
 
+// Returns the floating-point value of this node. Must be a number or an error will be generated.
+Float toFloat(ExprNode* node);
+
 //
 // Parsing (TODO: move to parsing?)
 //
