@@ -136,6 +136,12 @@ const std::string OPERATORS[OPERATOR_COUNT] =
     "not", "or", "xor", "and"
 };
 
+const size_t CONSTANT_COUNT = 2;
+const std::string CONSTANTS[CONSTANT_COUNT] = 
+{
+    "e", "pi"
+};
+
 bool isOperator(char c)
 {
 	for (size_t i = 0; OPERATOR_CHARS[i]; ++i)
@@ -176,24 +182,17 @@ bool isOpeningBracket(const std::string& str)
 
 bool isFunction(const std::string& func)
 {
-	for (size_t i = 0; i < PREDEF_FUNC_COUNT; ++i)
-	{
-		if (func == PREDEF_FUNCTIONS[i])
-			return true;
-	}
-
-	return false;
+	return isMember(PREDEF_FUNCTIONS, PREDEF_FUNC_COUNT, func);
 }
 
 bool isOperator(const std::string& op)
 {
-    for (size_t i = 0; i < OPERATOR_COUNT; ++i)
-    {
-        if (op == OPERATORS[i])
-            return true;
-    }
+    return isMember(OPERATORS, OPERATOR_COUNT, op);
+}
 
-    return false;
+bool isConstant(const std::string& val)
+{
+    return isMember(CONSTANTS, CONSTANT_COUNT, val);
 }
 
 int opPrec(const std::string& str)

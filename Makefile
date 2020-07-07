@@ -72,6 +72,9 @@ test-arithmetic: build/test-arithmetic
 test-inequality: build/test-inequality
 	$(TEST_DIR)/test.sh build/test-inequality
 
+test-boolean: build/test-boolean
+	$(TEST_DIR)/test.sh build/test-boolean
+
 # not tracked
 test-sandbox: build/test-sandbox
 	$(TEST_DIR)/test.sh build/test-sandbox
@@ -94,4 +97,5 @@ $(BUILD_DIR)/%: $(TEST_DIR)/%.cpp $(OBJS)
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -o $@ $(OBJS) $< $(LDFLAGS)
 
 -include $(DEPS)
-.PHONY: build clean clean-deps clean-all setup tests test-integer test-float test-parser test-sandbox test-integermath test-memcheck
+.PHONY: build clean clean-deps clean-all setup tests test-integer test-float test-parser test-sandbox test-integermath test-memcheck \
+		test-boolean

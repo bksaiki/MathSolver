@@ -334,9 +334,12 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
             std::string name = expr.substr(itr, i - itr);
             ExprNode* node;
 
-            if (isOperator(name))       node = new OpNode(name);     // special case
-            else if (isFunction(name))  node = new FuncNode(name);
-            else                        node = new VarNode(name);
+            if (isOperator(name))                   node = new OpNode(name); 
+            else if (isFunction(name))              node = new FuncNode(name);
+            else if (isConstant(name))              node = new ConstNode(name);
+            else if (name == "true")                node = new BoolNode(true);
+            else if (name == "false")               node = new BoolNode(false);
+            else                                    node = new VarNode(name);
             tokens.push_back(node);
             itr = i;
         }

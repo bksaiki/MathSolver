@@ -329,6 +329,19 @@ Float toFloat(ExprNode* node);
 // Parsing (TODO: move to parsing?)
 //
 
+// Returns true if the 'val' is in the array
+template <typename T>
+bool isMember(const T* array, size_t size, const T& val)
+{
+    for (size_t i = 0; i < size; ++i)
+    {
+        if (val == array[i])
+            return true;
+    }
+
+    return false;
+}
+
 // Returns true if the character is an operator.
 bool isOperator(char c);
 
@@ -349,6 +362,9 @@ bool isFunction(const std::string& func);
 
 // Returns true if the string is an operator
 bool isOperator(const std::string& op);
+
+// Returns true if the string is a constant
+bool isConstant(const std::string& op);
 
 /*
     Operator precedence
