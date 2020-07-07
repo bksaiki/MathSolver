@@ -6,8 +6,13 @@
 namespace MathSolver
 {
 
-const size_t FLATTENABLE_OP_COUNT = 8;
-const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**", ">", "<", ">=", "<=" };
+const size_t FLATTENABLE_OP_COUNT = 11;
+const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = 
+{ 
+	"+", "-", "*", "**",
+	">", "<", ">=", "<=", "!="
+	"and", "or"
+};
 
 ExprNode* copyOf(ExprNode* expr)
 {
@@ -18,7 +23,10 @@ ExprNode* copyOf(ExprNode* expr)
 	else if (expr->type() == ExprNode::VARIABLE) 	cp = new VarNode(((VarNode*)expr)->name(), expr->parent());
 	else if (expr->type() == ExprNode::CONSTANT) 	cp = new ConstNode(((ConstNode*)expr)->name(), expr->parent());
 	else if (expr->type() == ExprNode::INTEGER) 	cp = new IntNode(((IntNode*)expr)->value(), expr->parent());
-	else /* expr->type() == ExprNode::FLOAT) */		cp = new FloatNode(((FloatNode*)expr)->value(), expr->parent());
+	else if (expr->type() == ExprNode::FLOAT)		cp = new FloatNode(((FloatNode*)expr)->value(), expr->parent());
+	else if (expr->type() == ExprNode::RANGE)		cp = new RangeNode(((RangeNode*)expr)->value(), expr->parent());
+	else if (expr->type() == ExprNode::BOOLEAN)		cp = new BoolNode(((BoolNode*)expr)->value(), expr->parent());
+	else 		gErrorManager.log("Should not have executed here", ErrorManager::FATAL, __FILE__, __LINE__);
 
 	for (ExprNode* child : expr->children())
 		cp->children().push_back(copyOf(child));
@@ -159,13 +167,23 @@ std::string toInfixString(ExprNode* expr)
 		{
 			return toInfixString(op->children().front()) + "^" + toInfixString(op->children().back());		
 		}
-		else if (op->name() == "mod" || op->name() == "or" || op->name() == "and")
+		else if (op->name() == "mod")
 		{
 			return toInfixString(op->children().front()) + " " + op->name() + " " + toInfixString(op->children().back());
 		}
 		else if (op->name() == "-*" && op->children().size() == 1)
 		{
 			return "-" + toInfixString(op->children().front());
+		}
+		else if (op->name() == "or" || op->name() == "and")
+		{
+			std::string sub = toInfixString(op->children().front());
+			for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
+				sub += (" " + op->name() + " " + toInfixString(*it));
+			if (op->parent() != nullptr && !op->parent()->isSyntax() && op->parent()->prec() < op->prec())
+				return "(" + sub + ")";
+			else
+				return sub;
 		}
 		else
 		{

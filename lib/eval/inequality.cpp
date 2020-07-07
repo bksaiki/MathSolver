@@ -101,23 +101,19 @@ ExprNode* toExpression(const interval_t& ival, const std::string& var)
         }
         else
         {
-            ExprNode* op = new OpNode("and");
+            ExprNode* upper = new OpNode(((ival.upperClosed) ? "<=" : "<"));
+            ExprNode* lower = new OpNode(((ival.lowerClosed) ? "<=" : "<"), upper);
 
-            ExprNode* lower = new OpNode(((ival.lowerClosed) ? ">=" : ">"), op);
-            ExprNode* lbound = new FloatNode(ival.lower, op);
-            lower->children().push_back(vnode);
-            lower->children().push_back(lbound);
+            ExprNode* ubound = new FloatNode(ival.upper, upper);
+            ExprNode* lbound = new FloatNode(ival.lower, lower);
+
             vnode->setParent(lower);
-
-            ExprNode* upper = new OpNode(((ival.upperClosed) ? "<=" : "<"), op);
-            ExprNode* ubound = new FloatNode(ival.upper, op);
-            upper->children().push_back(vnode);
+            lower->children().push_back(lbound);
+            lower->children().push_back(vnode);
+            upper->children().push_back(lower);
             upper->children().push_back(ubound);
-            vnode->setParent(upper);
-
-            op->children().push_back(lower);
-            op->children().push_back(upper);
-            return op;
+            
+            return upper;
         }    
     }
 }
@@ -138,7 +134,7 @@ ExprNode* toExpression(const Range& range, const std::string& var)
     if (intervalCount == 1)
         return toExpression(range.data().front(), var);
     
-    ExprNode* node = new OpNode("and");
+    ExprNode* node = new OpNode("or");
     for (auto e : range.data())
         node->children().push_back(toExpression(e, var));
     return node; 
@@ -153,7 +149,7 @@ bool compareNumbers(ExprNode* lhs, ExprNode* rhs, const std::string& op)
         if (op == ">=")  return ((IntNode*)lhs)->value() >= ((IntNode*)rhs)->value();
         if (op == "<=")  return ((IntNode*)lhs)->value() <= ((IntNode*)rhs)->value();
         if (op == ">=")  return ((IntNode*)lhs)->value() >= ((IntNode*)rhs)->value();
-        if (op == ">=")  return ((IntNode*)lhs)->value() != ((IntNode*)rhs)->value();
+        if (op == "!=")  return ((IntNode*)lhs)->value() != ((IntNode*)rhs)->value();
     }
     else
     {
@@ -168,6 +164,43 @@ bool compareNumbers(ExprNode* lhs, ExprNode* rhs, const std::string& op)
 
     gErrorManager.log("Expected a comparator " + toInfixString(lhs) + op + toInfixString(rhs), ErrorManager::ERROR, __FILE__, __LINE__);
     return false;
+}
+
+ExprNode* inequalityNotEq(ExprNode* op)
+{
+    if (op->children().size() != 2)     
+    {
+        gErrorManager.log("Arity mismatch: " + toInfixString(op) + " , expected 2 arguments", ErrorManager::ERROR, __FILE__, __LINE__); 
+        return op;
+    }
+
+    ExprNode* lhs = op->children().front();
+    ExprNode* rhs = op->children().back();
+    ExprNode* node;
+    if (lhs->isNumber() && rhs->isNumber()) // (!= 1 2)
+    {
+        node = new BoolNode(compareNumbers(lhs, rhs, "!="), op->parent());
+        freeExpression(op);
+        return node;
+    }
+    
+    auto pred = [](ExprNode* node) { return node->type() == ExprNode::VARIABLE; };
+    if (!(containsOnce(lhs, pred) || containsOnce(rhs, pred))) // (!= pi 5)
+    {
+        node = new BoolNode(!eqvExpr(lhs, rhs), op->parent());
+        freeExpression(op);
+        return node;
+    }
+
+    if (eqvExpr(lhs, rhs)) // (!= x x)
+    {
+        node = new BoolNode(false, op->parent());
+        freeExpression(op);
+        return node;
+    }
+
+    // TODO: any expression more complex will require a proper "theorem prover"
+    return op;
 }
 
 ExprNode* inequalityCompare(ExprNode* expr, const std::string& op)
@@ -231,6 +264,7 @@ ExprNode* inequalityConnective(ExprNode* expr, const std::string& op)
                 it = expr->children().erase(it);
                 it = expr->children().insert(it, res);
                 it2 = expr->children().erase(it2);   
+                changed = true;
             }
             else
             {
@@ -301,7 +335,7 @@ ExprNode* inequalityOr(ExprNode* op)
     return inequalityConnective(op, "or");
 }
 
-// Evalutator
+// Evaluator
 
 ExprNode* evaluateInequality(ExprNode* expr, int data)
 {
@@ -326,6 +360,19 @@ ExprNode* evaluateInequality(ExprNode* expr, int data)
 
 // Checking
 
+bool isBoundedInequality(ExprNode* expr)
+{
+    return true;
+}
+
+bool isHalfBoundedInequality(ExprNode* expr)
+{
+    if (!isInequalityNode(expr) || ((OpNode*)expr)->name() == "!=" || expr->children().size() != 2)
+        return false;
+    return ((expr->children().front()->type() == ExprNode::VARIABLE && expr->children().back()->isNumber()) ||
+            (expr->children().front()->isNumber() && expr->children().back()->type() == ExprNode::VARIABLE));
+}
+
 bool isInequality(ExprNode* expr)
 {
     if (expr->isOperator())
@@ -335,10 +382,21 @@ bool isInequality(ExprNode* expr)
             return std::all_of(op->children().begin(), op->children().end(), isInequality);
 
         if (op->name() == ">" || op->name() == "<" || op->name() == ">=" || op->name() == "<=" || op->name() == "!=")
-            return std::all_of(op->children().begin(), op->children().end(), isArithmetic);
+        {
+            auto pred = [](ExprNode* node) { return isInequality(node) || isArithmetic(node); };
+            return std::all_of(op->children().begin(), op->children().end(), pred);
+        }
     }
 
     return false;
+}
+
+bool isInequalityNode(ExprNode* expr)
+{
+    if (!expr->isOperator())    return false;
+    
+    OpNode* op = (OpNode*)expr;
+    return (op->name() == ">" || op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "!=");
 }
 
 }

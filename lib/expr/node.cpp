@@ -125,13 +125,14 @@ const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] =
 	"sin", "cos", "tan"
 };
 
-const size_t OPERATOR_COUNT = 19;
+const size_t OPERATOR_COUNT = 20;
 const std::string OPERATORS[OPERATOR_COUNT] = 
 {
 	"+", "-", "*", "/", "%", "mod",
     "-*", "**",
 	"^", "!",
-	">", "<", ">=", "<=", "=",
+	">", "<", ">=", "<=", "!=",
+    "=",
     "not", "or", "xor", "and"
 };
 
@@ -204,8 +205,9 @@ int opPrec(const std::string& str)
 	else if (str == "*" || str == "/" || str == "%")		return 6;
     else if (str == "mod")								    return 6;
 	else if (str == "+" || str == "-")					    return 7;
-	else if (str == ">" || str == ">=" || str == "=" ||
-			 str == "<" || str == "<=")					    return 8;
+	else if (str == ">" || str == ">=" ||
+			 str == "<" || str == "<=" ||
+             str == "=" || str == "!=")					    return 8;
     else if (str == "not" || str == "and" ||
              str == "or" ||  str == "xor")                  return 9;
 	else												    return 0;

@@ -69,6 +69,9 @@ test-parser: build/test-parser
 test-arithmetic: build/test-arithmetic
 	$(TEST_DIR)/test.sh build/test-arithmetic
 
+test-inequality: build/test-inequality
+	$(TEST_DIR)/test.sh build/test-inequality
+
 # not tracked
 test-sandbox: build/test-sandbox
 	$(TEST_DIR)/test.sh build/test-sandbox

@@ -21,12 +21,12 @@ ExprNode* toExpression(const Range& range, const std::string& var);
 bool compareNumbers(ExprNode* lhs, ExprNode* rhs, const std::string& op);
 
 // Comparator operators
+ExprNode* inequalityNotEq(ExprNode* expr);
 ExprNode* inequalityCompare(ExprNode* expr, const std::string& op);
 inline ExprNode* inequalityGreater(ExprNode* expr) { return inequalityCompare(expr, ">"); }
 inline ExprNode* inequalityLess(ExprNode* expr) { return inequalityCompare(expr, "<"); }
 inline ExprNode* inequalityGreaterEq(ExprNode* expr) { return inequalityCompare(expr, ">="); }
 inline ExprNode* inequalityLessEq(ExprNode* expr) { return inequalityCompare(expr, "<="); }
-inline ExprNode* inequalityNotEq(ExprNode* expr) { return inequalityCompare(expr, "!="); }
 
 // Combine equalities
 ExprNode* inequalityAnd(ExprNode* expr);
@@ -35,8 +35,18 @@ ExprNode* inequalityOr(ExprNode* expr);
 // Evaluates an inequality
 ExprNode* evaluateInequality(ExprNode* expr, int data);
 
+// Returns true if the expression represents a univariate interval, e.g. 0<x<1
+bool isBoundedInequality(ExprNode* expr);
+
+// Returns true if the expression represents a univariate half-bounded
+// interval, e.g. x>1.
+bool isHalfBoundedInequality(ExprNode* expr);
+
 // Returns true if the expression is an inequality.
 bool isInequality(ExprNode* expr);
+
+// Returns true if the node is an inequality node (i.e >, <, >=, <=, !=)
+bool isInequalityNode(ExprNode* expr);
 
 }
 

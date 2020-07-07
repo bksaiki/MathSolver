@@ -6,6 +6,8 @@
 #include "eval/arithmetic.h"
 #include "eval/arithrr.h"
 #include "eval/evaluator.h"
+#include "eval/inequality.h"
+#include "eval/inequalityrr.h"
 
 #include "expr/arithmetic.h"
 #include "expr/expr.h"

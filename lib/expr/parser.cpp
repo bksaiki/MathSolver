@@ -237,7 +237,8 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
         OpNode* op = (OpNode*)node;
         if (op->name() == "+" || op->name() == "-" || op->name() == "**" || op->name() == "*" ||
             op->name() == "/" || op->name() == "%" || op->name() == "mod" || op->name() == "^" ||
-            op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "="||
+            op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" ||
+            op->name() == "="  || op->name() == "!=" ||
             op->name() == "or" || op->name() == "xor" || op->name() == "and")
         {         
             if (split == begin || split == rbegin) // arity mismatch

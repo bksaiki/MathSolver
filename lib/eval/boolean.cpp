@@ -40,7 +40,7 @@ ExprNode* booleanBinary(ExprNode* expr, const std::string& op)
         return expr;
     }
 
-    bool accum = new BoolNode(((BoolNode*)expr->children().front())->value(), expr->parent());
+    bool accum = ((BoolNode*)expr->children().front())->value();
     for (auto it = std::next(expr->children().begin()); it != expr->children().end(); ++it)
     {
         if (op == "or")          accum = accum || ((BoolNode*)*it)->value();
@@ -55,7 +55,8 @@ ExprNode* booleanBinary(ExprNode* expr, const std::string& op)
 
 ExprNode* evaluateBooleanExpr(ExprNode* expr, int data)
 {
-    if (expr->type() == ExprNode::BOOLEAN)  return expr;
+    if (expr->type() == ExprNode::BOOLEAN)  
+        return expr;
 
     if (expr->isOperator())
     {
