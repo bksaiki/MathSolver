@@ -251,7 +251,10 @@ ExprNode* reorderPolynomial(ExprNode* expr, bool down)
 #endif
 
     for (auto e : expr->children())
-        e->children().sort(monomialBasisGt);
+    {
+        if (expr->isOperator() && (((OpNode*)expr)->name() == "*" || ((OpNode*)expr)->name() == "**"))
+            e->children().sort(monomialBasisGt);
+    }
 
     if (!expr->isOperator() || (((OpNode*)expr)->name() != "+" && ((OpNode*)expr)->name() != "-")) // single term
         return expr;
