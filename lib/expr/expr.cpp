@@ -6,8 +6,13 @@
 namespace MathSolver
 {
 
-const size_t FLATTENABLE_OP_COUNT = 4;
-const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = { "+", "-", "*", "**" };
+const size_t FLATTENABLE_OP_COUNT = 11;
+const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] = 
+{ 
+	"+", "-", "*", "**",
+	">", "<", ">=", "<=", "!="
+	"and", "or"
+};
 
 ExprNode* copyOf(ExprNode* expr)
 {
@@ -18,7 +23,10 @@ ExprNode* copyOf(ExprNode* expr)
 	else if (expr->type() == ExprNode::VARIABLE) 	cp = new VarNode(((VarNode*)expr)->name(), expr->parent());
 	else if (expr->type() == ExprNode::CONSTANT) 	cp = new ConstNode(((ConstNode*)expr)->name(), expr->parent());
 	else if (expr->type() == ExprNode::INTEGER) 	cp = new IntNode(((IntNode*)expr)->value(), expr->parent());
-	else /* expr->type() == ExprNode::FLOAT) */		cp = new FloatNode(((FloatNode*)expr)->value(), expr->parent());
+	else if (expr->type() == ExprNode::FLOAT)		cp = new FloatNode(((FloatNode*)expr)->value(), expr->parent());
+	else if (expr->type() == ExprNode::RANGE)		cp = new RangeNode(((RangeNode*)expr)->value(), expr->parent());
+	else if (expr->type() == ExprNode::BOOLEAN)		cp = new BoolNode(((BoolNode*)expr)->value(), expr->parent());
+	else 		gErrorManager.log("Should not have executed here", ErrorManager::FATAL, __FILE__, __LINE__);
 
 	for (ExprNode* child : expr->children())
 		cp->children().push_back(copyOf(child));
@@ -53,6 +61,20 @@ bool eqvExpr(ExprNode* a, ExprNode* b)
 	}
 
 	return false;
+}
+
+std::list<std::string> extractVariables(ExprNode* expr)
+{
+	std::list<std::string> ret;
+	for (auto e : expr->children())
+	{
+		std::list<std::string> sub = extractVariables(e);
+		ret.insert(ret.end(), sub.begin(), sub.end());
+	}
+
+	if (expr->type() == ExprNode::VARIABLE)
+		ret.push_back(expr->toString());
+	return ret;
 }
 
 void flattenExpr(ExprNode* expr)
@@ -143,9 +165,9 @@ std::string toInfixString(ExprNode* expr)
 		}
 		else if (op->name() == "^")
 		{
-			return toInfixString(op->children().front()) + "^" + toInfixString(op->children().back());
+			return toInfixString(op->children().front()) + "^" + toInfixString(op->children().back());		
 		}
-		else if (op->name() == "mod" || op->name() == "or" || op->name() == "and")
+		else if (op->name() == "mod")
 		{
 			return toInfixString(op->children().front()) + " " + op->name() + " " + toInfixString(op->children().back());
 		}
@@ -153,23 +175,39 @@ std::string toInfixString(ExprNode* expr)
 		{
 			return "-" + toInfixString(op->children().front());
 		}
+		else if (op->name() == "or" || op->name() == "and")
+		{
+			std::string sub = toInfixString(op->children().front());
+			for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
+				sub += (" " + op->name() + " " + toInfixString(*it));
+			if (op->parent() != nullptr && !op->parent()->isSyntax() && op->parent()->prec() < op->prec())
+				return "(" + sub + ")";
+			else
+				return sub;
+		}
 		else
 		{
 			std::string sub = toInfixString(op->children().front());
 			std::string printOp = (op->name() == "**") ? "" : ((op->name() == "-*") ? "-" : op->name());
 			for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it)
 				sub += (printOp + toInfixString(*it));
-			if (op->parent() != nullptr && op->parent()->prec() < op->prec())
+			if (op->parent() != nullptr && !op->parent()->isSyntax() && op->parent()->prec() < op->prec())
 				return "(" + sub + ")";
 			else
 				return sub;
 		}
 		
 	}
-	else
+	else if (expr->isSyntax())
 	{
-		return expr->toString();
+		SyntaxNode* syntax = (SyntaxNode*)expr;
+		if (syntax->name() == "|")
+		{
+			return "{ " + toInfixString(expr->children().front()) + " " + syntax->name() + " " + toInfixString(expr->children().back()) + " }";
+		}
 	}
+
+	return expr->toString();
 }
 
 std::string toPrefixString(ExprNode* expr)

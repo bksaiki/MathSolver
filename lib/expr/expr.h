@@ -38,6 +38,9 @@ ExprNode* copyOf(ExprNode* expr);
 // Returns true if the value of two nodes is the same.
 bool eqvExpr(ExprNode* a, ExprNode* b);
 
+// Returns a list of variable names in an expression
+std::list<std::string> extractVariables(ExprNode* expr);
+
 // Takes an expression node and recursively simplifes certain operators with interior nodes of the
 // same operator into a single operator with many operands. e.g. (+ (+ a (+ b c)) d) ==> (+ a b c d)
 void flattenExpr(ExprNode* expr);

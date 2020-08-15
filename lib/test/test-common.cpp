@@ -20,18 +20,15 @@ std::string TestModule::result() const
 
 void TestModule::runTest(const std::string& test, const std::string& expected)
 {
-    std::string result;
-    if (test == expected)
+    std::string result = std::string((test == expected) ? "PASS" : "FAIL") + "\tExpected: " + expected + "\tActual: " + test;
+    if (test == expected)    ++mPassed;
+    if (gErrorManager.hasAny())
     {
-        result += "PASS";
-        ++mPassed;
-    }
-    else
-    {
-        result += "FAIL";
+        result += ("\n" + gErrorManager.toString());
+        gErrorManager.clear();
     }
 
-    mResults.push_back(result + "\tExpected: " + expected + "\tActual: " + test);
+    mResults.push_back(result);
 }
 
 void TestModule::reset(const std::string& name)

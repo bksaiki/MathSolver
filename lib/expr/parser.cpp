@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include "parser.h"
 
@@ -95,23 +96,24 @@ ExprNode* parseString(const std::string& expr)
 // Parse Tokens
 //
 
-bool bracketedExpr(std::list<ExprNode*>::const_iterator begin, std::list<ExprNode*>::const_iterator end)
+bool bracketedExpr(std::list<ExprNode*>::iterator begin, std::list<ExprNode*>::iterator end)
 {
-    if (!(*begin)->isSyntax() || !(*end)->isSyntax() ||
-        !(((SyntaxNode*)*begin)->name() == "(" || ((SyntaxNode*)*begin)->name() == "[" || ((SyntaxNode*)*begin)->name() == "{") ||
-        !(((SyntaxNode*)*end)->name() == ")" || ((SyntaxNode*)*end)->name() == "]" || ((SyntaxNode*)*end)->name() == "}"))
+    ExprNode* first = *begin;
+    ExprNode* last = *std::prev(end);
+    if ((!first->isSyntax() || !isOpeningBracket(((SyntaxNode*)first)->name())) || 
+        (!last->isSyntax() || !isClosingBracket(((SyntaxNode*)last)->name())))
         return false;
 
     size_t bracketLevel = 0;
-    for (auto it = begin; it != std::next(end); ++it)
+    for (auto it = begin; it != end; ++it)
     {
-        if ((*it)->isSyntax() && (((SyntaxNode*)*it)->name() == "(" || ((SyntaxNode*)*it)->name() == "[" || ((SyntaxNode*)*it)->name() == "{"))
+        if ((*it)->isSyntax() && isOpeningBracket(((SyntaxNode*)*it)->name()))
         {
             ++bracketLevel;
         }
-        else if ((*it)->isSyntax() && (((SyntaxNode*)*it)->name() == ")" || ((SyntaxNode*)*it)->name() == "]" || ((SyntaxNode*)*it)->name() == "}"))
+        else if ((*it)->isSyntax() && isClosingBracket(((SyntaxNode*)*it)->name()))
         {
-            if (bracketLevel == 1 && it != end)  
+            if (bracketLevel == 1 && *it != last)
                 return false;
             --bracketLevel;
         } 
@@ -120,11 +122,26 @@ bool bracketedExpr(std::list<ExprNode*>::const_iterator begin, std::list<ExprNod
     return true;
 }
 
-ExprNode* captureDataType(std::list<ExprNode*>::const_iterator begin, std::list<ExprNode*>::const_iterator end)
+ExprNode* captureDataType(std::list<ExprNode*>::iterator begin, std::list<ExprNode*>::iterator end)
 {
+    auto isBar = [](ExprNode* node) { return (node->isSyntax() && ((SyntaxNode*)node)->name() == "|"); };
+    auto barIt = std::find_if(begin, end, isBar);
+
+    if (std::find_if(std::next(barIt), end, isBar) == end)
+    {
+        ExprNode* bar = *barIt;
+        ExprNode* key = parseTokensR(begin, barIt);
+        ExprNode* val = parseTokensR(std::next(barIt), end);
+        bar->children().push_back(key);
+        bar->children().push_back(val);
+        key->setParent(bar);
+        val->setParent(bar);
+        return bar;
+    }
+
     std::list<ExprNode*> tokens;
-    tokens.insert(tokens.begin(), begin, std::next(end));
-    gErrorManager.log("Unknown type: '{" + toString(tokens) + "}'", ErrorManager::ERROR);
+    tokens.insert(tokens.begin(), begin, end);
+    gErrorManager.log("Unknown type: '{" + toString(tokens) + " }'", ErrorManager::ERROR);
     return nullptr;
 }
 
@@ -132,30 +149,32 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
 {
     if (bracketedExpr(begin, end))
     {
-        if (((SyntaxNode*)*begin)->name() == "{" && ((SyntaxNode*)*end)->name() == "}")   // '{ ... } implies a specific data type is contained within
+        ExprNode* first = *begin;
+        ExprNode* last = *std::prev(end);
+
+        if (((SyntaxNode*)first)->name() == "{" && ((SyntaxNode*)last)->name() == "}")   // '{ ... } implies a specific data type is contained within
             return captureDataType(std::next(begin), std::prev(end));
         
-        if (std::distance(begin, end) &&
-            (*std::next(begin))->isNumber() && (*std::prev(end))->isNumber() &&
+        if (std::distance(begin, end) == 5 &&
+            (*std::next(begin))->isNumber() && (*std::prev(end, 2))->isNumber() &&
             (*std::next(begin, 2))->isSyntax() && ((SyntaxNode*)*std::next(begin, 2))->name() == ",")
         {
-            Range range = { (*std::next(begin))->toString(), (*std::prev(end))->toString(), (((SyntaxNode*)*begin)->name() == "["), (((SyntaxNode*)*end)->name() == "]") };
+            Range range = { (*std::next(begin))->toString(), (*std::prev(end, 2))->toString(), (((SyntaxNode*)first)->name() == "["), (((SyntaxNode*)last)->name() == "]") };
             return new RangeNode(range);
         }
         
         return parseTokensR(std::next(begin),std::prev(end));
     }
 
-    auto split = end; // loop through tokens from end to beginning
-    auto rend = std::prev(begin);
+    auto split = std::prev(end); // loop through tokens from end to beginning
     size_t bracketLevel = 0;
-    for (auto it = end; it != rend; --it)
+    for (auto it = std::prev(end); it != std::prev(begin); --it)
     {
-        if ((*it)->isSyntax() && (((SyntaxNode*)*it)->name() == ")" || ((SyntaxNode*)*it)->name() == "]" || ((SyntaxNode*)*it)->name() == "}"))
+        if ((*it)->isSyntax() && isClosingBracket(((SyntaxNode*)*it)->name()))
         {
             ++bracketLevel;
         }
-        else if ((*it)->isSyntax() && (((SyntaxNode*)*it)->name() == "(" || ((SyntaxNode*)*it)->name() == "[" || ((SyntaxNode*)*it)->name() == "{"))
+        else if ((*it)->isSyntax() && isOpeningBracket(((SyntaxNode*)*it)->name()))
         {
             --bracketLevel;
         }
@@ -176,11 +195,11 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
 
     ExprNode* node = *split;
     auto next = std::next(split);
-    auto prev = std::prev(split);
+    auto rbegin = std::prev(end);
     if (node->type() == ExprNode::FUNCTION)
     {
         FuncNode* func = (FuncNode*)node;
-        if (split == end) // TODO: arity mismatch
+        if (split == rbegin) // TODO: arity mismatch
         {
             gErrorManager.log("Expected \"<func> (<args>...)\" for: " + func->name(), ErrorManager::ERROR);
             return nullptr;
@@ -206,7 +225,7 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
                     ++it2; // split arg vector
                 }
 
-                ExprNode* arg = parseTokensR(std::next(it), std::prev(it2));
+                ExprNode* arg = parseTokensR(std::next(it), (it2));
                 arg->setParent(node);
                 node->children().push_back(arg);
                 it = it2; 
@@ -218,16 +237,17 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
         OpNode* op = (OpNode*)node;
         if (op->name() == "+" || op->name() == "-" || op->name() == "**" || op->name() == "*" ||
             op->name() == "/" || op->name() == "%" || op->name() == "mod" || op->name() == "^" ||
-            op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" || op->name() == "="||
-            op->name() == "or" || op->name() == "and") 
+            op->name() == "<" || op->name() == ">" || op->name() == "<=" || op->name() == ">=" ||
+            op->name() == "="  || op->name() == "!=" ||
+            op->name() == "or" || op->name() == "xor" || op->name() == "and")
         {         
-            if (split == begin || split == end) // arity mismatch
+            if (split == begin || split == rbegin) // arity mismatch
             {
                 gErrorManager.log("Expected \"<lhs> " + op->name() + " <rhs>\"", ErrorManager::ERROR);
                 return nullptr;
             }
 
-            ExprNode* lhs = parseTokensR(begin, prev);
+            ExprNode* lhs = parseTokensR(begin, split);
             ExprNode* rhs = parseTokensR(next, end);
 
             lhs->setParent(node);
@@ -235,9 +255,9 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
             node->children().push_back(lhs);
             node->children().push_back(rhs);  
         }
-        else if (op->name() == "-*")
+        else if (op->name() == "-*" || op->name() == "not")
         {
-            if (split == end) // arity mismatch
+            if (split == rbegin) // arity mismatch
             {
                 gErrorManager.log("Expected \"" + op->name() + " <arg>\"", ErrorManager::ERROR);
                 return nullptr;
@@ -255,7 +275,7 @@ ExprNode* parseTokensR(std::list<ExprNode*>::iterator begin, std::list<ExprNode*
                 return nullptr;
             }
 
-            ExprNode* arg = parseTokensR(begin, prev);
+            ExprNode* arg = parseTokensR(begin, split);
             arg->setParent(node);
             node->children().push_back(arg);
         }
@@ -269,7 +289,7 @@ ExprNode* parseTokens(std::list<ExprNode*>& tokens)
     if (gErrorManager.hasError()) // Don't try to parse if there's an error =
         return nullptr;
 
-    ExprNode* expr = parseTokensR(tokens.begin(), std::prev(tokens.end()));
+    ExprNode* expr = parseTokensR(tokens.begin(), tokens.end());
     if (expr != nullptr) consumeFrom(expr, tokens);
     for (auto e : tokens) delete e;
     tokens.clear();
@@ -314,16 +334,14 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
             std::string name = expr.substr(itr, i - itr);
             ExprNode* node;
 
-            if (isOperator(name))       node = new OpNode(name);     // special case
-            else if (isFunction(name))  node = new FuncNode(name);
-            else                        node = new VarNode(name);
+            if (isOperator(name))                   node = new OpNode(name); 
+            else if (isFunction(name))              node = new FuncNode(name);
+            else if (isConstant(name))              node = new ConstNode(name);
+            else if (name == "true")                node = new BoolNode(true);
+            else if (name == "false")               node = new BoolNode(false);
+            else                                    node = new VarNode(name);
             tokens.push_back(node);
             itr = i;
-        }
-        else if (expr[itr] == ',') // TODO: syntax nodes other than brackets
-        {
-            tokens.push_back(new SyntaxNode(std::string(1, expr[itr])));
-            ++itr;
         }
         else if (isBracket(expr[itr]))
         {
@@ -354,6 +372,11 @@ std::list<ExprNode*> tokenizeStr(const std::string& expr)
             
             ExprNode* bracket = new SyntaxNode(std::string(1, expr[itr]));
             tokens.push_back(bracket);
+            ++itr;
+        }
+        else if (isSyntax(expr[itr])) // TODO: syntax nodes other than brackets
+        {
+            tokens.push_back(new SyntaxNode(std::string(1, expr[itr])));
             ++itr;
         }
         else if (isOperator(expr[itr]))

@@ -25,7 +25,8 @@ public:
         INTEGER,
         FLOAT,
         RANGE,
-        SYNTAX
+        SYNTAX,
+        BOOLEAN
     };
 
 public:
@@ -285,21 +286,85 @@ private:
     Range mData;
 };
 
+// Boolean node
+class BoolNode : public ExprNode
+{
+public:
+    BoolNode(bool data, ExprNode* parent = nullptr);
+    ~BoolNode() {}
+
+    inline bool value() const { return mData; }
+
+    inline bool isNumber() const { return false; }
+    inline bool isOperator() const { return false; }
+    inline bool isSyntax() const { return false; }
+    inline bool isValue() const { return true; }
+
+    inline void setValue(bool b) { mData = b; }
+
+    inline std::string toString() const { return (mData) ? "true" : "false"; }
+ 
+    inline Type type() const { return BOOLEAN; }
+
+private:
+    bool mData;
+};
+
 //
-// Parsing
+//  Special nodes
 //
+
+// Returns true if the expression node represents a zero value in the context
+// of the type.
+bool isZeroNode(ExprNode* expr);
+
+// Returns true if the expression node represents a one, identity, or unit value
+// depending on the context of the type.
+bool isIdentityNode(ExprNode* expr);
+
+// Returns the floating-point value of this node. Must be a number or an error will be generated.
+Float toFloat(ExprNode* node);
+
+//
+// Parsing (TODO: move to parsing?)
+//
+
+// Returns true if the 'val' is in the array
+template <typename T>
+bool isMember(const T* array, size_t size, const T& val)
+{
+    for (size_t i = 0; i < size; ++i)
+    {
+        if (val == array[i])
+            return true;
+    }
+
+    return false;
+}
 
 // Returns true if the character is an operator.
 bool isOperator(char c);
 
+// Returns true if the character is syntax
+bool isSyntax(char c);
+
 // Returns true if the character is a bracket: (), {}, [].
 bool isBracket(char c);
+
+// Returns true if the string is a bracket: ),},]
+bool isClosingBracket(const std::string& str);
+
+// Returns true if the string is a bracket: (,{,[
+bool isOpeningBracket(const std::string& str);
 
 // Returns true if the string is a predefined or user-defined function.
 bool isFunction(const std::string& func);
 
 // Returns true if the string is an operator
 bool isOperator(const std::string& op);
+
+// Returns true if the string is a constant
+bool isConstant(const std::string& op);
 
 /*
     Operator precedence
@@ -335,7 +400,6 @@ std::list<ExprNode*>::iterator replaceChild(ExprNode* parent, ExprNode* src, std
 // Removes this expression from the parent's list of children. Assumes another pointer is tracking this node,
 // else data will be lost.
 void releaseChild(ExprNode* node);
-
 
 
 }

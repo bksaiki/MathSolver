@@ -7,16 +7,22 @@
 namespace MathSolver
 {
 
-// Evaluates the given Range expression and returns the result.
-ExprNode* evaluateRange(ExprNode* expr);
+// Range operators
+ExprNode* rangeOr(ExprNode* op);
+ExprNode* rangeAnd(ExprNode* op);
+ExprNode* rangeSetBuild(ExprNode* op);
 
-// Returns true if the node is:
-//  (i) a Range type
-//  (ii) 'or', 'and'
-bool isRangeExprNode(ExprNode* node);
+// Evaluates the given Range expression and returns the result.
+ExprNode* evaluateRange(ExprNode* expr, int data = 0);
+
+// Returns true if the node is a comparator.
+bool isComparatorNode(ExprNode* node);
 
 // Returns true if the expression can be simplified into a range.
-inline bool isRangeExpr(ExprNode* expr) { return containsAll(expr, isRangeExprNode); }
+//  (i)     Range type, e.g. [0, 1]
+//  (ii)    'or', 'and'
+//  (iii)   Set builder, e.g. { x | x > 5 }  
+bool isRangeExpr(ExprNode* expr);
 
 }
 

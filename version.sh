@@ -10,17 +10,19 @@
 #    'major'       1.0.0 -> 2.0.0
 #    'minor'       1.0.0 -> 1.1.0
 #    'patch'       1.0.0 -> 1.0.1
-#    'revision'    1.0.0 -> 1.0.0-rev1
-#                  1.0.0-rev1 -> 1.0.0-rev2
 #   
 #  'decrement'     decreases the version number, see 'increment' for methods
 #
 #  'set'           sets the version number
+#
+#  'drop'          drops any version tag: '1.0.0-dev' ==> '1.0.0' 
+#
+#  'tag'           adds a version tag: '1.0.0' ==> '1.0.0-tag' 
+#
 
 ver_file="lib/common/base.h"
-rev_str="rev"
 full_version=$(echo $(grep -oP '(?<=MATHSOLVER_VERSION_STR\s)[^ ]*' $ver_file) | sed 's/"//g')
-version=${full_version%-$rev_str*}
+version=$(echo $full_version | sed -nre 's/^(([0-9]+\.)*[0-9]+).*/\1/p')
 ver_comp=($(echo ${version} | sed -e 's/\./\n/g' | sed -e '/^[0-9]*$/!d'))
 new_version=""
 
@@ -28,13 +30,7 @@ if [ $1 == "current" ]; then
     echo $full_version
     exit 0
 elif [[ $1 == "increment" ]]; then
-    if [[ $2 == "revision" ]]; then
-        if [[ $full_version == *$rev_str* ]]; then
-            new_version=$version-$rev_str$((1+$(echo $full_version | grep -Eo '[0-9]+$')))
-        else
-            new_version="$full_version-$rev_str"1
-        fi
-    elif [[ $2 == "patch" ]]; then
+    if [[ $2 == "patch" ]]; then
         new_version="${ver_comp[0]}.${ver_comp[1]}.$((1+${ver_comp[2]}))"
     elif [[ $2 == "minor" ]]; then
         new_version="${ver_comp[0]}.$((1+${ver_comp[1]})).${ver_comp[2]}"
@@ -44,35 +40,34 @@ elif [[ $1 == "increment" ]]; then
         exit 1
     fi
 elif [[ $1 == "decrement" ]]; then
-    if [[ $2 == "revision" ]]; then
-        if [[ $full_version == *$rev_str* ]]; then
-            new_version=$version-$rev_str$((1+$(echo $full_version | grep -Eo '[0-9]+$')))
-        else
-            new_version="$full_version-$rev_str"1
-        fi
-    elif [[ $2 == "patch" ]] && ! [ ${ver_comp[2]} -eq 1 ]; then
+    if [[ $2 == "patch" ]] && ! [ ${ver_comp[2]} -eq 0 ]; then
         new_version="${ver_comp[0]}.${ver_comp[1]}.$((${ver_comp[2]}-1))"
-    elif [[ $2 == "minor" ]] && ! [ ${ver_comp[1]} -eq 1 ]; then
+    elif [[ $2 == "minor" ]] && ! [ ${ver_comp[1]} -eq 0 ]; then
         new_version="${ver_comp[0]}.$((${ver_comp[1]}-1)).${ver_comp[2]}"
-    elif [[ $2 == "major" ]] && ! [ ${ver_comp[0]} -eq 1 ]; then
+    elif [[ $2 == "major" ]] && ! [ ${ver_comp[0]} -eq 0 ]; then
         new_version="$((${ver_comp[0]}-1)).${ver_comp[1]}.${ver_comp[2]}"
     else 
         exit 1
     fi
-elif [[ $1 == set ]]; then
-    if [[ $2 =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-${rev_str}([0-9]+))*$ ]]; then
+elif [[ $1 == "set" ]]; then
+    if [[ $2 =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([a-zA-Z0-9]+))*$ ]]; then
         new_version=$2
     else
         echo "Invalid version"
         exit 1
     fi
+elif [[ $1 == "drop" ]]; then
+    new_version=$version
+elif [[ $1 == "tag" ]]; then
+    new_version=$version-$2
 else
     exit 1
 fi
 
 # sets new version
 echo "Changing version from $full_version to $new_version"
-new_ver_comp=($(echo ${new_version} | sed -e 's/\./\n/g' | sed -e '/^[0-9]*$/!d'))
+new_ver=$(echo $new_version | sed -nre 's/^(([0-9]+\.)*[0-9]+).*/\1/p')
+new_ver_comp=($(echo ${new_ver} | sed -e 's/\./\n/g' | sed -e '/^[0-9]*$/!d'))
 sed -i "s/$full_version/$new_version/g" $ver_file
 sed -i "s/MATHSOLVER_VERSION_MAJOR\([[:space:]]\+\)${ver_comp[0]}/MATHSOLVER_VERSION_MAJOR\1${new_ver_comp[0]}/g" $ver_file
 sed -i "s/MATHSOLVER_VERSION_MINOR\([[:space:]]\+\)${ver_comp[1]}/MATHSOLVER_VERSION_MINOR\1${new_ver_comp[1]}/g" $ver_file

@@ -84,7 +84,39 @@ RangeNode::RangeNode(Range&& data, ExprNode* parent)
     mPrec = 0;
 }
 
+BoolNode::BoolNode(bool data, ExprNode* parent)
+{
+    mData = data;
+    mParent = parent;
+    mPrec = 0;
+}
+
+bool isZeroNode(ExprNode* expr)
+{
+    return ((expr->type() == ExprNode::INTEGER && ((IntNode*)expr)->value().isZero()) || 
+            (expr->type() == ExprNode::FLOAT && ((FloatNode*)expr)->value().isZero()));
+}
+
+bool isIdentityNode(ExprNode* expr)
+{
+    return ((expr->type() == ExprNode::INTEGER && ((IntNode*)expr)->value() == Integer(1)) || 
+            (expr->type() == ExprNode::FLOAT && ((FloatNode*)expr)->value() == Float("1.0")));
+}
+
+Float toFloat(ExprNode* node)
+{
+    if (!node->isNumber())
+    {
+        gErrorManager.log("Only numerical nodes can be converted into a Float: " + node->toString(),
+                          ErrorManager::ERROR, __FILE__, __LINE__);
+        return Float();
+    }
+
+    return (node->type() == ExprNode::INTEGER) ? Float(((IntNode*)node)->value().toString()) : ((FloatNode*)node)->value();    
+}
+
 const char* OPERATOR_CHARS = "+-*/%^!=><|";
+const char* SYNTAX_CHARS = "(){}[]|,";
 
 const size_t PREDEF_FUNC_COUNT = 5;
 const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] = 
@@ -93,14 +125,21 @@ const std::string PREDEF_FUNCTIONS[PREDEF_FUNC_COUNT] =
 	"sin", "cos", "tan"
 };
 
-const size_t OPERATOR_COUNT = 17;
+const size_t OPERATOR_COUNT = 20;
 const std::string OPERATORS[OPERATOR_COUNT] = 
 {
 	"+", "-", "*", "/", "%", "mod",
     "-*", "**",
 	"^", "!",
-	">", "<", ">=", "<=", "=",
-    "or", "and"
+	">", "<", ">=", "<=", "!=",
+    "=",
+    "not", "or", "xor", "and"
+};
+
+const size_t CONSTANT_COUNT = 2;
+const std::string CONSTANTS[CONSTANT_COUNT] = 
+{
+    "e", "pi"
 };
 
 bool isOperator(char c)
@@ -114,32 +153,46 @@ bool isOperator(char c)
 	return false;
 }
 
-bool isBracket(char c)
+bool isSyntax(char c)
 {
-	return (c == '(' || c == '{' || c == '[' ||
-			c == ')' || c == '}' || c == ']');
-}
-
-bool isFunction(const std::string& func)
-{
-	for (size_t i = 0; i < PREDEF_FUNC_COUNT; ++i)
+	for (size_t i = 0; SYNTAX_CHARS[i]; ++i)
 	{
-		if (func == PREDEF_FUNCTIONS[i])
+		if (c == SYNTAX_CHARS[i])
 			return true;
 	}
 
 	return false;
 }
 
+bool isBracket(char c)
+{
+	return (c == '(' || c == '{' || c == '[' ||
+			c == ')' || c == '}' || c == ']');
+}
+
+bool isClosingBracket(const std::string& str)
+{
+    return (str == ")" || str == "}" || str == "]");
+}
+
+bool isOpeningBracket(const std::string& str)
+{
+    return (str == "(" || str == "{" || str == "[");
+}
+
+bool isFunction(const std::string& func)
+{
+	return isMember(PREDEF_FUNCTIONS, PREDEF_FUNC_COUNT, func);
+}
+
 bool isOperator(const std::string& op)
 {
-    for (size_t i = 0; i < OPERATOR_COUNT; ++i)
-    {
-        if (op == OPERATORS[i])
-            return true;
-    }
+    return isMember(OPERATORS, OPERATOR_COUNT, op);
+}
 
-    return false;
+bool isConstant(const std::string& val)
+{
+    return isMember(CONSTANTS, CONSTANT_COUNT, val);
 }
 
 int opPrec(const std::string& str)
@@ -151,9 +204,11 @@ int opPrec(const std::string& str)
 	else if (str == "*" || str == "/" || str == "%")		return 6;
     else if (str == "mod")								    return 6;
 	else if (str == "+" || str == "-")					    return 7;
-	else if (str == ">" || str == ">=" || str == "=" ||
-			 str == "<" || str == "<=")					    return 8;
-    else if (str == "or" || str == "and")                   return 9;
+	else if (str == ">" || str == ">=" ||
+			 str == "<" || str == "<=" ||
+             str == "=" || str == "!=")					    return 8;
+    else if (str == "not" || str == "and" ||
+             str == "or" ||  str == "xor")                  return 9;
 	else												    return 0;
 }
 

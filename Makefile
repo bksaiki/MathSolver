@@ -14,7 +14,7 @@ TESTS 		:= $(shell find $(TEST_DIR) -name *.cpp)
 TEST_EXES 	:= $(TESTS:$(TEST_DIR)/%.cpp=$(BUILD_DIR)/%)
 
 DEPFLAGS 	:= -MMD -MP
-CFLAGS 		:= -g -Wall -std=c++17
+CXXFLAGS 	:= -g -O0 -Wall -std=c++17
 LDFLAGS 	:= -lmpfr -lgmp
 
 .PRECIOUS: $(BUILD_DIR)/. $(BUILD_DIR)%/.
@@ -25,7 +25,7 @@ LDFLAGS 	:= -lmpfr -lgmp
 all: build-tests main;
 
 main: $(OBJS)
-	$(CXX) $(CFLAGS) $(OBJS) $(SRC_DIR)/$(ENTRY) $(LDFLAGS) -o $(EXE)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(SRC_DIR)/$(ENTRY) $(LDFLAGS) -o $(EXE)
 
 tests: $(OBJS) $(TEST_EXES)
 	$(TEST_DIR)/test.sh $(TEST_EXES)
@@ -69,6 +69,12 @@ test-parser: build/test-parser
 test-arithmetic: build/test-arithmetic
 	$(TEST_DIR)/test.sh build/test-arithmetic
 
+test-inequality: build/test-inequality
+	$(TEST_DIR)/test.sh build/test-inequality
+
+test-boolean: build/test-boolean
+	$(TEST_DIR)/test.sh build/test-boolean
+
 # not tracked
 test-sandbox: build/test-sandbox
 	$(TEST_DIR)/test.sh build/test-sandbox
@@ -82,13 +88,14 @@ $(BUILD_DIR)%/.:
 	mkdir -p $@
 
 $(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.cpp | $$(@D)/.
-	$(CXX) $(CFLAGS) $(DEPFLAGS) -c -o $@ $< $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c -o $@ $< $(LDFLAGS)
 
 $(BUILD_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp | $$(@D)/.
-	$(CXX) $(CFLAGS) $(DEPFLAGS) -c -o $@ $< $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c -o $@ $< $(LDFLAGS)
 
 $(BUILD_DIR)/%: $(TEST_DIR)/%.cpp $(OBJS)
-	$(CXX) $(CFLAGS) $(DEPFLAGS) -o $@ $(OBJS) $< $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -o $@ $(OBJS) $< $(LDFLAGS)
 
 -include $(DEPS)
-.PHONY: build clean clean-deps clean-all setup tests test-integer test-float test-parser test-sandbox test-integermath test-memcheck
+.PHONY: build clean clean-deps clean-all setup tests test-integer test-float test-parser test-sandbox test-integermath test-memcheck \
+		test-boolean

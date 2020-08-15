@@ -126,7 +126,7 @@ int main()
 		const size_t COUNT = 4;
 		const std::string exprs[COUNT * 2] = 
 		{ 
-			"a+b/c*d",			"bd/c+a",
+			"a+b/c*d",			"a+bd/c",
 			"-a+b*c+d", 		"b*c-a+d",
 			"(3a+5a)/5a",		"8/5",
 			"2a/(15*a*b)",		"2/15b"
@@ -172,13 +172,17 @@ int main()
 
 	tests.reset("*,^ mixed");
 	{
-		const size_t COUNT = 4;
+		const size_t COUNT = 8;
 		const std::string exprs[COUNT * 2] = 
 		{ 
 			"x*x",		"x^2",
 			"x*x^2",	"x^3",
 			"x^2*x",	"x^3",
-			"x^2*x^2",	"x^4"
+			"x^2*x^2",	"x^4",
+			"x^5/x",	"x^4",
+			"x/x^5",	"1/x^4",
+			"x^5/x^3",	"x^2",
+			"x^3/x^5", 	"x^-2"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

@@ -12,13 +12,16 @@ namespace MathSolver
 //      operators: +, -, *, /, % (mod), !, ^
 //      functions: exp, log, sin, cos, tan
 // Assumes the expression is valid.
-bool nodeIsArithmetic(ExprNode* node);
+bool isArithmeticNode(ExprNode* node);
 
 // Returns true if every node in the expression is arithmetic:
-inline bool isArithmetic(ExprNode* expr) { return containsAll(expr, nodeIsArithmetic); }
+inline bool isArithmetic(ExprNode* expr) { return containsAll(expr, isArithmeticNode); }
 
 // Returns true if the expression contains inexact (Float) subexpressions.
 inline bool isInexact(ExprNode* expr) { return containsAll(expr, [](ExprNode* node) { return node->type() != ExprNode::FLOAT; }); }
+
+// Returns true if the expression is undefined
+inline bool isUndef(ExprNode* expr) { return expr->type() == ExprNode::CONSTANT && ((ConstNode*)expr)->name() == "undef"; }
 
 // Finds the common term between two monomial expressions.
 std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2);
@@ -26,17 +29,20 @@ std::list<ExprNode*> commonTerm(ExprNode* expr1, ExprNode* expr2);
 // Finds the coefficient of an expression given a base term.
 std::list<ExprNode*> coeffTerm(ExprNode* expr, ExprNode* term);
 
-// Assumes the expression is in the form x^n or x and returns x, the base that is being
-// raised to the power of n or 1, respectively.
-ExprNode* getPowBase(ExprNode* op);
+// Removes a list of term from an expression
+void removeTerm(ExprNode* expr, const std::list<ExprNode*>& terms);
 
-// Assumes the expression is in the form x^n or x and returns n or 1, respectively. If it is the
-// latter case, a new expression node is created.
-ExprNode* getPowExp(ExprNode* op);
+// Assumes the expression is in the form x^n or x and returns a copy of x,
+ExprNode* extractPowBase(ExprNode* op);
 
-// Applies arithmetic rewrite rules to make evaluation easier
-//   (- a b c ...) ==> (+ a (- b) (- c) ...)
-void arithmeticRewrite(ExprNode* op);
+// Assumes the expression is in the form x^n or x and returns a copy of n or 1, respectively.
+ExprNode* extractPowExp(ExprNode* op);
+
+// Assumes the expression is in the form x^n or x and returns x directly.
+ExprNode* peekPowBase(ExprNode* op);
+
+// Assumes the expression is in the form x^n or x and returns n or 1 directly.
+ExprNode* peekPowExp(ExprNode* op);
 
 }
 

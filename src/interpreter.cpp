@@ -12,18 +12,12 @@ int parseLine(const std::string& line)
     ExprNode* eval = parseString(line);
 
     if (gErrorManager.hasError())
-    {   
-        std::cout << gErrorManager.toString();
-        return 1;
-    }
+        std::cout << gErrorManager.toString() << std::endl;
 
     flattenExpr(eval);
     eval = evaluateExpr(eval);
     if (gErrorManager.hasError())
-    {   
-        std::cout << gErrorManager.toString();
-        return 1;
-    }
+        std::cout << gErrorManager.toString() << std::endl;
     
     std::cout << toInfixString(eval) << std::endl;
     freeExpression(eval);

@@ -1,38 +1,38 @@
 #include "../expr/arithmetic.h"
 #include "arithmetic.h"
+#include "arithrr.h"
+#include "boolean.h"
 #include "evaluator.h"
+#include "inequality.h"
+#include "inequalityrr.h"
 #include "interval.h"
 
 namespace MathSolver
 {
 
-ExprNode* evaluateExprR(ExprNode* expr, bool firstPass)
-{   
-    size_t childCount = expr->children().size();
-    for (size_t i = 0; i < childCount; ++i)
-    {
-        ExprNode* child = expr->children().front();
-        expr->children().pop_front();
-        child = evaluateExprR(child, firstPass);
-        expr->children().push_back(child);
-    }
-  
-    if (isArithmetic(expr))     return evaluateArithmetic(expr, firstPass);
-    if (isRangeExpr(expr))      return evaluateRange(expr);
-
-    gErrorManager.log("Unrecognized expression: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);
-    return expr;
-}
-
 ExprNode* evaluateExpr(ExprNode* expr)
 { 
-    if (expr == nullptr)
-        return expr;
+    if (expr == nullptr)        return expr;
+    if (isUndef(expr))          return expr;
 
-    ExprNode* simplified = evaluateExprR(expr, true);
-    if (containsType(simplified, ExprNode::FLOAT))
-        return evaluateExprR(simplified, false);
-    return simplified;
+    if (isArithmetic(expr))
+    {
+        expr = evaluateExprLayer(expr, rewriteArithmetic, 0);
+        expr = evaluateExprLayer(expr, evaluateArithmetic, true);
+        return evaluateExprLayer(expr, evaluateArithmetic, false);
+    }
+
+    if (isInequality(expr))     
+    {
+        expr = evaluateExprLayer(expr, rewriteInequality, 0);
+        return evaluateExprLayer(expr, evaluateInequality, 0);
+    }
+
+    if (isBooleanExpr(expr))    return evaluateExprLayer(expr, evaluateBooleanExpr, 0);
+    if (isRangeExpr(expr))      return evaluateExprLayer(expr, evaluateRange, 0);
+    
+    gErrorManager.log("Unrecognized expression: " + toInfixString(expr), ErrorManager::ERROR, __FILE__, __LINE__);
+    return expr;
 }
 
 }
