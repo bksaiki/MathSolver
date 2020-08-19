@@ -2,7 +2,7 @@
 #define _MATHSOLVER_EXPRESSION_H_
 
 #include "../common/base.h"
-#include "../expr/node.h"
+#include "node.h"
 
 namespace MathSolver
 {

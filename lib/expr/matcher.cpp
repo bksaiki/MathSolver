@@ -1,0 +1,157 @@
+#include <list>
+#include <map>
+#include "matcher.h"
+
+namespace MathSolver
+{
+
+std::list<std::string> tokenizeMatchString(const std::string& match)
+{
+    std::list<std::string> tokens;
+    size_t len = match.length();
+    for (size_t i = 0; i < len; ++i)
+    {
+        while (isspace(match[i])) ++i;
+
+        if (match[i] == '(' || match[i] == ')')
+        {
+            tokens.push_back(std::string(1, match[i]));
+        }
+        else
+        {  
+            size_t j = i;
+            while (!isspace(match[j]) && match[i] != '(' && match[j] != ')') ++j;
+            tokens.push_back(match.substr(i, j - i));
+            i = j - 1;
+        }   
+    }
+
+    return tokens;
+}
+
+bool isMatchString(const std::string& match)
+{
+    std::list<std::string> tokens = tokenizeMatchString(match);
+    std::map<int, int> subexprCount;
+    int parenCount = 0;
+
+    subexprCount[0] = 0;
+    for (auto e : tokens)
+    {
+        if (e == "(")
+        {
+            // increment subexpr count of this layer
+            if (subexprCount.find(parenCount) != subexprCount.end())    ++subexprCount[parenCount];
+            else                                                        subexprCount[parenCount] = 1;
+            
+            // set the next layer to 0
+            subexprCount[++parenCount] = 0;
+        }
+        else if (e == ")")
+        {
+            --parenCount;
+        }
+        else
+        {
+            ++subexprCount[parenCount]; // assume this layer has been set to 0
+        }     
+    }
+
+    if (parenCount != 0)    return false; // unmatched parenthesis
+
+    for (auto it : subexprCount)
+    {
+        if (it.second == 0)     // nullary layer
+            return false;
+    }
+
+    return true;
+}
+
+std::list<std::string> extractMatchSubexpr(const std::list<std::string>& match, std::list<std::string>::const_iterator& it)
+{
+    std::list<std::string> subexpr;
+    if (*it == "(")
+    {
+        auto it2 = std::next(it);
+        int parenCount = 1;
+        for (; it2 != match.end() && parenCount > 0; ++it2)
+        {
+            if (*it2 == "(")        ++parenCount;
+            else if (*it2 == ")")   --parenCount;
+        }
+
+        subexpr.insert(subexpr.begin(), it, it2);
+    }
+    else
+    {
+        subexpr.push_back(*it);
+    }
+
+    return subexpr;
+}
+
+bool matchExprToken(const std::string& token, ExprNode* expr)
+{
+    if (token.front() != '?')   return token == expr->toString();
+    else                        return true;
+}
+
+bool matchExprHelper(const std::list<std::string> tokens, ExprNode* expr)
+{
+    if (tokens.size() == 1)
+    {
+        if (expr->children().size() != 0)       return false;
+        else                                    return matchExprToken(tokens.front(), expr);
+    }
+    else
+    {
+        std::list<std::string> sexpr;
+        auto it = std::next(tokens.begin());
+        auto end = std::prev(tokens.end());
+        size_t argc = 0;
+
+        sexpr = extractMatchSubexpr(tokens, it);
+        if (sexpr.size() != 1 || !matchExprToken(sexpr.front(), expr)) 
+            return false;
+
+        it = std::next(it, sexpr.size());
+        for (auto it2 = expr->children().begin(); it != end; ++argc, ++it2, it = std::next(it, sexpr.size()))
+        {
+            if (it2 == expr->children().end()) // too many match arguments
+                return false;
+
+            sexpr = extractMatchSubexpr(tokens, it);    
+            if (!matchExprHelper(sexpr, *it2))
+                return false;
+        }
+
+        if (argc != expr->children().size()) // too few match arguments
+            return false;
+
+        return true;
+    }
+}
+
+bool matchExpr(const std::string& match, ExprNode* expr)
+{
+    std::list<std::string> tokens = tokenizeMatchString(match);
+    return matchExprHelper(tokens, expr);
+} 
+
+void loadMatchDict(const std::string& match, ExprNode* expr)
+{
+
+}
+
+
+ExprNode* applyMatchTransform(const std::string& input, const std::string& output, ExprNode* expr)
+{
+    std::map<std::string, ExprNode*> matchDict;
+
+    loadMatchDict(input, expr, matchDict);
+    freeExpression(expr);
+    return nullptr;
+}
+
+}
