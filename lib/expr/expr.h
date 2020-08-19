@@ -35,6 +35,9 @@ inline bool containsType(ExprNode* expr, ExprNode::Type type) { return containsO
 // Returns a copy of the given expression tree.
 ExprNode* copyOf(ExprNode* expr);
 
+// Returns a copy of the given expression node with no tree information
+ExprNode* copyNodeNoTree(ExprNode* expr);
+
 // Returns true if the value of two nodes is the same.
 bool eqvExpr(ExprNode* a, ExprNode* b);
 

@@ -106,6 +106,34 @@ int main()
         }
     }
 
+    {
+        const size_t COUNT = 4;
+        std::string exprs[COUNT] =
+        {
+            "x + x",
+            "x * 0",
+            "x * x",
+            "x / 0"
+        };
+
+        std::string match[COUNT * 2] =
+        {
+            "(+ ?a ?a)",    "(* 2 ?a)",
+            "(* ?a 0)",     "0",
+            "(* ?a ?a)",    "(^ ?a 2)",
+            "(* ?a 0)",     "undef"
+        };
+        
+        std::cout << "Match and replace" << std::endl;
+        for (size_t i = 0; i < COUNT; ++i)
+        {
+            ExprNode* expr = parseString(exprs[i]);
+            expr = applyMatchTransform(match[2 * i], match[2 * i + 1], expr);
+            std::cout << toPrefixString(expr) << std::endl;
+            freeExpression(expr);
+        }
+    }
+
     return 0;
 
 }

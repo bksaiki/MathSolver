@@ -16,6 +16,15 @@ const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] =
 
 ExprNode* copyOf(ExprNode* expr)
 {
+	ExprNode* cp = copyNodeNoTree(expr);
+
+	for (ExprNode* child : expr->children())
+		cp->children().push_back(copyOf(child));
+	return cp;
+}
+
+ExprNode* copyNodeNoTree(ExprNode* expr)
+{
 	ExprNode* cp;
 	if (expr->type() == ExprNode::SYNTAX) 			cp = new SyntaxNode(((SyntaxNode*)expr)->name(), expr->parent());
 	else if (expr->type() == ExprNode::OPERATOR) 	cp = new OpNode(((OpNode*)expr)->name(), expr->parent());
@@ -28,8 +37,6 @@ ExprNode* copyOf(ExprNode* expr)
 	else if (expr->type() == ExprNode::BOOLEAN)		cp = new BoolNode(((BoolNode*)expr)->value(), expr->parent());
 	else 		gErrorManager.log("Should not have executed here", ErrorManager::FATAL, __FILE__, __LINE__);
 
-	for (ExprNode* child : expr->children())
-		cp->children().push_back(copyOf(child));
 	return cp;
 }
 

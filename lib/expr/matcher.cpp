@@ -1,6 +1,7 @@
 #include <list>
 #include <map>
 #include "matcher.h"
+#include "parser.h"
 
 namespace MathSolver
 {
@@ -40,7 +41,7 @@ bool isMatchString(const std::string& match)
     {
         if (e == "(")
         {
-            // increment subexpr count of this layer
+            // increment subexpr count of this subexpr layer
             if (subexprCount.find(parenCount) != subexprCount.end())    ++subexprCount[parenCount];
             else                                                        subexprCount[parenCount] = 1;
             
@@ -49,11 +50,12 @@ bool isMatchString(const std::string& match)
         }
         else if (e == ")")
         {
+            subexprCount[parenCount] = 0; // reset
             --parenCount;
         }
         else
         {
-            ++subexprCount[parenCount]; // assume this layer has been set to 0
+            ++subexprCount[parenCount]; // assume this subexpr count has been set to 0
         }     
     }
 
@@ -61,7 +63,7 @@ bool isMatchString(const std::string& match)
 
     for (auto it : subexprCount)
     {
-        if (it.second == 0)     // nullary layer
+        if (it.second == 0)     // nullary subexpr
             return false;
     }
 
@@ -139,19 +141,72 @@ bool matchExpr(const std::string& match, ExprNode* expr)
     return matchExprHelper(tokens, expr);
 } 
 
-void loadMatchDict(const std::string& match, ExprNode* expr)
+void loadMatchDict(const std::list<std::string> tokens, ExprNode* expr, std::map<std::string, ExprNode*>& matchDict)
 {
+    if (tokens.size() == 1)
+    {
+        matchDict[tokens.front()] = expr;
+    }
+    else
+    {
+        std::list<std::string> sexpr;
+        auto it = std::next(tokens.begin());
+        auto end = std::prev(tokens.end());
 
+        sexpr = extractMatchSubexpr(tokens, it);    
+        loadMatchDict(sexpr, expr, matchDict);
+        it = std::next(it, sexpr.size());
+
+        for (auto it2 = expr->children().begin(); it != end; ++it2, it = std::next(it, sexpr.size()))
+        {
+            sexpr = extractMatchSubexpr(tokens, it);    
+            loadMatchDict(sexpr, *it2, matchDict);
+        }
+    }
 }
 
+ExprNode* buildTree(const std::list<std::string> tokens, const std::map<std::string, ExprNode*>& matchDict)
+{
+    if (tokens.size() == 1)
+    {
+        if (matchDict.find(tokens.front()) != matchDict.end())
+            return copyNodeNoTree(matchDict.at(tokens.front()));
+        
+        std::list<ExprNode*> exprTokens = tokenizeStr(tokens.front());
+        return exprTokens.front();
+    }
+    else
+    {
+        std::list<std::string> sexpr;
+        auto it = std::next(tokens.begin());
+        auto end = std::prev(tokens.end());
+
+        sexpr = extractMatchSubexpr(tokens, it);    
+        ExprNode* op = buildTree(sexpr, matchDict);
+
+        for (it = std::next(it, sexpr.size()); it != end; it = std::next(it, sexpr.size()))
+        {
+            sexpr = extractMatchSubexpr(tokens, it);    
+            ExprNode* sub = buildTree(sexpr, matchDict);
+            sub->setParent(op);
+            op->children().push_back(sub);
+        }
+        
+        return op;
+    }
+}
 
 ExprNode* applyMatchTransform(const std::string& input, const std::string& output, ExprNode* expr)
 {
+    std::list<std::string> itokens = tokenizeMatchString(input);
+    std::list<std::string> otokens = tokenizeMatchString(output);
     std::map<std::string, ExprNode*> matchDict;
+    ExprNode* ret;
 
-    loadMatchDict(input, expr, matchDict);
+    loadMatchDict(itokens, expr, matchDict);
+    ret = buildTree(otokens, matchDict);
     freeExpression(expr);
-    return nullptr;
+    return ret;
 }
 
 }
