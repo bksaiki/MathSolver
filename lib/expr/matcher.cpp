@@ -209,4 +209,28 @@ ExprNode* applyMatchTransform(const std::string& input, const std::string& outpu
     return ret;
 }
 
+// ** Unique Transform Matcher ** //
+
+void UniqueTransformMatcher::add(const std::string& input, const std::string& output)
+{
+    if (mTransforms.find(input) != mTransforms.end())
+    {
+        gErrorManager.log("Overwriting transform " + input + " -> " + mTransforms.at(input) + " with " + output,
+                          ErrorManager::WARNING);
+    }
+
+    mTransforms[input] = output;
+}
+
+ExprNode* UniqueTransformMatcher::transform(ExprNode* expr)
+{
+    for (auto e : mTransforms)
+    {
+        if (matchExpr(e.first, expr))   // if match, return transform
+            return applyMatchTransform(e.first, e.second, expr);
+    }
+
+    return expr; // else, return unaltered
+}
+
 }

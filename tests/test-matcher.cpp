@@ -121,7 +121,7 @@ int main()
             "(+ ?a ?a)",    "(* 2 ?a)",
             "(* ?a 0)",     "0",
             "(* ?a ?a)",    "(^ ?a 2)",
-            "(* ?a 0)",     "undef"
+            "(/ ?a 0)",     "undef"
         };
         
         std::cout << "Match and replace" << std::endl;
@@ -129,6 +129,32 @@ int main()
         {
             ExprNode* expr = parseString(exprs[i]);
             expr = applyMatchTransform(match[2 * i], match[2 * i + 1], expr);
+            std::cout << toPrefixString(expr) << std::endl;
+            freeExpression(expr);
+        }
+    }
+
+    {
+        UniqueTransformMatcher utm;
+        utm.add("(+ ?a ?a)", "(* 2 ?a)");
+        utm.add("(* ?a ?a)", "(^ ?a 2)");
+        utm.add("(* ?a 0)", "0");
+        utm.add("(/ ?a 0)", "undef");
+
+        const size_t COUNT = 4;
+        std::string exprs[COUNT] =
+        {
+            "x + x",
+            "x * 0",
+            "x * x",
+            "x / 0"
+        };
+
+        std::cout << "Match and replace" << std::endl;
+        for (size_t i = 0; i < COUNT; ++i)
+        {
+            ExprNode* expr = parseString(exprs[i]);
+            expr = utm.transform(expr);
             std::cout << toPrefixString(expr) << std::endl;
             freeExpression(expr);
         }
