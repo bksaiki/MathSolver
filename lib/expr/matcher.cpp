@@ -50,7 +50,8 @@ bool isMatchString(const std::string& match)
         }
         else if (e == ")")
         {
-            subexprCount[parenCount] = 0; // reset
+            if (subexprCount[parenCount] == 0)      return false;
+            subexprCount.erase(parenCount);
             --parenCount;
         }
         else
@@ -60,13 +61,6 @@ bool isMatchString(const std::string& match)
     }
 
     if (parenCount != 0)    return false; // unmatched parenthesis
-
-    for (auto it : subexprCount)
-    {
-        if (it.second == 0)     // nullary subexpr
-            return false;
-    }
-
     return true;
 }
 
@@ -213,13 +207,20 @@ ExprNode* applyMatchTransform(const std::string& input, const std::string& outpu
 
 void UniqueTransformMatcher::add(const std::string& input, const std::string& output)
 {
-    if (mTransforms.find(input) != mTransforms.end())
+    if (!isMatchString(input) || !isMatchString(output))
+    {
+        gErrorManager.log("Expected a match transform. Got " + input + " and " + output,
+                          ErrorManager::FATAL);
+    }
+    else if (mTransforms.find(input) != mTransforms.end())
     {
         gErrorManager.log("Overwriting transform " + input + " -> " + mTransforms.at(input) + " with " + output,
                           ErrorManager::WARNING);
     }
-
-    mTransforms[input] = output;
+    else
+    {
+        mTransforms[input] = output;
+    }
 }
 
 ExprNode* UniqueTransformMatcher::transform(ExprNode* expr)

@@ -12,40 +12,55 @@ std::string bool_to_string(bool x)
 	return std::string((x ? "true" : "false"));
 }
 
+std::string list_to_string(const std::list<std::string>& li)
+{
+    if (li.empty())     return "";
+
+    std::string s = li.front();
+    for (auto it = std::next(li.begin()); it != li.end(); ++it)
+        s += (" " + *it);
+    return s;
+}
+
 int main()
 {
+    bool status = true;
+	bool verbose = false;
+
     {
         const size_t COUNT = 3;
-        std::string match[COUNT] =
+        std::string match[COUNT * 2] =
         {
-            "(+ ?a ?b)",
-            "(+ (* ?a ?b) ?c)",
-            "(+ (* PI E) ?a)"
+            "(+ ?a ?b)",            "( + ?a ?b )",
+            "(+ (* ?a ?b) ?c)",     "( + ( * ?a ?b ) ?c )",
+            "(+ (* PI E) ?a)",      "( + ( * PI E ) ?a )"
         };
+
+        TestModule tests("Tokenize", verbose);
         
         for (size_t i = 0; i < COUNT; ++i)
-        {
-            std::list<std::string> tokens = tokenizeMatchString(match[i]);
-            for (auto e : tokens) std::cout << e << " ";
-            std::cout << std::endl;
-        }
+            tests.runTest(list_to_string(tokenizeMatchString(match[2 * i])), match[2 * i + 1]);
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
     }
 
     {
         const size_t COUNT = 6;
-        std::string match[COUNT] =
+        std::string match[COUNT * 2] =
         {
-            "(+ ?a ?b)",
-            "(+ (* ?a ?b) ?c)",
-            "(+ (* PI E) ?a)",
-            "()",
-            "(+ ?a ())",
-            "(+ (* ?a ?b)"
+            "(+ ?a ?b)",            "true",
+            "(+ (* ?a ?b) ?c)",     "true",
+            "(+ (* PI E) ?a)",      "true",
+            "()",                   "false",
+            "(+ ?a ())",            "false",
+            "(+ (* ?a ?b)",         "false"
         };
         
-        std::cout << "isMatchString?" << std::endl;
-        for (auto e : match)
-            std::cout << bool_to_string(isMatchString(e)) << std::endl;
+        TestModule tests("Verify", verbose);
+        for (size_t i = 0; i < COUNT; ++i)
+            tests.runTest(bool_to_string(isMatchString(match[2 * i])), match[2 * i + 1]);
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
     }
 
     {
@@ -62,18 +77,26 @@ int main()
             "x",
             "?a"
         };
+
+        std::string expect[EXPR_COUNT * MATCH_COUNT] =
+        {
+            "true", "true",
+            "false", "true"
+        };
         
-        std::cout << "Single token match?" << std::endl;
+        TestModule tests("Single token matching", verbose);
         for (size_t i = 0; i < EXPR_COUNT; ++i)
         {
             for (size_t j = 0; j < MATCH_COUNT; ++j)
             {
                 ExprNode* expr = parseString(exprs[i]);
-                std::cout << exprs[i] << " satisfies? " << match[j] << " : " <<
-                    bool_to_string(matchExpr(match[j], expr)) << std::endl;
+                tests.runTest(bool_to_string(matchExpr(match[j], expr)), expect[i * EXPR_COUNT + j]);
                 freeExpression(expr);
             }
         }
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
     }
 
     {
@@ -90,20 +113,29 @@ int main()
         {
             "(+ ?a ?b)",
             "(+ (* ?a ?b) ?c)",
-            "(+ (* PI E) ?a)",
+            "(+ (* PI E) ?a)"
+        };
+
+        std::string expect[EXPR_COUNT * MATCH_COUNT] =
+        {
+            "false", "true", "false",
+            "true", "false", "false",
+            "false", "true", "true"
         };
         
-        std::cout << "Multi token match?" << std::endl;
+        TestModule tests("Multi token matching", verbose);
         for (size_t i = 0; i < EXPR_COUNT; ++i)
         {
             for (size_t j = 0; j < MATCH_COUNT; ++j)
             {
                 ExprNode* expr = parseString(exprs[i]);
-                bool res = matchExpr(match[j], expr);
-                std::cout << exprs[i] << " satisfies? " << match[j] << " : " << bool_to_string(res) << std::endl;
+                tests.runTest(bool_to_string(matchExpr(match[j], expr)), expect[i * EXPR_COUNT + j]);
                 freeExpression(expr);
             }
         }
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
     }
 
     {
@@ -123,15 +155,26 @@ int main()
             "(* ?a ?a)",    "(^ ?a 2)",
             "(/ ?a 0)",     "undef"
         };
+
+        std::string expect[COUNT] =
+        {
+            "(* 2 x)",
+            "0",
+            "(^ x 2)",
+            "undef"
+        };
         
-        std::cout << "Match and replace" << std::endl;
+        TestModule tests("Match and replace", verbose);
         for (size_t i = 0; i < COUNT; ++i)
         {
             ExprNode* expr = parseString(exprs[i]);
             expr = applyMatchTransform(match[2 * i], match[2 * i + 1], expr);
-            std::cout << toPrefixString(expr) << std::endl;
+            tests.runTest(toPrefixString(expr), expect[i]);
             freeExpression(expr);
         }
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
     }
 
     {
@@ -150,16 +193,27 @@ int main()
             "x / 0"
         };
 
-        std::cout << "Match and replace" << std::endl;
+        std::string expect[COUNT] =
+        {
+            "(* 2 x)",
+            "0",
+            "(^ x 2)",
+            "undef"
+        };
+
+        TestModule tests("Unique transform matcher", verbose);
         for (size_t i = 0; i < COUNT; ++i)
         {
             ExprNode* expr = parseString(exprs[i]);
             expr = utm.transform(expr);
-            std::cout << toPrefixString(expr) << std::endl;
+            tests.runTest(toPrefixString(expr), expect[i]);
             freeExpression(expr);
         }
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
     }
 
-    return 0;
+    return (int)(!status);
 
 }
