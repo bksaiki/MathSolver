@@ -118,9 +118,9 @@ int main()
 
         std::string expect[EXPR_COUNT * MATCH_COUNT] =
         {
-            "false", "true", "false",
+            "true", "true", "false",
             "true", "false", "false",
-            "false", "true", "true"
+            "true", "true", "true"
         };
         
         TestModule tests("Multi token matching", verbose);
@@ -210,6 +210,41 @@ int main()
             freeExpression(expr);
         }
 
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
+        UniqueExprMatcher uem;
+        ExprNode* expr = parseString("(a + b) * (c + d) + (e / f)");
+
+        TestModule tests("Unique expr matcher", verbose);
+        if (uem.match(expr, "(+ (* ?a ?b) ?c)"))
+        {
+            tests.runTest(toPrefixString(uem.get("?a")), "(+ a b)");
+            tests.runTest(toPrefixString(uem.get("?b")), "(+ c d)");
+            tests.runTest(toPrefixString(uem.get("?c")), "(/ e f)");
+        }
+        else
+        {
+            std::cout << "Expression should have matched" << std::endl;
+            status = false;
+        }
+        
+        freeExpression(expr);
+
+        expr = parseString("PI ^ 4");
+        if (uem.match(expr, "(^ PI ?a)"))
+        {
+            tests.runTest(toPrefixString(uem.get("?a")), "4");
+        }
+        else
+        {
+            std::cout << "Expression should have matched" << std::endl;
+            status = false;
+        }
+
+        freeExpression(expr);
         std::cout << tests.result() << std::endl;
         status &= tests.status();
     }

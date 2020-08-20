@@ -97,8 +97,7 @@ bool matchExprHelper(const std::list<std::string> tokens, ExprNode* expr)
 {
     if (tokens.size() == 1)
     {
-        if (expr->children().size() != 0)       return false;
-        else                                    return matchExprToken(tokens.front(), expr);
+        return matchExprToken(tokens.front(), expr);
     }
     else
     {
@@ -205,6 +204,11 @@ ExprNode* applyMatchTransform(const std::string& input, const std::string& outpu
 
 // ** Unique Transform Matcher ** //
 
+UniqueTransformMatcher::UniqueTransformMatcher()   // default constructor
+{
+    successful = false;
+}
+
 void UniqueTransformMatcher::add(const std::string& input, const std::string& output)
 {
     if (!isMatchString(input) || !isMatchString(output))
@@ -228,10 +232,46 @@ ExprNode* UniqueTransformMatcher::transform(ExprNode* expr)
     for (auto e : mTransforms)
     {
         if (matchExpr(e.first, expr))   // if match, return transform
+        {
+            successful = true;
             return applyMatchTransform(e.first, e.second, expr);
+        }
     }
 
+    successful = false;
     return expr; // else, return unaltered
+}
+
+ExprNode* UniqueExprMatcher::get(const std::string& key) const
+{
+    if (mSubexprs.find(key) == mSubexprs.end())
+    {
+        gErrorManager.log("Could not find match subexpression key \"" + key + "\"",
+                          ErrorManager::FATAL);
+        return nullptr;
+    }
+
+    return mSubexprs.at(key);
+}
+
+bool UniqueExprMatcher::match(ExprNode* expr, const std::string& match)
+{
+    if (!isMatchString(match))
+    {
+        gErrorManager.log("Expected a match transform. Got " + match + " instead",
+                          ErrorManager::FATAL);
+        return false;
+    }
+
+    std::list<std::string> tokens = tokenizeMatchString(match);
+    if (!matchExprHelper(tokens, expr))
+        return false;
+
+    if (!mSubexprs.empty())
+        mSubexprs.clear();
+
+    loadMatchDict(tokens, expr, mSubexprs);
+    return true;
 }
 
 }
