@@ -388,6 +388,9 @@ int opPrec(const std::string& str);
 // Node manipulation
 //
 
+// Returns a copy of the given node.
+ExprNode* copyNode(ExprNode* node);
+
 // Sets the parent of src to the parent of dest, deletes the original node at dest, and
 // returns the new node at dest. Effectively overwrites dest with src. The node at dest is
 // unusable after this operation

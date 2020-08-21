@@ -27,7 +27,7 @@ all: build-tests main;
 main: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(SRC_DIR)/$(ENTRY) $(LDFLAGS) -o $(EXE)
 
-tests: $(OBJS) $(TEST_EXES)
+tests: $(TEST_EXES)
 	$(TEST_DIR)/test.sh $(TEST_EXES)
 
 memcheck: $(OBJS) $(TEST_EXES)

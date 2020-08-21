@@ -1,5 +1,6 @@
 #include "arithrr.h"
 #include "../expr/polynomial.h"
+#include "../expr/matcher.h"
 
 namespace MathSolver
 {
@@ -12,23 +13,11 @@ ExprNode* rewriteNeg(ExprNode* op)
         return op;
     }
 
-    ExprNode* arg = op->children().front();
-    if (isZeroNode(arg))     // (-* 0) ==> 0
-    {
-        ExprNode* ret = new IntNode(0, op->parent());
-        freeExpression(op);
-        op = ret;
-    }
-    else if (arg->isOperator() && ((OpNode*)arg)->name() == "-*") // (-* (-* x)) ==> x
-    {
-        ExprNode* iarg = arg->children().front();
-        arg->children().pop_front();
-        iarg->setParent(op->parent());
-        freeExpression(op);
-        op = iarg;
-    }
+    UniqueTransformMatcher utm;
+    utm.add("(-* 0)", "0");
+    utm.add("(-* (-* ?a))", "?a");
 
-    return op;
+    return utm.transform(op);
 }
 
 ExprNode* rewriteAddSub(ExprNode* op)
@@ -216,34 +205,12 @@ ExprNode* rewriteDiv(ExprNode* op)
         return op;
     }
 
-    ExprNode* num = op->children().front();
-    ExprNode* den = op->children().back();
+    UniqueTransformMatcher utm;
+    utm.add("(/ 0 ?a)", "0");
+    utm.add("(/ ?a 0", "undef");
+    utm.add("(/ ?a 1)", "?a");
 
-    if (isZeroNode(num))    // (/ 0 n) ==> 0
-    {
-        ExprNode* zero = new IntNode(0, op->parent());
-        freeExpression(op);
-        return zero;
-    }
-
-    if (isZeroNode(den))    // (/ n 0) ==> undef
-    {
-        ExprNode* ret = new ConstNode("undef", op->parent());
-        gErrorManager.log("Division by zero: " + toInfixString(op), ErrorManager::WARNING);      
-        freeExpression(op);
-        return ret;
-    }
-
-    if (isIdentityNode(den))    // (/ n 1) ==> n
-    {
-        ExprNode* arg = op->children().front();
-        arg->setParent(op->parent());
-        op->children().pop_front();
-        freeExpression(op);
-        return arg;
-    }
-
-    return op;
+    return utm.transform(op);
 }
 
 ExprNode* rewritePow(ExprNode* op)
@@ -254,25 +221,11 @@ ExprNode* rewritePow(ExprNode* op)
         return op;
     }
 
-    ExprNode* base = op->children().front();
-    ExprNode* ex = op->children().back();
+    UniqueTransformMatcher utm;
+    utm.add("(^ ?a 0)", "1");
+    utm.add("(^ ?a 1)", "1");
 
-    if (isZeroNode(ex))   // (^ x 0) ==> 1
-    {
-        ExprNode* one = new IntNode(1, op->parent());
-        freeExpression(op);
-        return one;
-    }
-
-    if (isZeroNode(ex))   // (^ x 1) ==> x
-    {
-        base->setParent(op->parent());
-        op->children().pop_front();
-        freeExpression(op);
-        return base;
-    }
-
-    return op;
+    return utm.transform(op);
 }
 
 ExprNode* rewriteExp(ExprNode* op)
@@ -283,17 +236,10 @@ ExprNode* rewriteExp(ExprNode* op)
         return op;
     }
 
-    ExprNode* arg = op->children().front();
-    if (op->isOperator() && ((OpNode*)op)->name() == "log")  // (exp (log x)) ==> x
-    {
-        ExprNode* iarg = arg->children().front();
-        arg->children().pop_front();
-        iarg->setParent(op->parent());
-        freeExpression(op);
-        return iarg;
-    }
+    UniqueTransformMatcher utm;
+    utm.add("(exp (log ?a))", "?a");
 
-    return op;
+    return utm.transform(op);
 }
 
 ExprNode* rewriteLog(ExprNode* op)
@@ -304,17 +250,10 @@ ExprNode* rewriteLog(ExprNode* op)
         return op;
     }
 
-    ExprNode* arg = op->children().front();
-    if (op->isOperator() && ((OpNode*)op)->name() == "exp")   // (log (exp x)) ==> x
-    {
-        ExprNode* iarg = arg->children().front();
-        arg->children().pop_front();
-        iarg->setParent(op->parent());
-        freeExpression(op);
-        return iarg;
-    }
+    UniqueTransformMatcher utm;
+    utm.add("(log (exp ?a))", "?a");
 
-    return op;
+    return utm.transform(op);
 }
 
 ExprNode* rewriteArithmetic(ExprNode* expr, int data)

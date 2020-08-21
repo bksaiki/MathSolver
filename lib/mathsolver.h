@@ -11,6 +11,7 @@
 
 #include "expr/arithmetic.h"
 #include "expr/expr.h"
+#include "expr/matcher.h"
 #include "expr/parser.h"
 #include "expr/polynomial.h"
 

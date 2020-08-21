@@ -2,7 +2,6 @@
 #include <list>
 #include <string>
 #include "../lib/mathsolver.h"
-#include "../lib/expr/matcher.h"
 #include "../lib/test/test-common.h"
 
 using namespace MathSolver;
@@ -183,14 +182,16 @@ int main()
         utm.add("(* ?a ?a)", "(^ ?a 2)");
         utm.add("(* ?a 0)", "0");
         utm.add("(/ ?a 0)", "undef");
+        utm.add("(= ?a (* 2 ?a))", "(= 1 ?a)");
 
-        const size_t COUNT = 4;
+        const size_t COUNT = 5;
         std::string exprs[COUNT] =
         {
             "x + x",
             "x * 0",
             "x * x",
-            "x / 0"
+            "x / 0",
+            "x + y = 2 * (x + y)"
         };
 
         std::string expect[COUNT] =
@@ -198,13 +199,15 @@ int main()
             "(* 2 x)",
             "0",
             "(^ x 2)",
-            "undef"
+            "undef",
+            "(= 1 (+ x y))"
         };
 
         TestModule tests("Unique transform matcher", verbose);
         for (size_t i = 0; i < COUNT; ++i)
         {
             ExprNode* expr = parseString(exprs[i]);
+            std::cout << toPrefixString(expr) << std::endl;
             expr = utm.transform(expr);
             tests.runTest(toPrefixString(expr), expect[i]);
             freeExpression(expr);

@@ -163,7 +163,10 @@ ExprNode* buildTree(const std::list<std::string> tokens, const std::map<std::str
     if (tokens.size() == 1)
     {
         if (matchDict.find(tokens.front()) != matchDict.end())
-            return copyNodeNoTree(matchDict.at(tokens.front()));
+        {
+            if (tokens.front().front() == '?')  return copyOf(matchDict.at(tokens.front()));
+            else                                return copyNode(matchDict.at(tokens.front()));
+        }
         
         std::list<ExprNode*> exprTokens = tokenizeStr(tokens.front());
         return exprTokens.front();
@@ -206,7 +209,7 @@ ExprNode* applyMatchTransform(const std::string& input, const std::string& outpu
 
 UniqueTransformMatcher::UniqueTransformMatcher()   // default constructor
 {
-    successful = false;
+    mSuccess = false;
 }
 
 void UniqueTransformMatcher::add(const std::string& input, const std::string& output)
@@ -227,18 +230,24 @@ void UniqueTransformMatcher::add(const std::string& input, const std::string& ou
     }
 }
 
+void UniqueTransformMatcher::clear()
+{
+    mTransforms.clear();
+    mSuccess = false;
+}
+
 ExprNode* UniqueTransformMatcher::transform(ExprNode* expr)
 {
     for (auto e : mTransforms)
     {
         if (matchExpr(e.first, expr))   // if match, return transform
         {
-            successful = true;
+            mSuccess = true;
             return applyMatchTransform(e.first, e.second, expr);
         }
     }
 
-    successful = false;
+    mSuccess = false;
     return expr; // else, return unaltered
 }
 

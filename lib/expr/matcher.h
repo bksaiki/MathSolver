@@ -41,17 +41,20 @@ public:
     // Adds a transformation. Both parameters must be match expressions.
     void add(const std::string& input, const std::string& output);
 
+    // Clears the map of transforms and resets the success flag.
+    void clear();
+
     // Attempts to apply one of the stored transformations. 
     ExprNode* transform(ExprNode* expr);
 
     // Returns whether or not the last transformation attempt was successful.
     // Calling this function after initialization returns false.s
-    inline bool success() const;
+    inline bool success() const { return mSuccess; }
 
 private:
 
     std::map<std::string, std::string> mTransforms;
-    bool successful;
+    bool mSuccess;
 };
 
 // Stores a single match expression for matching and a map to access matched subexpressions

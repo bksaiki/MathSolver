@@ -16,27 +16,10 @@ const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] =
 
 ExprNode* copyOf(ExprNode* expr)
 {
-	ExprNode* cp = copyNodeNoTree(expr);
-
+	ExprNode* cp = copyNode(expr);
+	
 	for (ExprNode* child : expr->children())
 		cp->children().push_back(copyOf(child));
-	return cp;
-}
-
-ExprNode* copyNodeNoTree(ExprNode* expr)
-{
-	ExprNode* cp;
-	if (expr->type() == ExprNode::SYNTAX) 			cp = new SyntaxNode(((SyntaxNode*)expr)->name(), expr->parent());
-	else if (expr->type() == ExprNode::OPERATOR) 	cp = new OpNode(((OpNode*)expr)->name(), expr->parent());
-	else if (expr->type() == ExprNode::FUNCTION) 	cp = new FuncNode(((FuncNode*)expr)->name(), expr->parent());
-	else if (expr->type() == ExprNode::VARIABLE) 	cp = new VarNode(((VarNode*)expr)->name(), expr->parent());
-	else if (expr->type() == ExprNode::CONSTANT) 	cp = new ConstNode(((ConstNode*)expr)->name(), expr->parent());
-	else if (expr->type() == ExprNode::INTEGER) 	cp = new IntNode(((IntNode*)expr)->value(), expr->parent());
-	else if (expr->type() == ExprNode::FLOAT)		cp = new FloatNode(((FloatNode*)expr)->value(), expr->parent());
-	else if (expr->type() == ExprNode::RANGE)		cp = new RangeNode(((RangeNode*)expr)->value(), expr->parent());
-	else if (expr->type() == ExprNode::BOOLEAN)		cp = new BoolNode(((BoolNode*)expr)->value(), expr->parent());
-	else 		gErrorManager.log("Should not have executed here", ErrorManager::FATAL, __FILE__, __LINE__);
-
 	return cp;
 }
 
