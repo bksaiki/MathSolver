@@ -1,5 +1,5 @@
 #include <iostream>
-#include <list>
+#include <vector>
 #include <string>
 #include "../lib/mathsolver.h"
 #include "../lib/test/test-common.h"
@@ -11,7 +11,7 @@ std::string bool_to_string(bool x)
 	return std::string((x ? "true" : "false"));
 }
 
-std::string list_to_string(const std::list<std::string>& li)
+std::string vec_to_str(const std::vector<std::string>& li)
 {
     if (li.empty())     return "";
 
@@ -38,7 +38,7 @@ int main()
         TestModule tests("Tokenize", verbose);
         
         for (size_t i = 0; i < COUNT; ++i)
-            tests.runTest(list_to_string(tokenizeMatchString(match[2 * i])), match[2 * i + 1]);
+            tests.runTest(vec_to_str(tokenizeMatchString(match[2 * i])), match[2 * i + 1]);
         std::cout << tests.result() << std::endl;
         status &= tests.status();
     }
@@ -89,6 +89,7 @@ int main()
             for (size_t j = 0; j < MATCH_COUNT; ++j)
             {
                 ExprNode* expr = parseString(exprs[i]);
+                flattenExpr(expr);
                 tests.runTest(bool_to_string(matchExpr(match[j], expr)), expect[i * EXPR_COUNT + j]);
                 freeExpression(expr);
             }
@@ -99,27 +100,33 @@ int main()
     }
 
     {
-        const size_t EXPR_COUNT = 3;
+        const size_t EXPR_COUNT = 5;
         std::string exprs[EXPR_COUNT] =
         {
             "5 * 3 + 2",
             "x + y",
-            "PI * E + 10.5"
+            "PI * E + 10.5",
+            "1 * 2 * 3 * 4 * 5",
+            "0 * 1 * 2 * 3 * 4"
         };
 
-        const size_t MATCH_COUNT = 3;
+        const size_t MATCH_COUNT = 5;
         std::string match[MATCH_COUNT] =
         {
             "(+ ?a ?b)",
             "(+ (* ?a ?b) ?c)",
-            "(+ (* PI E) ?a)"
+            "(+ (* PI E) ?a)",
+            "(* 1 ?a ...)",
+            "(* 1 ...?)"
         };
 
         std::string expect[EXPR_COUNT * MATCH_COUNT] =
         {
-            "true", "true", "false",
-            "true", "false", "false",
-            "true", "true", "true"
+            "true", "true", "false", "false", "false",
+            "true", "false", "false", "false", "false",
+            "true", "true", "true", "false", "false",
+            "false", "false", "false", "true", "true",
+            "false", "false", "false", "false", "true",
         };
         
         TestModule tests("Multi token matching", verbose);
@@ -128,6 +135,7 @@ int main()
             for (size_t j = 0; j < MATCH_COUNT; ++j)
             {
                 ExprNode* expr = parseString(exprs[i]);
+                flattenExpr(expr);
                 tests.runTest(bool_to_string(matchExpr(match[j], expr)), expect[i * EXPR_COUNT + j]);
                 freeExpression(expr);
             }
@@ -138,21 +146,25 @@ int main()
     }
 
     {
-        const size_t COUNT = 4;
+        const size_t COUNT = 6;
         std::string exprs[COUNT] =
         {
             "x + x",
             "x * 0",
             "x * x",
-            "x / 0"
+            "x / 0",
+            "1 * 2 * 3 * 4 * 5",
+            "2 * 1 * 3 * 4 * 5"
         };
 
         std::string match[COUNT * 2] =
         {
-            "(+ ?a ?a)",    "(* 2 ?a)",
-            "(* ?a 0)",     "0",
-            "(* ?a ?a)",    "(^ ?a 2)",
-            "(/ ?a 0)",     "undef"
+            "(+ ?a ?a)",        "(* 2 ?a)",
+            "(* ?a 0)",         "0",
+            "(* ?a ?a)",        "(^ ?a 2)",
+            "(/ ?a 0)",         "undef",
+            "(* 1 ?a ...)",     "(* ?a ...)",
+            "(* 1 ...?)",       "(* ...?)"
         };
 
         std::string expect[COUNT] =
@@ -160,13 +172,16 @@ int main()
             "(* 2 x)",
             "0",
             "(^ x 2)",
-            "undef"
+            "undef",
+            "(* 2 3 4 5)",
+            "(* 2 3 4 5)"
         };
         
         TestModule tests("Match and replace", verbose);
         for (size_t i = 0; i < COUNT; ++i)
         {
             ExprNode* expr = parseString(exprs[i]);
+            flattenExpr(expr);
             expr = applyMatchTransform(match[2 * i], match[2 * i + 1], expr);
             tests.runTest(toPrefixString(expr), expect[i]);
             freeExpression(expr);
@@ -207,7 +222,7 @@ int main()
         for (size_t i = 0; i < COUNT; ++i)
         {
             ExprNode* expr = parseString(exprs[i]);
-            std::cout << toPrefixString(expr) << std::endl;
+            flattenExpr(expr);
             expr = utm.transform(expr);
             tests.runTest(toPrefixString(expr), expect[i]);
             freeExpression(expr);

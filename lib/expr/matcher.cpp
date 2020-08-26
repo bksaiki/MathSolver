@@ -6,9 +6,9 @@
 namespace MathSolver
 {
 
-std::list<std::string> tokenizeMatchString(const std::string& match)
+std::vector<std::string> tokenizeMatchString(const std::string& match)
 {
-    std::list<std::string> tokens;
+    std::vector<std::string> tokens;
     size_t len = match.length();
     for (size_t i = 0; i < len; ++i)
     {
@@ -21,7 +21,8 @@ std::list<std::string> tokenizeMatchString(const std::string& match)
         else
         {  
             size_t j = i;
-            while (!isspace(match[j]) && match[i] != '(' && match[j] != ')') ++j;
+            while (j < len && !isspace(match[j]) && match[i] != '(' && match[j] != ')')
+                ++j;
             tokens.push_back(match.substr(i, j - i));
             i = j - 1;
         }   
@@ -32,27 +33,40 @@ std::list<std::string> tokenizeMatchString(const std::string& match)
 
 bool isMatchString(const std::string& match)
 {
-    std::list<std::string> tokens = tokenizeMatchString(match);
+    std::vector<std::string> tokens = tokenizeMatchString(match);
     std::map<int, int> subexprCount;
+    std::map<int, bool> ellipseUsed;
     int parenCount = 0;
 
-    subexprCount[0] = 0;
-    for (auto e : tokens)
+    for (size_t i = 0; i < tokens.size(); ++i)
     {
-        if (e == "(")
+        if (tokens[i] == "(")
         {
             // increment subexpr count of this subexpr layer
             if (subexprCount.find(parenCount) != subexprCount.end())    ++subexprCount[parenCount];
             else                                                        subexprCount[parenCount] = 1;
             
             // set the next layer to 0
-            subexprCount[++parenCount] = 0;
+            ++parenCount;
+            subexprCount[parenCount] = 0;
+            ellipseUsed[parenCount] = false;
         }
-        else if (e == ")")
+        else if (tokens[i] == ")")
         {
             if (subexprCount[parenCount] == 0)      return false;
             subexprCount.erase(parenCount);
+            ellipseUsed.erase(parenCount);
             --parenCount;
+        }
+        else if (tokens[i] == "...")
+        {
+            if (ellipseUsed[parenCount])       return false;
+            ellipseUsed[parenCount] = true;
+        }
+        else if (tokens[i] == "...?")
+        {
+            if (tokens[i + 1] != ")")   
+                return false; // ellipses may only appear in the tail
         }
         else
         {
@@ -64,9 +78,10 @@ bool isMatchString(const std::string& match)
     return true;
 }
 
-std::list<std::string> extractMatchSubexpr(const std::list<std::string>& match, std::list<std::string>::const_iterator& it)
+std::vector<std::string> extractMatchSubexpr(const std::vector<std::string>& match,
+                                             std::vector<std::string>::const_iterator& it)
 {
-    std::list<std::string> subexpr;
+    std::vector<std::string> subexpr;
     if (*it == "(")
     {
         auto it2 = std::next(it);
@@ -93,7 +108,7 @@ bool matchExprToken(const std::string& token, ExprNode* expr)
     else                        return true;
 }
 
-bool matchExprHelper(const std::list<std::string> tokens, ExprNode* expr)
+bool matchExprHelper(const std::vector<std::string> tokens, ExprNode* expr)
 {
     if (tokens.size() == 1)
     {
@@ -101,28 +116,64 @@ bool matchExprHelper(const std::list<std::string> tokens, ExprNode* expr)
     }
     else
     {
-        std::list<std::string> sexpr;
+        std::vector<std::vector<std::string>> sexprs;
         auto it = std::next(tokens.begin());
         auto end = std::prev(tokens.end());
+        
+       while (it != end)
+       {
+           std::vector<std::string> s = extractMatchSubexpr(tokens, it);
+           it = std::next(it, s.size());
+           sexprs.push_back(s);
+       }
+
+       if (sexprs[0].size() != 1 || !matchExprToken(sexprs[0][0], expr))
+            return false;   // operator did not match
+        
+        auto it2 = expr->children().begin();
         size_t argc = 0;
-
-        sexpr = extractMatchSubexpr(tokens, it);
-        if (sexpr.size() != 1 || !matchExprToken(sexpr.front(), expr)) 
-            return false;
-
-        it = std::next(it, sexpr.size());
-        for (auto it2 = expr->children().begin(); it != end; ++argc, ++it2, it = std::next(it, sexpr.size()))
+        if (sexprs.back().front() == "...?")
         {
-            if (it2 == expr->children().end()) // too many match arguments
-                return false;
+            size_t len = expr->children().size();
+            size_t needed = sexprs.size() - 2;
+            size_t check = len - needed;
+            size_t idx = 1;
+            for (; argc <= check + idx && argc < len; ++argc, ++it2)
+            {
+                if (matchExprHelper(sexprs[idx], *it2))
+                {
+                    if (idx == needed)  return true;
+                    ++idx;
+                }
+            }
 
-            sexpr = extractMatchSubexpr(tokens, it);    
-            if (!matchExprHelper(sexpr, *it2))
+            return false;
+        }
+        else
+        {
+            for (size_t i = 1; i < sexprs.size(); ++i, ++it2, ++argc)
+            {
+                if (it2 == expr->children().end()) // too many match arguments
+                    return false;
+                
+                if (i + 1 < sexprs.size() && sexprs[i + 1].front() == "...")
+                {
+                    size_t after = (sexprs.size() - 2) - i;
+                    size_t inlist = expr->children().size() - argc - after;
+                    argc += (inlist - 1);
+                    it2 = std::next(it2, (inlist - 1));
+                    ++i;
+                }
+                else
+                {
+                    if (!matchExprHelper(sexprs[i], *it2))
+                        return false;
+                }
+            }
+
+            if (argc != expr->children().size()) // too few match arguments
                 return false;
         }
-
-        if (argc != expr->children().size()) // too few match arguments
-            return false;
 
         return true;
     }
@@ -130,11 +181,12 @@ bool matchExprHelper(const std::list<std::string> tokens, ExprNode* expr)
 
 bool matchExpr(const std::string& match, ExprNode* expr)
 {
-    std::list<std::string> tokens = tokenizeMatchString(match);
+    std::vector<std::string> tokens = tokenizeMatchString(match);
     return matchExprHelper(tokens, expr);
 } 
 
-void loadMatchDict(const std::list<std::string> tokens, ExprNode* expr, std::map<std::string, ExprNode*>& matchDict)
+void loadMatchDict(const std::vector<std::string> tokens, ExprNode* expr,
+                   std::map<std::string, ExprNode*>& matchDict)
 {
     if (tokens.size() == 1)
     {
@@ -142,30 +194,96 @@ void loadMatchDict(const std::list<std::string> tokens, ExprNode* expr, std::map
     }
     else
     {
-        std::list<std::string> sexpr;
+        std::vector<std::vector<std::string>> sexprs;
         auto it = std::next(tokens.begin());
         auto end = std::prev(tokens.end());
+        
+       while (it != end)
+       {
+           std::vector<std::string> s = extractMatchSubexpr(tokens, it);
+           it = std::next(it, s.size());
+           sexprs.push_back(s);
+       }
 
-        sexpr = extractMatchSubexpr(tokens, it);    
-        loadMatchDict(sexpr, expr, matchDict);
-        it = std::next(it, sexpr.size());
-
-        for (auto it2 = expr->children().begin(); it != end; ++it2, it = std::next(it, sexpr.size()))
+       loadMatchDict(sexprs[0], expr, matchDict);
+        
+        auto it2 = expr->children().begin();
+        size_t argc = 0;
+        if (sexprs.back()[0] == "...?")
         {
-            sexpr = extractMatchSubexpr(tokens, it);    
-            loadMatchDict(sexpr, *it2, matchDict);
+            ExprNode* ell = new SyntaxNode("...?");
+            ExprNode* before = new SyntaxNode("before", ell);
+            ExprNode* after = new SyntaxNode("after", ell);
+            ell->children().push_back(before);
+            ell->children().push_back(after);
+
+            size_t len = expr->children().size();
+            size_t needed = sexprs.size() - 2;
+            size_t check = len - needed;
+            size_t idx = 1;
+            bool matched = false;
+            for (; argc <= check + idx && argc < len; ++argc, ++it2)
+            {
+                if (matchExprHelper(sexprs[idx], *it2))
+                {
+                   loadMatchDict(sexprs[idx], *it2, matchDict);
+                    ++idx;
+                    matched = true;
+                }
+                else
+                {
+                    if (matched)    after->children().push_back(*it2);
+                    else            before->children().push_back(*it2);
+                }  
+            }
+
+            matchDict["...?"] = ell;
+        }
+        else
+        {
+            for (size_t i = 1; i < sexprs.size(); ++i, ++it2, ++argc)
+            {
+                if (i + 1 < sexprs.size() && sexprs[i + 1].front() == "...")
+                {
+                    size_t after = (sexprs.size() - 2) - i;
+                    size_t inlist = expr->children().size() - argc - after;
+
+                    ExprNode* ell = new SyntaxNode("...");
+                    for (size_t j = 0; j < inlist; ++j, ++it2)
+                    {
+                        ExprNode* t = *it2;
+                        t->setParent(ell);
+                        ell->children().push_back(t);
+                    }
+
+                    matchDict[sexprs[i].front()] = ell;
+                    ++i;
+                    --it2;
+                    argc += (inlist - 1);
+                }
+                else
+                {
+                    loadMatchDict(sexprs[i], *it2, matchDict);
+                }
+            }
         }
     }
 }
 
-ExprNode* buildTree(const std::list<std::string> tokens, const std::map<std::string, ExprNode*>& matchDict)
+ExprNode* buildTree(const std::vector<std::string> tokens,
+                    const std::map<std::string, ExprNode*>& matchDict)
 {
     if (tokens.size() == 1)
     {
         if (matchDict.find(tokens.front()) != matchDict.end())
         {
-            if (tokens.front().front() == '?')  return copyOf(matchDict.at(tokens.front()));
-            else                                return copyNode(matchDict.at(tokens.front()));
+            if (tokens.front().front() == '?')
+            {
+                ExprNode* t = matchDict.at(tokens.front());
+                return ((t->toString() == "...") ? t : copyOf(t));
+            }
+           
+           return copyNode(matchDict.at(tokens.front()));
         }
         
         std::list<ExprNode*> exprTokens = tokenizeStr(tokens.front());
@@ -173,34 +291,92 @@ ExprNode* buildTree(const std::list<std::string> tokens, const std::map<std::str
     }
     else
     {
-        std::list<std::string> sexpr;
+        std::vector<std::vector<std::string>> sexprs;
         auto it = std::next(tokens.begin());
         auto end = std::prev(tokens.end());
 
-        sexpr = extractMatchSubexpr(tokens, it);    
-        ExprNode* op = buildTree(sexpr, matchDict);
-
-        for (it = std::next(it, sexpr.size()); it != end; it = std::next(it, sexpr.size()))
+        while (it != end)
         {
-            sexpr = extractMatchSubexpr(tokens, it);    
-            ExprNode* sub = buildTree(sexpr, matchDict);
-            sub->setParent(op);
-            op->children().push_back(sub);
+            std::vector<std::string> s = extractMatchSubexpr(tokens, it);
+            it = std::next(it, s.size());
+            sexprs.push_back(s);
         }
         
+        ExprNode* op = buildTree(sexprs[0], matchDict);
+        bool ellipse = sexprs.back().front() == "...?";
+        
+        if (ellipse)
+        {
+            ExprNode* ell = matchDict.at("...?");
+            for (auto e : ell->children().front()->children())
+            {
+                ExprNode* t = copyOf(e);
+                t->setParent(op);
+                op->children().push_back(t);
+            }
+        }
+
+        size_t lim = (ellipse ? (sexprs.size() - 1) : sexprs.size());
+        for (size_t i = 1; i < lim; ++i)
+        {
+            ExprNode* sub = buildTree(sexprs[i], matchDict);
+            if (sub->toString() == "...") // ellipse match
+            {
+                for (auto e : sub->children())
+                {
+                    ExprNode* t = copyOf(e);
+                    t->setParent(op);
+                    op->children().push_back(t);
+                }
+
+                ++i; // skip ellipse
+            }
+            else
+            {
+                sub->setParent(op);
+                op->children().push_back(sub);
+            }
+        }
+
+        if (ellipse)
+        {
+            ExprNode* ell = matchDict.at("...?");
+            for (auto e : ell->children().back()->children())
+            {
+                ExprNode* t = copyOf(e);
+                t->setParent(op);
+                op->children().push_back(t);
+            }
+        }
+
         return op;
     }
 }
 
 ExprNode* applyMatchTransform(const std::string& input, const std::string& output, ExprNode* expr)
 {
-    std::list<std::string> itokens = tokenizeMatchString(input);
-    std::list<std::string> otokens = tokenizeMatchString(output);
+    std::vector<std::string> itokens = tokenizeMatchString(input);
+    std::vector<std::string> otokens = tokenizeMatchString(output);
     std::map<std::string, ExprNode*> matchDict;
     ExprNode* ret;
 
     loadMatchDict(itokens, expr, matchDict);
     ret = buildTree(otokens, matchDict);
+
+    for (auto e : matchDict)
+    {
+        if (e.first == "...?")
+        {
+            delete e.second->children().front();
+            delete e.second->children().back();
+            delete e.second;
+        }
+        else if (e.second->toString() == "...")
+        {
+            delete e.second;
+        }
+    }
+
     freeExpression(expr);
     return ret;
 }
@@ -272,7 +448,7 @@ bool UniqueExprMatcher::match(ExprNode* expr, const std::string& match)
         return false;
     }
 
-    std::list<std::string> tokens = tokenizeMatchString(match);
+    std::vector<std::string> tokens = tokenizeMatchString(match);
     if (!matchExprHelper(tokens, expr))
         return false;
 

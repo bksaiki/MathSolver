@@ -2,7 +2,7 @@
 #define _MATHSOLVER_MATCHER_H_
 
 #include <map>
-#include <list>
+#include <vector>
 #include <string>
 #include "expr.h"
 
@@ -12,9 +12,9 @@ namespace MathSolver
 
 /* Match helper functions */
 
-// Tokenizes a given match expression and returns the tokens in a list. Not safe, does not
+// Tokenizes a given match expression and returns the tokens in a vector. Not safe, does not
 // check if the match expressions is valid.
-std::list<std::string> tokenizeMatchString(const std::string& match);
+std::vector<std::string> tokenizeMatchString(const std::string& match);
 
 // Returns true if the expression matches the match expression and false otherwise. Not safe, does not
 // check if the match expressions is valid.
