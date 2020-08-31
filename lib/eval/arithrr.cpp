@@ -13,63 +13,29 @@ ExprNode* rewriteNeg(ExprNode* op)
         return op;
     }
 
-    UniqueTransformMatcher utm;
-    utm.add("(-* 0)", "0");
-    utm.add("(-* (-* ?a))", "?a");
+    UniqueExprTransformer etrans;
+    etrans.add("(-* 0)", "0");
+    etrans.add("(-* (-* ?a))", "?a");
 
-    return utm.transform(op);
+    return etrans.transform(op);
 }
 
 ExprNode* rewriteAddSub(ExprNode* op)
 {
     flattenExpr(op);
+
+    UniqueExprTransformer etrans;
+    etrans.add("(+ 0 ?a ...?)", "(+ ?a ...?)");
+    etrans.add("(+ (-* ?a) ?b ?c ...)", "(+ (- ?b ?a) ?c ...)");
+    etrans.add("(+ (-* ?a) (-* ?b) ?c ...)", "(+ (-* (+ ?a ?b)) ?c ...)");
+    etrans.add("(+ ?a (-* ?b) ?c ...?)", "(+ (- ?a ?b) ?c ...?)");
+    op = etrans.transform(op);
+
     auto it = op->children().begin();
-    if ((*it)->isOperator() && ((OpNode*)*it)->name() == "-*")        // (+ (-* a) b c ...) ==> (+ (- b a) c ...)
+    auto it2 = std::next(it);
+    while (it != op->children().end() && it2 != op->children().end())
     {
-        auto it2 = std::next(it); 
-        if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "-*")    // (+ (-* a) (-* b) c ...) ==> (+ (-* (+ a b)) c ...)
-        {
-            ExprNode* add = new OpNode("+", *it);
-            add->children().push_back((*it)->children().front());
-            add->children().push_back((*it2)->children().front());
-            add = rewriteAdd(add);
-            (*it)->children().clear();
-            (*it2)->children().clear();
-
-            (*it)->children().push_back(add);
-            freeExpression(*it2);
-            op->children().erase(it2);
-        }
-        else              
-        {
-            ((OpNode*)*it)->setName("-");                                              
-            (*it)->children().push_front(*it2);
-            op->children().erase(it2);
-        }
-    }
-
-    while (it != op->children().end())
-    {
-        auto it2 = std::next(it);
         bool changed = false;
-
-        if (it2 == op->children().end())
-            break;
-
-        if (isZeroNode(*it)) // (+ a 0 b ...) ==> (+ a b ...)
-        {
-            freeExpression(*it);
-            it = op->children().erase(it);
-            changed = true;
-            continue;
-        }
-        else if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "-*") // (+ a (-* b) c ...) ==> (+ (- a b) c ...)
-        {
-            ((OpNode*)*it2)->setName("-");
-            (*it2)->children().push_front(*it);
-            it = op->children().erase(it);
-            continue;
-        }
 
         for (; it2 != op->children().end(); ++it2)
         {
@@ -85,7 +51,11 @@ ExprNode* rewriteAddSub(ExprNode* op)
             }   
         }
 
-        if (!changed)   ++it;
+        if (!changed)
+        {
+            ++it;
+            ++it2;
+        }
     }
 
     flattenExpr(op);
@@ -153,48 +123,11 @@ ExprNode* rewriteMul(ExprNode* op)
         return op;
     }
 
-    auto it = op->children().begin();
-    while (it != op->children().end())
-    {
-        ExprNode* arg = *it;
-        bool changed = false;
-
-        if (isZeroNode(arg))    // (* a 0 b ...) ==> 0
-        {
-            ExprNode* zero = new IntNode(0, op->parent());
-            freeExpression(op);
-            return zero;
-        }
-
-        if (isIdentityNode(arg))     // (* a 1 b ...) ==> (* a b ...)    
-        {
-            freeExpression(*it);
-            it = op->children().erase(it);
-            changed = true;
-        }
-
-        if (!changed)  ++it;
-    }
-
-    if (op->children().size() < 2) // Post: (* x) ==> x or (*) ==> 1
-    {
-        ExprNode* ret;
-        if (op->children().size() == 1)     
-        {
-            ret = op->children().front();
-            op->children().clear();
-        }
-        else                                
-        {
-            ret = new IntNode(1);
-        }
-
-        ret->setParent(op->parent());
-        freeExpression(op);
-        return ret;
-    } 
-
-    return op;
+    UniqueExprTransformer etrans;
+    etrans.add("(* 0 ?a ...?)", "0");
+    etrans.add("(* 1 ?a ...?)", "(* ?a ...?)");
+    etrans.add("(* ?a)", "?a");
+    return etrans.transform(op);
 }
 
 ExprNode* rewriteDiv(ExprNode* op)
@@ -205,12 +138,12 @@ ExprNode* rewriteDiv(ExprNode* op)
         return op;
     }
 
-    UniqueTransformMatcher utm;
-    utm.add("(/ 0 ?a)", "0");
-    utm.add("(/ ?a 0", "undef");
-    utm.add("(/ ?a 1)", "?a");
+    UniqueExprTransformer etrans;
+    etrans.add("(/ 0 ?a)", "0");
+    etrans.add("(/ ?a 0)", "undef");
+    etrans.add("(/ ?a 1)", "?a");
 
-    return utm.transform(op);
+    return etrans.transform(op);
 }
 
 ExprNode* rewritePow(ExprNode* op)
@@ -221,11 +154,11 @@ ExprNode* rewritePow(ExprNode* op)
         return op;
     }
 
-    UniqueTransformMatcher utm;
-    utm.add("(^ ?a 0)", "1");
-    utm.add("(^ ?a 1)", "1");
+    UniqueExprTransformer etrans;
+    etrans.add("(^ ?a 0)", "1");
+    etrans.add("(^ ?a 1)", "1");
 
-    return utm.transform(op);
+    return etrans.transform(op);
 }
 
 ExprNode* rewriteExp(ExprNode* op)
@@ -236,10 +169,10 @@ ExprNode* rewriteExp(ExprNode* op)
         return op;
     }
 
-    UniqueTransformMatcher utm;
-    utm.add("(exp (log ?a))", "?a");
+    UniqueExprTransformer etrans;
+    etrans.add("(exp (log ?a))", "?a");
 
-    return utm.transform(op);
+    return etrans.transform(op);
 }
 
 ExprNode* rewriteLog(ExprNode* op)
@@ -250,10 +183,10 @@ ExprNode* rewriteLog(ExprNode* op)
         return op;
     }
 
-    UniqueTransformMatcher utm;
-    utm.add("(log (exp ?a))", "?a");
+    UniqueExprTransformer etrans;
+    etrans.add("(log (exp ?a))", "?a");
 
-    return utm.transform(op);
+    return etrans.transform(op);
 }
 
 ExprNode* rewriteArithmetic(ExprNode* expr, int data)

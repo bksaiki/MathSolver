@@ -48,6 +48,9 @@ void flattenExpr(ExprNode* expr);
 // Deletes an expression tree.
 void freeExpression(ExprNode* expr);
 
+// Returns the given expression unaltered. This is the default transform, corresponding to f(x) = x.
+inline ExprNode* identity(ExprNode* expr) { return expr; }
+
 // Returns true if the expression only contains numerical operands (Non-symbolic expression).
 inline bool isNumerical(ExprNode* expr)
 { 

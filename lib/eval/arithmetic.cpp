@@ -2,6 +2,7 @@
 #include "arithmetic.h"
 #include "arithrr.h"
 #include "../expr/arithmetic.h"
+#include "../expr/matcher.h"
 #include "../expr/polynomial.h"
 #include "../math/float-math.h"
 #include "../math/integer-math.h"
@@ -805,134 +806,28 @@ ExprNode* symbolicDiv(OpNode* op)
         return op;
     }
 
+    // Naive simplications
+    UniqueExprTransformer etrans;
+    etrans.add("(/ ?x 0)", "undef");
+    etrans.add("(/ ?x 1)", "?x");
+    etrans.add("(/ ?x ?x)", "1");
+    etrans.add("(/ (^ ?x ?m) (^ ?x ?n))", "(^ ?x (- ?m ?n))");
+    etrans.add("(/ (^ ?x ?n) ?x)", "(^ ?x (- ?n 1))");
+    etrans.add("(/ ?x (^ ?x ?n))", "(/ 1 (^ ?x (- ?n 1)))");
+
+    op = (OpNode*)etrans.transform(op);
+    if (etrans.success())
+        return op;
+
+    // Rewrite stage
+    etrans.clear();
+    etrans.add("(/ (/ ?a ?b) (/ ?c ?d))", "(/ (** ?a ?d) (** ?b ?c))");
+    etrans.add("(/ (/ ?a ?b) ?c)", "(/ ?a (** ?b ?c))");
+    etrans.add("(/ ?a (/ ?b ?c))", "(/ (** ?a ?c) ?b)");
+    op = (OpNode*)etrans.transform(op);
+
     ExprNode* num = op->children().front();
     ExprNode* den = op->children().back();
-
-    if (isZeroNode(den)) // (/ x 0) ==> undef
-    {
-        ExprNode* ret = new ConstNode("undef", op->parent());   
-        freeExpression(op);
-        return ret;
-    }
-
-    if (isIdentityNode(den)) // (/ x 1) ==> x
-    {
-        num->setParent(op->parent());
-        op->children().pop_front();      
-        freeExpression(op);
-        return num;
-    }
-
-    if (eqvExpr(num, den)) // (/ x x) ==> 1
-    {
-        ExprNode* ret = new IntNode(1, op->parent());
-        freeExpression(op);
-        return ret;
-    }
-    
-    if (num->isOperator() && den->isOperator() &&       // (/ (^ x n) (^ x m)) ==> (^ x (- n m))
-        ((OpNode*)num)->name() == "^" && ((OpNode*)den)->name() == "^" && 
-        eqvExpr(peekPowBase(num), peekPowBase(den)))    
-    {
-        ExprNode* sub = new OpNode("-", num);
-        sub->children().push_back(num->children().back());
-        sub->children().push_back(den->children().back());
-        num->children().back()->setParent(sub);
-        den->children().back()->setParent(sub);
-        num->children().pop_back();
-        den->children().pop_back();
-        sub = evaluateArithmetic(sub);
-
-        num->children().push_back(sub);
-        freeExpression(den);
-        return moveNode(op, num);
-    }
-
-    if (num->isOperator() && ((OpNode*)num)->name() == "^" && den->isValue() && // (/ (^ x n) x) ==> (^ x (- n 1))
-        eqvExpr(peekPowBase(num), peekPowBase(den)))    
-    {
-        ExprNode* sub = new OpNode("-", num);
-        sub->children().push_back(num->children().back());
-        sub->children().push_back(new IntNode(1, sub));
-        num->children().back()->setParent(sub);
-        num->children().pop_back();
-        sub = evaluateArithmetic(sub);
-
-        num->children().push_back(sub);
-        freeExpression(den);
-        return moveNode(op, num);
-    }
-    
-    if (num->isValue() && den->isOperator() && ((OpNode*)den)->name() == "^" && // (/ x (^ x n)) ==> (/ 1 (^ x (- n 1))
-        eqvExpr(peekPowBase(num), peekPowBase(den)))    
-    {
-        ExprNode* sub = new OpNode("-", den);
-        sub->children().push_back(den->children().back());
-        sub->children().push_back(new IntNode(1, sub));
-        den->children().back()->setParent(sub);
-        den->children().pop_back();
-        sub = evaluateArithmetic(sub);
-
-        den->children().push_back(sub);
-        freeExpression(num);
-        op->children().pop_front();
-        op->children().push_front(new IntNode(1, op));
-        return op;
-    }
-    
-    if (num->isOperator() && den->isOperator() &&  // (/ (/ a b) (/ c d)) ==> (/ (* a d) (* b c))
-        ((OpNode*)num)->name() == "/" && ((OpNode*)den)->name() == "/") 
-    {
-        ExprNode* tmp = num->children().back();
-        ExprNode* tmp2 = den->children().back();
-
-        ((OpNode*)num)->setName("**");
-        ((OpNode*)den)->setName("**");
-        num->children().erase(std::prev(num->children().end()));
-        den->children().erase(std::prev(den->children().end()));
-        num->children().push_back(tmp2);
-        den->children().push_front(tmp);
-        tmp->setParent(den);
-        tmp2->setParent(num);
-
-        num = evaluateArithmetic(num);
-        den = evaluateArithmetic(den);
-    }
-    else if (num->isOperator() && ((OpNode*)num)->name() == "/") // (/ (/ a b) c) ==> (/ a (* b c))
-    {
-        ExprNode* tmp = num->children().front();
-        ExprNode* tmp2 = op->children().back();
-
-        ((OpNode*)num)->setName("**");
-        num->children().erase(num->children().begin());
-        op->children().erase(std::prev(op->children().end()));
-        op->children().push_front(tmp);
-        num->children().push_back(tmp2);
-        tmp->setParent(op);
-        tmp2->setParent(num);
-        
-        num = op->children().front(); // reassign numerator and denominator
-        den = op->children().back();
-        den = evaluateArithmetic(den);
-    }
-    else if (den->isOperator() && ((OpNode*)den)->name() == "/") // (/ a (/ b c)) ==> (/ (* a c) b)
-    {
-        ExprNode* tmp = op->children().front();
-        ExprNode* tmp2 = den->children().front();
-
-        ((OpNode*)den)->setName("**");
-        op->children().erase(op->children().begin());
-        den->children().erase(den->children().begin());
-        den->children().push_front(tmp);
-        op->children().push_back(tmp2);
-        tmp->setParent(den);
-        tmp2->setParent(op);
-        num = op->children().front(); // reassign numerator and denominator
-        den = op->children().back();
-        
-        num = evaluateArithmetic(num);
-        replaceChild(op, num, op->children().begin());
-    }
 
     // second pass
     if (num->isOperator() && den->isOperator() &&
@@ -1103,41 +998,14 @@ ExprNode* symbolicMod(ExprNode* op)
         return op;
     }
 
-    if (op->children().front()->isOperator() &&   // (% (% x n) n) ==> (% x n)
-        (((OpNode*)op->children().front())->name() == "%" || ((OpNode*)op->children().front())->name() == "mod") && 
-        eqvExpr(op->children().front()->children().back(), op->children().back()))
-    {
-        delete op->children().back();
-        return moveNode(op, op->children().front());
-    }
-    else if (op->children().front()->isOperator() && ((OpNode*)op->children().front())->name() == "^" && // (% (^ n x) n) ==> 0, where x ∈ N
-             eqvExpr(op->children().front()->children().front(), op->children().back()) &&
-             op->children().front()->children().back()->type() == ExprNode::INTEGER && 
-             ((IntNode*)op->children().front()->children().back())->value() > Integer(0))
-    {
-        ExprNode* res = new IntNode(0, op->parent());
-        freeExpression(op);
-        return res;
-    }
-    else if (op->children().front()->isOperator() && (((OpNode*)op->children().front())->name() == "+" ||               // (% (+ (% a n) (% b n)) n) ==> (% (+ a b) n)
-            ((OpNode*)op->children().front())->name() == "*" || ((OpNode*)op->children().front())->name() == "**") &&   // (% (* (% a n) (% b n)) n) ==> (% (* a b) n)
-             op->children().front()->children().front()->isOperator() && (((OpNode*)op->children().front()->children().front())->name() == "%" ||
-             ((OpNode*)op->children().front()->children().front())->name() == "mod") && 
-             op->children().front()->children().back()->isOperator() && (((OpNode*)op->children().front()->children().back())->name() == "%" ||
-             ((OpNode*)op->children().front()->children().back())->name() == "mod") &&
-             eqvExpr(op->children().front()->children().front()->children().back(), op->children().front()->children().back()->children().back()))
-    {
-        ExprNode* lhs = op->children().front()->children().front()->children().front();
-        ExprNode* rhs = op->children().front()->children().back()->children().front();
-        op->children().front()->children().front()->children().pop_front();
-        op->children().front()->children().back()->children().pop_front();
-        freeExpression(op->children().front()->children().front());
-        freeExpression(op->children().front()->children().back());
-        replaceChild(op->children().front(), lhs, op->children().front()->children().begin());
-        replaceChild(op->children().front(), rhs, std::next(op->children().front()->children().begin()));
-    }
+    UniqueExprTransformer etrans;
+    etrans.add("(% (% ?x ?n) ?n)", "(% ?x ?n)");
+    etrans.add("(% (^ ?n ?x) ?n)", "0");
+    etrans.add("(% (+ (% ?a ?n) (% ?b ?n)) ?n)", "(% (+ ?a ?b) ?n)");
+    etrans.add("(% (* (% ?a ?n) (% ?b ?n)) ?n)", "(% (* ?a ?b) ?n)");
+    etrans.add("(% (** (% ?a ?n) (% ?b ?n)) ?n)", "(% (** ?a ?b) ?n)");
 
-    return op;
+    return etrans.transform(op);
 }
 
 // Evalutes "(^ <arg0> <arg1>)"
@@ -1149,43 +1017,12 @@ ExprNode* symbolicPow(ExprNode* op)
         return op;
     }
 
-    ExprNode* base = op->children().front();
-    ExprNode* ex = op->children().back();
+    UniqueExprTransformer etrans;
+    etrans.add("(^ ?x 0)", "1");
+    etrans.add("(^ ?x 1)", "?x");
+    etrans.add("(^ (^ ?x ?m) ?n)", "(^ ?x (** ?m ?n))");
 
-    if (isZeroNode(ex)) // (^ x 0) ==> 1
-    {
-        ExprNode* ret = new IntNode(1, op->parent());
-        freeExpression(op);
-        return ret;
-    }
-    else if (isIdentityNode(ex))// (^ x 1) ==> x
-    {
-        base->setParent(op->parent());
-        op->children().pop_front();      
-        freeExpression(op);
-        op = base;
-    }
-    else if (base->isOperator() && ((OpNode*)base)->name() == "^") // (^ (^ x n) m) ==> (^ x (* n m))
-    {
-        ExprNode* base2 = base->children().front();
-        ExprNode* mul = new OpNode("**", op);
-
-        mul->children().push_back(base->children().back());
-        mul->children().push_back(ex);
-        mul->children().front()->setParent(mul);
-        mul->children().back()->setParent(mul);
-        mul = evaluateArithmetic(mul);
-
-        base->children().clear();
-        delete base;
-        
-        op->children().clear();
-        op->children().push_back(base2);
-        op->children().push_back(mul);
-        base2->setParent(op);
-    }
-
-    return op;
+    return etrans.transform(op);
 }
 
 //

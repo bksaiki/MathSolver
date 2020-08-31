@@ -32,11 +32,11 @@ ExprNode* applyMatchTransform(const std::string& input, const std::string& outpu
 // Stores and applies transformations on expressions using expression matching logic
 // Unlike the TransformMatcher, this object will return the first matching expression it encounters.
 // Useful for matching unique transformations.
-class UniqueTransformMatcher
+class UniqueExprTransformer
 {
 public:
 
-    UniqueTransformMatcher();   // default constructor
+    UniqueExprTransformer();   // default constructor
 
     // Adds a transformation. Both parameters must be match expressions.
     void add(const std::string& input, const std::string& output);
@@ -48,7 +48,7 @@ public:
     ExprNode* transform(ExprNode* expr);
 
     // Returns whether or not the last transformation attempt was successful.
-    // Calling this function after initialization returns false.s
+    // Calling this function after initialization returns false.
     inline bool success() const { return mSuccess; }
 
 private:

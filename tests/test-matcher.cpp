@@ -117,7 +117,7 @@ int main()
             "(+ (* ?a ?b) ?c)",
             "(+ (* PI E) ?a)",
             "(* 1 ?a ...)",
-            "(* 1 ...?)"
+            "(* 1 ?a ...?)"
         };
 
         std::string expect[EXPR_COUNT * MATCH_COUNT] =
@@ -164,7 +164,7 @@ int main()
             "(* ?a ?a)",        "(^ ?a 2)",
             "(/ ?a 0)",         "undef",
             "(* 1 ?a ...)",     "(* ?a ...)",
-            "(* 1 ...?)",       "(* ...?)"
+            "(* 1 ?a ...?)",    "(* ?a ...?)"
         };
 
         std::string expect[COUNT] =
@@ -192,7 +192,7 @@ int main()
     }
 
     {
-        UniqueTransformMatcher utm;
+        UniqueExprTransformer utm;
         utm.add("(+ ?a ?a)", "(* 2 ?a)");
         utm.add("(* ?a ?a)", "(^ ?a 2)");
         utm.add("(* ?a 0)", "0");
