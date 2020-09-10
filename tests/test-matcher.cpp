@@ -89,6 +89,7 @@ int main()
             for (size_t j = 0; j < MATCH_COUNT; ++j)
             {
                 ExprNode* expr = parseString(exprs[i]);
+                
                 flattenExpr(expr);
                 tests.runTest(bool_to_string(matchExpr(match[j], expr)), expect[i * EXPR_COUNT + j]);
                 freeExpression(expr);
