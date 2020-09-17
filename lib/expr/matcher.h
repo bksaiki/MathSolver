@@ -19,14 +19,18 @@ public:
     typedef std::map<std::pair<std::string, std::string>, ExprNode*>    ell_dict_t;
 
     inline MatchDict() = default;
+    inline ~MatchDict() { clear(); }
 
     // Adds a key-value pair to the primary dictionary.
     void add(const std::string& id, ExprNode* expr);
 
+    // Deletes extra nodes in this dictionary
+    void clear();
+
     // Returns a pointer the expression associated with id. Returns nullptr on failure.
     ExprNode* get(const std::string& id);
 
-    // Returns a reference to the ellipse dictionary
+    // Returns a reference to the ellipse dictionary.
     inline ell_dict_t& ellDict() { return mEll; }
     inline const ell_dict_t& ellDict() const { return mEll; }
 

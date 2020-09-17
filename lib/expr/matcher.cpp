@@ -23,6 +23,26 @@ void MatchDict::add(const std::string& id, ExprNode* expr)
     mDict[id] = expr;
 }
 
+void MatchDict::clear()
+{
+    for (auto e : mDict)
+    {
+        if (e.second->toString() == "...?") // (...? (before a b) (after c d))
+        {
+            delete e.second->children().front();
+            delete e.second->children().back();
+            delete e.second;
+        }
+        else if (e.second->toString() == "...") // (... a b)
+        {
+            delete e.second;
+        }
+    }
+
+    mDict.clear();
+    mEll.clear();
+}
+
 ExprNode* MatchDict::get(const std::string& id)
 {
     auto it = mDict.find(id);
@@ -36,7 +56,10 @@ ExprNode* MatchDict::get(const std::string& id)
 
 bool MatchExpr::match(ExprNode* expr, MatchDict& dict) const
 {
-    return matchSubexpr(mTop, expr, dict);
+    bool res = matchSubexpr(mTop, expr, dict);
+
+    if (!res) dict.clear();
+    return res;
 }
 
 bool MatchExpr::match(ExprNode* expr) const
@@ -159,11 +182,8 @@ bool MatchExpr::matchLeaf(const node& match, ExprNode* expr, MatchDict& dict) co
         return true;
     }
 
-    if (dict.get(token) != nullptr)     // check if it's the same
-        return (token == expr->toString());
-
-    dict.add(token, expr);  // add if not found
-    return true;
+    if (dict.get(token) == nullptr) dict.add(token, expr);  // add if not found
+    return (token == expr->toString()); // check if it's the same
 }
 
 bool MatchExpr::matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict) const
@@ -175,20 +195,134 @@ bool MatchExpr::matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict)
     if (!matchLeaf(match, expr, dict))
         return false;
 
-    if (match.children.back().type == node::REL_ELLIPSE)  // (+ 0 ?b ...?)
-    {
+    const std::vector<node>& sexprs = match.children;
+    if (sexprs.back().type == node::REL_ELLIPSE)  // (+ 0 ?b ...?)
+    {   
+        // unknown relative ellipse match (+ ?a ?b ...?), but
+        // '?b' is contained in the ellipse dict
+        if (sexprs.size() == 2 && sexprs[0].name.front() == '?' &&
+            dict.get(sexprs[1].name) == nullptr)
+        {
+            MatchDict::ell_dict_t& ellDict = dict.ellDict();
+            const std::string& head = sexprs[0].name;
+            const std::string& rest = sexprs[1].name;
 
+            auto pred = [&](MatchDict::ell_dict_t::value_type pair) {
+                return pair.first.first == head;
+            };
+            auto it = std::find_if(ellDict.begin(), ellDict.end(), pred);
+            
+            if (it != ellDict.end()) // in the ellipse dict
+            {
+                bool matchFound = false;
+                for (auto i : expr->children())
+                {
+                    for (auto j : it->second->children())
+                    {
+                        if (eqvExpr(i, j))
+                        {
+                            // this subexpression
+                            ExprNode* ell = new SyntaxNode("...?");
+                            ExprNode* before = new SyntaxNode("before", ell);
+                            ExprNode* after = new SyntaxNode("after", ell);
+                            bool found = false;
+
+                            for (auto n : expr->children())
+                            {
+                                if (eqvExpr(n, i))   found = true;
+                                else if (found)      after->children().push_back(n);
+                                else                 before->children().push_back(n);
+                            }
+
+                            ell->children().push_back(before);
+                            ell->children().push_back(after);
+                            dict.add(head, i);
+                            dict.add(rest, ell);
+
+                            // in ellipse subexpression
+                            ell = new SyntaxNode("...?");
+                            before = new SyntaxNode("before", ell);
+                            after = new SyntaxNode("after", ell);
+                            found = false;
+
+                            for (auto n : it->second->children())
+                            {
+                                if (eqvExpr(n, i))  found = true;
+                                else if (found)     after->children().push_back(n);
+                                else                before->children().push_back(n);
+                            }
+
+                            ell->children().push_back(before);
+                            ell->children().push_back(after);
+                            dict.add(it->first.second, ell);
+
+                            it = ellDict.erase(it);
+                            matchFound = true;
+                            break;
+                        }
+                    }
+
+                    if (matchFound) break;
+                }
+
+                return matchFound;
+            }
+            else
+            {
+                std::pair<std::string, std::string> key = { head, rest };
+                ellDict[key] = expr;
+                return true;
+            }
+        }
+        else
+        {
+            ExprNode* ell = new SyntaxNode("...?");
+            ExprNode* before = new SyntaxNode("before", ell);
+            ExprNode* after = new SyntaxNode("after", ell);
+
+            ell->children().push_back(before);
+            ell->children().push_back(after);
+
+            std::vector<ExprNode*> possible;
+            size_t len = sexprs.size();
+            size_t idx = 0;
+            for (auto it = expr->children().begin(); it != expr->children().end(); ++it)
+            {
+                if (matchSubexpr(sexprs[idx], *it, dict))
+                {
+                    if (idx == len - 2)
+                    {
+                        after->children().insert(after->children().begin(),
+                                                 std::next(it), expr->children().end());
+                        dict.add(sexprs[len - 1].name, ell);
+                        return true;
+                    }
+
+                    possible.push_back(*it);
+                    ++idx;
+                }
+                else
+                {
+                    before->children().insert(before->children().end(),
+                                              possible.begin(), possible.end());
+                    possible.clear();
+                    idx = 0;
+                }
+            }
+
+            return false;
+        }
     }
-    else if (match.children.back().type == node::ELLIPSE) // (+ ?a ?b ...)
+    else if (sexprs.back().type == node::ELLIPSE) // (+ ?a ?b ...)
     {
-        if (match.children.size() > expr->children().size() + 1)
+        if (sexprs.size() > expr->children().size() + 1)
             return false;  // too many args
 
         auto it = expr->children().begin();
-        size_t end = match.children.size() - 1;
+        size_t end = sexprs.size() - 1;
         for (size_t i = 0; i < end; ++i)
         {
-            if (!matchSubexpr(match.children[i], *it, dict))
+            if (!matchSubexpr(sexprs[i], *it, dict))
                 return false;
             ++it;
         }
@@ -196,15 +330,15 @@ bool MatchExpr::matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict)
         ExprNode* ell = new SyntaxNode("...");
         ell->children().insert(ell->children().begin(), it, expr->children().end());
         for (auto e : ell->children())  e->setParent(ell);  // not necessary, good for debugging
-        dict.add(match.children[end].name, ell);
+        dict.add(sexprs[end].name, ell);
     }
     else
     {
-        if (match.children.size() != expr->children().size())
+        if (sexprs.size() != expr->children().size())
             return false;  // argc does not match
 
         auto it = expr->children().begin();
-        for (auto e : match.children)
+        for (auto e : sexprs)
         {
             if (!matchSubexpr(e, *it, dict))
                 return false;
