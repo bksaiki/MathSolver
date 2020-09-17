@@ -11,15 +11,42 @@ namespace MathSolver
 
 /* Match helper objects */
 
+class MatchDict
+{
+public:
+
+    typedef std::map<std::string, ExprNode*>                            dict_t;
+    typedef std::map<std::pair<std::string, std::string>, ExprNode*>    ell_dict_t;
+
+    inline MatchDict() = default;
+
+    // Adds a key-value pair to the primary dictionary.
+    void add(const std::string& id, ExprNode* expr);
+
+    // Returns a pointer the expression associated with id. Returns nullptr on failure.
+    ExprNode* get(const std::string& id);
+
+    // Returns a reference to the ellipse dictionary
+    inline ell_dict_t& ellDict() { return mEll; }
+    inline const ell_dict_t& ellDict() const { return mEll; }
+
+private:
+
+    dict_t mDict;       // primary dictionary
+    ell_dict_t mEll;    // ellipse dictionary (temporary storage during matching)
+};
+
 // Stores the syntax tree of a match expression
 class MatchExpr
 {
-    struct node_t
+public:
+
+    struct node
     {
         enum Type { SINGLE, VARIABLE, ELLIPSE, REL_ELLIPSE };
 
         std::string name;
-        std::vector<node_t> children;
+        std::vector<node> children;
         ExprNode* expr;
         Type type;
         int depth;
@@ -27,8 +54,13 @@ class MatchExpr
 
 public:
 
-    inline MatchExpr() {}
+    inline MatchExpr() = default;
     inline MatchExpr(const std::string& match) { set(match); }
+
+    // Returns true if the expression matches. A match dictionary can be optionally
+    // passed to store match data.
+    bool match(ExprNode* expr, MatchDict& dict) const;
+    bool match(ExprNode* expr) const;
 
     // Sets this object based on a match string.
     void set(const std::string& match);
@@ -38,16 +70,24 @@ public:
 
 private:
 
-    // Helper functions. Given a list of match expression tokens, returns the corresponding
+    // Given a list of match expression tokens, returns the corresponding
     // syntax tree. Called recursively.
-    node_t buildMatchTree(const std::vector<std::string>& tokens);
+    node buildMatchTree(const std::vector<std::string>& tokens) const;
+
+    // Returns true if the expression matches a single token. Stores match
+    // data in a dictionary.
+    bool matchLeaf(const node& match, ExprNode* expr, MatchDict& dict) const;
+
+    // Returns true if the expression matches the given syntax tree. Stores
+    // match data in a dictionary
+    bool matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict) const;
 
     // Returns the subtree as a string.
-    std::string toString(const node_t& node) const;
+    std::string toString(const node& tree) const;
 
 private:
 
-    node_t mTop;
+    node mTop;
 };
 
 /* Match helper functions */
