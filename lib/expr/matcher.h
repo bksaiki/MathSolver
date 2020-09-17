@@ -9,6 +9,46 @@
 namespace MathSolver
 {
 
+/* Match helper objects */
+
+// Stores the syntax tree of a match expression
+class MatchExpr
+{
+    struct node_t
+    {
+        enum Type { SINGLE, VARIABLE, ELLIPSE, REL_ELLIPSE };
+
+        std::string name;
+        std::vector<node_t> children;
+        ExprNode* expr;
+        Type type;
+        int depth;
+    };
+
+public:
+
+    inline MatchExpr() {}
+    inline MatchExpr(const std::string& match) { set(match); }
+
+    // Sets this object based on a match string.
+    void set(const std::string& match);
+
+    // Returns this object as a string.
+    inline std::string toString() const { return toString(mTop); }
+
+private:
+
+    // Helper functions. Given a list of match expression tokens, returns the corresponding
+    // syntax tree. Called recursively.
+    node_t buildMatchTree(const std::vector<std::string>& tokens);
+
+    // Returns the subtree as a string.
+    std::string toString(const node_t& node) const;
+
+private:
+
+    node_t mTop;
+};
 
 /* Match helper functions */
 

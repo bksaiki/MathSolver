@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <list>
 #include <map>
 #include "matcher.h"
@@ -5,6 +6,84 @@
 
 namespace MathSolver
 {
+
+MatchExpr::node_t MatchExpr::buildMatchTree(const std::vector<std::string>& tokens)
+{
+    if (tokens.size() == 1)
+    {
+        node_t node;
+        node.name = tokens.front();
+        node.expr = nullptr;
+        node.type = ((tokens.front().front() == '?') ? node_t::VARIABLE : node_t::SINGLE);
+        node.depth = 0;
+        return node;
+    }
+    else
+    {
+        if (tokens.front() != "(" && tokens.front() != ")")
+        {
+            gErrorManager.log("Malformed match expression!", ErrorManager::FATAL);
+            return node_t();
+        }
+
+        node_t top;
+        top.name = tokens[1];
+        top.expr = nullptr;
+        top.type = node_t::SINGLE;
+
+        size_t end = tokens.size() - 1; // end paren
+        for (size_t i = 2; i < end; ++i)
+        {
+            if (tokens[i] == "(")
+            {
+                size_t paren = 1;
+                size_t j = i + 1;
+                for (; j != end && paren != 0; ++j)
+                {
+                    if (tokens[j] == "(")       ++paren;
+                    else if (tokens[j] == ")")  --paren;
+                }
+
+                std::vector<std::string> sexpr;
+                sexpr.insert(sexpr.begin(), tokens.begin() + i, tokens.begin() + j);
+                top.children.push_back(buildMatchTree(sexpr));
+                i = j - 1;
+            }
+            else if (tokens[i] == "...")
+            {
+                top.children.back().depth += 1;
+                top.children.back().type = node_t::ELLIPSE;
+            }
+            else if (tokens[i] == "...?")
+            {
+                top.children.back().depth += 1;
+                top.children.back().type = node_t::REL_ELLIPSE;
+            }
+            else
+            {
+                std::vector<std::string> sexpr = { tokens[i] };
+                top.children.push_back(buildMatchTree(sexpr));
+            }
+        }
+
+        auto cmp = [](node_t& lhs, node_t& rhs) { return lhs.depth < rhs.depth; };
+        auto it = std::min_element(top.children.begin(), top.children.end(), cmp);
+        top.depth = it->depth + 1;
+        return top;
+    }
+}
+
+void MatchExpr::set(const std::string& match)
+{
+    if (!isMatchString(match))
+    {
+        gErrorManager.log("Expected a match string: " + match, ErrorManager::FATAL);
+        return;
+    }
+
+    std::vector<std::string> tokens = tokenizeMatchString(match);
+    mTop = buildMatchTree(tokens);
+}
 
 std::vector<std::string> tokenizeMatchString(const std::string& match)
 {
@@ -29,6 +108,16 @@ std::vector<std::string> tokenizeMatchString(const std::string& match)
     }
 
     return tokens;
+}
+
+std::string MatchExpr::toString(const MatchExpr::node_t& node) const
+{
+    if (node.depth == 0)    return node.name;
+
+    std::string accum = "(" + node.name;
+    for (auto e : node.children)
+        accum += (" " + toString(e));
+    return accum + ")";
 }
 
 bool isMatchString(const std::string& match)
@@ -180,7 +269,9 @@ bool matchExprHelper(const std::vector<std::string> tokens, ExprNode* expr,
     size_t argc = 0;
     if (sexprs.back().front() == "...?")
     {
-        if (sexprs[1].front().front() == '?' &&  // unknown relative ellipse match
+        // unknown relative ellipse match (+ ?a ?b ...?)   
+        // what is b?
+        if (sexprs[1].front().front() == '?' && sexprs.size() == 4 &&
             matchDict.find(sexprs[1].front()) == matchDict.end())
         {
             bool isUnknown = false;
@@ -259,10 +350,10 @@ bool matchExprHelper(const std::vector<std::string> tokens, ExprNode* expr,
                 key.push_back(head);
                 key.push_back(rest);
 
-                ExprNode* ell = new SyntaxNode("...?");
+                ExprNode* ell = new SyntaxNode("...");
                 ell->children().insert(ell->children().begin(), 
-                                    expr->children().begin(),
-                                    expr->children().end());
+                                       expr->children().begin(),
+                                       expr->children().end());
                 unknownDict[key] = ell;
                 // Any match expr w/ a relative ellipse and a subexpression variable
                 // must be of the form (op ?x ?y ...?), assume true
@@ -274,6 +365,7 @@ bool matchExprHelper(const std::vector<std::string> tokens, ExprNode* expr,
             ExprNode* ell = new SyntaxNode("...?");
             ExprNode* before = new SyntaxNode("before", ell);
             ExprNode* after = new SyntaxNode("after", ell);
+
             ell->children().push_back(before);
             ell->children().push_back(after);
 
@@ -379,12 +471,8 @@ bool matchExpr(const std::string& match, ExprNode* expr,
         clearMatchDict(matchDict);
         for (auto e : unknownDict) // clear unknown dict
         {
-            if (e.second->toString() == "...?")
-            {
-                delete e.second->children().front();
-                delete e.second->children().back();
+            if (e.second->toString() == "...")
                 delete e.second;
-            }
         }
     }
 
@@ -545,6 +633,7 @@ void UniqueExprTransformer::clear()
 
 ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
 {
+    std::map<std::string, ExprNode*> matchDict;
     bool loop = true;
     mSuccess = false;
 
@@ -553,7 +642,6 @@ ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
         loop = false;
         for (auto e : mTransforms)
         {
-            std::map<std::string, ExprNode*> matchDict;
             if (matchExpr(e.first, expr, matchDict))   // if match, return transform
             {
                 ExprNode* trans = buildTree(e.second, matchDict);
