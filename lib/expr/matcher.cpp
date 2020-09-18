@@ -43,7 +43,7 @@ void MatchDict::clear()
     mEll.clear();
 }
 
-ExprNode* MatchDict::get(const std::string& id)
+ExprNode* MatchDict::get(const std::string& id) const
 {
     auto it = mDict.find(id);
     if (it != mDict.end())  return it->second;
@@ -53,6 +53,11 @@ ExprNode* MatchDict::get(const std::string& id)
 //
 // MatchExpr
 //
+
+ExprNode* MatchExpr::create(const MatchDict& dict) const
+{
+    return createSubexpr(mTop, dict);
+}
 
 bool MatchExpr::match(ExprNode* expr, MatchDict& dict) const
 {
@@ -133,11 +138,81 @@ MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens
             }
         }
 
-        auto cmp = [](node& lhs, node& rhs) { return lhs.depth < rhs.depth; };
-        auto it = std::min_element(top.children.begin(), top.children.end(), cmp);
+        auto pred = [](const node& lhs, const node& rhs) { return lhs.depth < rhs.depth; };
+        auto it = std::min_element(top.children.begin(), top.children.end(), pred);
         top.depth = it->depth + 1; // min(children) + 1
         return top;
     }
+}
+
+ExprNode* MatchExpr::createLeaf(const node& match, const MatchDict& dict) const
+{
+    ExprNode* inDict = dict.get(match.name);
+    if (inDict != nullptr)
+    {
+        if (match.name.front() == '?')
+            return ((inDict->toString() == "...") ? inDict : copyOf(inDict));
+        else
+            return copyNode(inDict);
+    }
+
+    return parseString(match.name);
+}
+
+ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict) const
+{
+    if (match.children.empty()) // create leaf
+        return createLeaf(match, dict);
+
+    // create subexpr layer
+    ExprNode* op = createLeaf(match, dict);
+    const node& last = match.children.back();
+    bool ellipse = (last.type == node::REL_ELLIPSE);
+    op->setParent(nullptr);
+    
+    if (ellipse)
+    {
+        ExprNode* ell = dict.get(last.name);
+        for (auto e : ell->children().front()->children())
+        {
+            ExprNode* t = copyOf(e);
+            t->setParent(op);
+            op->children().push_back(t);
+        }
+    } 
+
+    size_t lim = (ellipse ? (match.children.size() - 1) : match.children.size());
+    for (size_t i = 0; i < lim; ++i)
+    {
+        ExprNode* sexpr = createSubexpr(match.children[i], dict);
+        if (sexpr->toString() == "...")
+        {
+            for (auto e : sexpr->children())
+            {
+                ExprNode* t = copyOf(e);
+                t->setParent(op);
+                op->children().push_back(t);
+            }
+        }
+        else
+        {
+            sexpr->setParent(op);
+            op->children().push_back(sexpr);
+        }
+    }
+
+    if (ellipse)
+    {
+        ExprNode* ell = dict.get(last.name);
+        for (auto e : ell->children().back()->children())
+        {
+            ExprNode* t = copyOf(e);
+            t->setParent(op);
+            op->children().push_back(t);
+        }
+    } 
+
+    return op;
 }
 
 bool MatchExpr::matchLeaf(const node& match, ExprNode* expr, MatchDict& dict) const
@@ -879,20 +954,7 @@ UniqueExprTransformer::UniqueExprTransformer()   // default constructor
 
 void UniqueExprTransformer::add(const std::string& input, const std::string& output)
 {
-    if (!isMatchString(input) || !isMatchString(output))
-    {
-        gErrorManager.log("Expected a match transform. Got " + input + " and " + output,
-                          ErrorManager::FATAL);
-    }
-    else if (mTransforms.find(input) != mTransforms.end())
-    {
-        gErrorManager.log("Overwriting transform " + input + " -> " + mTransforms.at(input) + " with " + output,
-                          ErrorManager::WARNING);
-    }
-    else
-    {
-        mTransforms[input] = output;
-    }
+    mTransforms.push_back({ MatchExpr(input), MatchExpr(output) });
 }
 
 void UniqueExprTransformer::clear()
@@ -903,7 +965,7 @@ void UniqueExprTransformer::clear()
 
 ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
 {
-    std::map<std::string, ExprNode*> matchDict;
+    MatchDict dict;
     bool loop = true;
     mSuccess = false;
 
@@ -912,19 +974,15 @@ ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
         loop = false;
         for (auto e : mTransforms)
         {
-            if (matchExpr(e.first, expr, matchDict))   // if match, return transform
+            if (e.first.match(expr, dict))
             {
-                ExprNode* trans = buildTree(e.second, matchDict);
-                clearMatchDict(matchDict);
+                ExprNode* trans = e.second.create(dict);
+                dict.clear();
                 freeExpression(expr);
 
                 expr = trans;
                 mSuccess = true;
                 loop = true;
-            }
-            else
-            {
-                clearMatchDict(matchDict);
             }
         }
     }
@@ -934,29 +992,22 @@ ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
 
 ExprNode* UniqueExprMatcher::get(const std::string& key) const
 {
-    if (mSubexprs.find(key) == mSubexprs.end())
+    ExprNode* inDict = mSubexprs.get(key);
+    if (inDict == nullptr)
     {
         gErrorManager.log("Could not find match subexpression key \"" + key + "\"",
                           ErrorManager::FATAL);
-        return nullptr;
     }
 
-    return mSubexprs.at(key);
+    return inDict;
 }
 
 bool UniqueExprMatcher::match(ExprNode* expr, const std::string& match)
 {
-    if (!isMatchString(match))
-    {
-        gErrorManager.log("Expected a match transform. Got " + match + " instead",
-                          ErrorManager::FATAL);
-        return false;
-    }
+    MatchExpr mexpr(match);
 
-    if (!mSubexprs.empty())
-        mSubexprs.clear();
-
-    return matchExpr(match, expr, mSubexprs);
+    mSubexprs.clear();
+    return mexpr.match(expr);
 }
 
 }

@@ -28,7 +28,7 @@ public:
     void clear();
 
     // Returns a pointer the expression associated with id. Returns nullptr on failure.
-    ExprNode* get(const std::string& id);
+    ExprNode* get(const std::string& id) const;
 
     // Returns a reference to the ellipse dictionary.
     inline ell_dict_t& ellDict() { return mEll; }
@@ -61,6 +61,9 @@ public:
     inline MatchExpr() = default;
     inline MatchExpr(const std::string& match) { set(match); }
 
+    // Creates an expression based on this match expression and dictionary.
+    ExprNode* create(const MatchDict& dict) const;
+
     // Returns true if the expression matches. A match dictionary can be optionally
     // passed to store match data.
     bool match(ExprNode* expr, MatchDict& dict) const;
@@ -77,6 +80,12 @@ private:
     // Given a list of match expression tokens, returns the corresponding
     // syntax tree. Called recursively.
     node buildMatchTree(const std::vector<std::string>& tokens) const;
+
+    // Creates a single leaf based on a syntax node.
+    ExprNode* createLeaf(const node& match, const MatchDict& dict) const;
+
+    // Creates a subexpression based on a syntax tree.
+    ExprNode* createSubexpr(const node& match, const MatchDict& dict) const;
 
     // Returns true if the expression matches a single token. Stores match
     // data in a dictionary.
@@ -118,6 +127,8 @@ ExprNode* applyMatchTransform(const std::string& input, const std::string& outpu
 // Useful for matching unique transformations.
 class UniqueExprTransformer
 {
+    typedef std::vector<std::pair<MatchExpr, MatchExpr>> transform_t;
+
 public:
 
     UniqueExprTransformer();   // default constructor
@@ -137,7 +148,7 @@ public:
 
 private:
 
-    std::map<std::string, std::string> mTransforms;
+    transform_t mTransforms;
     bool mSuccess;
 };
 
@@ -155,7 +166,7 @@ public:
 
 private:
 
-    std::map<std::string, ExprNode*> mSubexprs;
+    MatchDict mSubexprs;
 };
 
 }
