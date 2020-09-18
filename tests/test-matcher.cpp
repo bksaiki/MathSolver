@@ -28,17 +28,21 @@ int main()
 
     {
         const size_t COUNT = 3;
-        std::string match[COUNT * 2] =
+        std::string match[COUNT] =
         {
-            "(+ ?a ?b)",            "( + ?a ?b )",
-            "(+ (* ?a ?b) ?c)",     "( + ( * ?a ?b ) ?c )",
-            "(+ (* PI E) ?a)",      "( + ( * PI E ) ?a )"
+            "(+ ?a ?b)",
+            "(+ (* ?a ?b) ?c)",
+            "(+ (* PI E) ?a)",
         };
 
         TestModule tests("Tokenize", verbose);
         
         for (size_t i = 0; i < COUNT; ++i)
-            tests.runTest(vec_to_str(tokenizeMatchString(match[2 * i])), match[2 * i + 1]);
+        {
+            MatchExpr mexpr(match[i]);
+            tests.runTest(mexpr.toString(), match[i]);
+        }
+
         std::cout << tests.result() << std::endl;
         status &= tests.status();
     }
@@ -57,7 +61,12 @@ int main()
         
         TestModule tests("Verify", verbose);
         for (size_t i = 0; i < COUNT; ++i)
-            tests.runTest(bool_to_string(isMatchString(match[2 * i])), match[2 * i + 1]);
+        {
+            MatchExpr mexpr(match[2 * i]);
+            tests.runTest(bool_to_string(!gErrorManager.hasAny()), match[2 * i + 1]);
+            gErrorManager.clear();
+        }
+
         std::cout << tests.result() << std::endl;
         status &= tests.status();
     }
@@ -89,9 +98,10 @@ int main()
             for (size_t j = 0; j < MATCH_COUNT; ++j)
             {
                 ExprNode* expr = parseString(exprs[i]);
-                
                 flattenExpr(expr);
-                tests.runTest(bool_to_string(matchExpr(match[j], expr)), expect[i * EXPR_COUNT + j]);
+
+                MatchExpr mexpr(match[j]);
+                tests.runTest(bool_to_string(mexpr.match(expr)), expect[i * EXPR_COUNT + j]);
                 freeExpression(expr);
             }
         }
@@ -137,7 +147,9 @@ int main()
             {
                 ExprNode* expr = parseString(exprs[i]);
                 flattenExpr(expr);
-                tests.runTest(bool_to_string(matchExpr(match[j], expr)), expect[i * EXPR_COUNT + j]);
+
+                MatchExpr mexpr(match[j]);
+                tests.runTest(bool_to_string(mexpr.match(expr)), expect[i * EXPR_COUNT + j]);
                 freeExpression(expr);
             }
         }
@@ -178,12 +190,16 @@ int main()
             "(* 2 3 4 5)"
         };
         
-        TestModule tests("Match and replace", verbose);
+        TestModule tests("Transformer 1", verbose);
         for (size_t i = 0; i < COUNT; ++i)
         {
             ExprNode* expr = parseString(exprs[i]);
             flattenExpr(expr);
-            expr = applyMatchTransform(match[2 * i], match[2 * i + 1], expr);
+
+            UniqueExprTransformer uet;
+            uet.add(match[2 * i], match[2 * i + 1]);
+
+            expr = uet.transform(expr);
             tests.runTest(toPrefixString(expr), expect[i]);
             freeExpression(expr);
         }
@@ -219,7 +235,7 @@ int main()
             "(= 1 (+ x y))"
         };
 
-        TestModule tests("Unique transform matcher", verbose);
+        TestModule tests("Transformer 2", verbose);
         for (size_t i = 0; i < COUNT; ++i)
         {
             ExprNode* expr = parseString(exprs[i]);
@@ -243,6 +259,7 @@ int main()
             tests.runTest(toPrefixString(uem.get("?a")), "(+ a b)");
             tests.runTest(toPrefixString(uem.get("?b")), "(+ c d)");
             tests.runTest(toPrefixString(uem.get("?c")), "(/ e f)");
+            uem.clear();
         }
         else
         {
@@ -256,6 +273,7 @@ int main()
         if (uem.match(expr, "(^ PI ?a)"))
         {
             tests.runTest(toPrefixString(uem.get("?a")), "4");
+            uem.clear();
         }
         else
         {

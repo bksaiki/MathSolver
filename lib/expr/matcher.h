@@ -95,6 +95,10 @@ private:
     // match data in a dictionary
     bool matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict) const;
 
+    // Tokenizes a given match expression and returns the tokens in a vector. Not safe, does not
+    // check if the match expressions is valid.
+    std::vector<std::string> tokenizeMatchString(const std::string& match);
+
     // Returns the subtree as a string.
     std::string toString(const node& tree) const;
 
@@ -102,23 +106,6 @@ private:
 
     node mTop;
 };
-
-/* Match helper functions */
-
-// Tokenizes a given match expression and returns the tokens in a vector. Not safe, does not
-// check if the match expressions is valid.
-std::vector<std::string> tokenizeMatchString(const std::string& match);
-
-// Returns true if the expression matches the match expression and false otherwise. Not safe, does not
-// check if the match expressions is valid.
-bool matchExpr(const std::string& match, ExprNode* expr);
-
-// Returns true if the match expression is valid.
-bool isMatchString(const std::string& match);
-
-// Returns an updated expression by applying the given transformation on an expression. Not safe, does not
-// check if the match expressions are valid or if the expression matches the transformation.
-ExprNode* applyMatchTransform(const std::string& input, const std::string& output, ExprNode* expr);
 
 /* Matchers */
 
@@ -156,6 +143,11 @@ private:
 class UniqueExprMatcher
 {
 public:
+
+    // Clears the dictionary of extraneous nodes. Call this after a successful match when
+    // the subexpression components are no longer of use and before the underlying
+    // expression is altered.
+    inline void clear() { mSubexprs.clear(); }
 
     // Returns the subexpression mapped by the key. Call this only if match returns true.
     ExprNode* get(const std::string& key) const;
