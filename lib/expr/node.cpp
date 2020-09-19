@@ -214,15 +214,15 @@ int opPrec(const std::string& str)
 
 ExprNode* copyNode(ExprNode* node)
 {
-	if (node->type() == ExprNode::SYNTAX) 		return new SyntaxNode(((SyntaxNode*)node)->name(), node->parent());
-	if (node->type() == ExprNode::OPERATOR) 	return new OpNode(((OpNode*)node)->name(), node->parent());
-	if (node->type() == ExprNode::FUNCTION) 	return new FuncNode(((FuncNode*)node)->name(), node->parent());
-	if (node->type() == ExprNode::VARIABLE) 	return new VarNode(((VarNode*)node)->name(), node->parent());
-	if (node->type() == ExprNode::CONSTANT) 	return new ConstNode(((ConstNode*)node)->name(), node->parent());
-	if (node->type() == ExprNode::INTEGER) 	    return new IntNode(((IntNode*)node)->value(), node->parent());
-	if (node->type() == ExprNode::FLOAT)		return new FloatNode(((FloatNode*)node)->value(), node->parent());
-	if (node->type() == ExprNode::RANGE)		return new RangeNode(((RangeNode*)node)->value(), node->parent());
-	if (node->type() == ExprNode::BOOLEAN)		return new BoolNode(((BoolNode*)node)->value(), node->parent());
+	if (node->type() == ExprNode::SYNTAX) 		return new SyntaxNode(((SyntaxNode*)node)->name());
+	if (node->type() == ExprNode::OPERATOR) 	return new OpNode(((OpNode*)node)->name());
+	if (node->type() == ExprNode::FUNCTION) 	return new FuncNode(((FuncNode*)node)->name());
+	if (node->type() == ExprNode::VARIABLE) 	return new VarNode(((VarNode*)node)->name());
+	if (node->type() == ExprNode::CONSTANT) 	return new ConstNode(((ConstNode*)node)->name());
+	if (node->type() == ExprNode::INTEGER) 	    return new IntNode(((IntNode*)node)->value());
+	if (node->type() == ExprNode::FLOAT)		return new FloatNode(((FloatNode*)node)->value());
+	if (node->type() == ExprNode::RANGE)		return new RangeNode(((RangeNode*)node)->value());
+	if (node->type() == ExprNode::BOOLEAN)		return new BoolNode(((BoolNode*)node)->value());
 	
     gErrorManager.log("Should not have executed here", ErrorManager::FATAL, __FILE__, __LINE__);
     return nullptr;

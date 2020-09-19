@@ -15,14 +15,15 @@ class MatchDict
 {
 public:
 
-    typedef std::map<std::string, ExprNode*>                            dict_t;
+    typedef std::map<std::string, std::pair<ExprNode*, bool>>           dict_t;
     typedef std::map<std::pair<std::string, std::string>, ExprNode*>    ell_dict_t;
+    typedef std::map<std::string, std::vector<ExprNode*>>               subp_t;
 
     inline MatchDict() = default;
     inline ~MatchDict() { clear(); }
 
     // Adds a key-value pair to the primary dictionary.
-    void add(const std::string& id, ExprNode* expr);
+    void add(const std::string& id, ExprNode* expr, bool pattern = false);
 
     // Deletes extra nodes in this dictionary
     void clear();
@@ -34,10 +35,15 @@ public:
     inline ell_dict_t& ellDict() { return mEll; }
     inline const ell_dict_t& ellDict() const { return mEll; }
 
+    // Returns a reference to the subpattern dictionary.
+    inline subp_t& subp() { return mSubPattern; }
+    inline const subp_t& subp() const { return mSubPattern; }
+
 private:
 
     dict_t mDict;       // primary dictionary
     ell_dict_t mEll;    // ellipse dictionary (temporary storage during matching)
+    subp_t mSubPattern;
 };
 
 // Stores the syntax tree of a match expression
@@ -101,6 +107,9 @@ private:
 
     // Returns the subtree as a string.
     std::string toString(const node& tree) const;
+
+    // Returns a vector of all the variables in a subexpression
+    std::vector<std::string> varsInSubexpr(const node& match) const;
 
 private:
 

@@ -17,9 +17,13 @@ const std::string FLATTENABLE_OPS[FLATTENABLE_OP_COUNT] =
 ExprNode* copyOf(ExprNode* expr)
 {
 	ExprNode* cp = copyNode(expr);
-	
-	for (ExprNode* child : expr->children())
-		cp->children().push_back(copyOf(child));
+	for (auto child : expr->children())
+	{
+		ExprNode* t = copyOf(child);
+		cp->children().push_back(t);
+		t->setParent(cp);
+	}
+
 	return cp;
 }
 

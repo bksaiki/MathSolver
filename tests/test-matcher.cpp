@@ -259,7 +259,6 @@ int main()
             tests.runTest(toPrefixString(uem.get("?a")), "(+ a b)");
             tests.runTest(toPrefixString(uem.get("?b")), "(+ c d)");
             tests.runTest(toPrefixString(uem.get("?c")), "(/ e f)");
-            uem.clear();
         }
         else
         {
@@ -273,7 +272,6 @@ int main()
         if (uem.match(expr, "(^ PI ?a)"))
         {
             tests.runTest(toPrefixString(uem.get("?a")), "4");
-            uem.clear();
         }
         else
         {

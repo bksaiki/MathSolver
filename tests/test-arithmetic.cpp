@@ -112,10 +112,10 @@ int main()
 			"(a/b)/c",	 		"a/bc",
 			"a/(b/c)",			"ac/b",
 			"(a*b)/(b*c)",		"a/c",
-			"a/(a*b*c)",		"1/bc",
-			"(a*b*c)/a",		"bc",
-			"(a*b)/(a*c*d)",	"b/cd",
-			"(a*b*c)/(a*d)",	"bc/d"
+			"a/(a*b*c)",		"1/b*c",
+			"(a*b*c)/a",		"b*c",
+			"(a*b)/(a*c*d)",	"b/c*d",
+			"(a*b*c)/(a*d)",	"b*c/d"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);
@@ -129,7 +129,7 @@ int main()
 			"a+b/c*d",			"a+bd/c",
 			"-a+b*c+d", 		"b*c-a+d",
 			"(3a+5a)/5a",		"8/5",
-			"2a/(15*a*b)",		"2/15b"
+			"2*a/(15*a*b)",		"2/15*b"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);
