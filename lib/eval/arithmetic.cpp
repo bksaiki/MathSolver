@@ -551,11 +551,12 @@ ExprNode* symbolicAddSub(ExprNode* op, const char* str)
         }
     }
     
-    if (op->children().size() == 1) // (+- (...)) ==> (...)
-        return moveNode(op, op->children().front());
-
-    flattenExpr(op);
-    return op;
+    UniqueExprTransformer etrans;
+    etrans.add("(+ (?op ?a ...))", "(?op ?a ...)");
+    etrans.add("(- (?op ?a ...))", "(?op ?a ...)");
+    etrans.add("(+ (+ ?a ...) ?b ...?)", "(+ ?a ... ?b ...?)");
+    etrans.add("(- (- ?a ...) ?b ...?)", "(- ?a ... ?b ...?)");
+    return etrans.transform(op);
 }
 
 // Evalutes "(+ <arg0> <arg1> ... )"
@@ -567,36 +568,13 @@ ExprNode* symbolicAdd(ExprNode* op)
         return op;
     }
 
-    auto it = op->children().begin();
-    auto next = std::next(it); 
-    if ((*it)->isOperator() && ((OpNode*)*it)->name() == "-*" && // (+ (-* a) b ...) ==> (+ (- b a) ...) 
-        (!(*next)->isOperator() || ((OpNode*)*next)->name() != "-*"))
-    {
-        ((OpNode*)*it)->setName("-");
-        (*it)->children().push_front(*next);
-        op->children().erase(next);
-        next = std::next(it);
-    }
+    UniqueExprTransformer etrans;
+    etrans.add("(+ (-* ?a) ?b ?c ...)", "(+ (- ?b ?a) ?c ...)");
+    etrans.add("(+ ?a (-* ?b) ?c ...?)", "(+ (- ?a ?b) ?c ...?)");
+    etrans.add("(- (+ ?a ?b))", "(+ ?a ?b)");
+    op = etrans.transform(op);
 
-    for (; next != op->children().end(); ++next) // (+ a (-* b) c d) ==> (+ (- a b) c d)
-    {
-        if ((*next)->isOperator() && ((OpNode*)*next)->name() == "-*")
-        {
-            (*next)->children().push_front(*it);
-            op->children().erase(it);
-            ((OpNode*)*next)->setName("-");
-            it = next;
-        }
-        else
-        {
-            ++it;
-        }    
-    }
-
-    if (op->children().size() == 1) // (- (+ a b)) ==> (+ a b)
-        return symbolicAddSub(moveNode(op, op->children().front()), "-");
-
-    return symbolicAddSub(op, "+");
+    return symbolicAddSub(op, ((OpNode*)op)->name().c_str());
 }
 
 // Evalutes "(- <arg0> <arg1> ... )"
@@ -608,25 +586,12 @@ ExprNode* symbolicSub(ExprNode* op)
         return op;
     }
     
-    auto it = op->children().begin();
-    for (auto next = std::next(it); next != op->children().end(); ++next) // (- a (-* b) c d) ==> (- (+ a b) c d)
-    {
-        if ((*next)->isOperator() && ((OpNode*)*next)->name() == "-*")
-        {
-            (*next)->children().push_front(*it);
-            op->children().erase(it);
-            ((OpNode*)*next)->setName("+");
-            it = next;
-        }
-        else
-        {
-            ++it;
-        }    
-    }
-
-    if (op->children().size() == 1) // (- (+ a b)) ==> (+ a b)
-        return symbolicAddSub(moveNode(op, op->children().front()), "+");
-    return symbolicAddSub(op, "-");
+    UniqueExprTransformer etrans;
+    etrans.add("(- ?a (-* ?b) ?c ...?)", "(- (+ ?a ?b) ?c ...?)");
+    etrans.add("(- (+ ?a ?b))", "(+ ?a ?b)");
+    op = etrans.transform(op);
+    
+    return symbolicAddSub(op, ((OpNode*)op)->name().c_str());
 }
 
 // Evalutes "(* <arg0> <arg1> ... )" or "(** <arg0> <arg1> ... )"
@@ -673,6 +638,7 @@ ExprNode* symbolicMul(ExprNode* op)
 
     // Naive transforms;
     UniqueExprTransformer etrans;
+    etrans.add("(* ?a)", "?a");
     etrans.add("(* 0 ?a ...?)", "0");
     etrans.add("(* 1 ?a ...?)", "(* ?a ...?)");
     etrans.add("(* (-* 1) ?a)", "(-* ?a)");
@@ -681,7 +647,11 @@ ExprNode* symbolicMul(ExprNode* op)
     etrans.add("(* (-* 1) ?a ...?)", "(-* (* ?a ...?))");
     etrans.add("(* -1 ?a ...?)", "(-* (* ?a ...?))");
     etrans.add("(* -1.0 ?a ...?)", "(-* (* ?a ...?))");
+    etrans.add("(* (* ?a ...) ?b ...?)", "(* ?a ... ?b ...?)");
+    etrans.add("(* (/ ?a ?b) (/ ?c ?d) ?e ...?)", "(* (/ (* ?a ?c) (* ?b ?d)) ?e ...?)");
+    etrans.add("(* (/ ?a ?b) ?c ...?)", "(/ (* ?a ?c ...?) ?b)");
     // ===================
+    etrans.add("(** ?a)", "?a");
     etrans.add("(** 0 ?a ...?)", "0");
     etrans.add("(** 1 ?a ...?)", "(** ?a ...?)");
     etrans.add("(** (-* 1) ?a)", "(-* ?a)");
@@ -690,102 +660,13 @@ ExprNode* symbolicMul(ExprNode* op)
     etrans.add("(** (-* 1) ?a ...?)", "(-* (** ?a ...?))");
     etrans.add("(** -1 ?a ...?)", "(-* (** ?a ...?))");
     etrans.add("(** -1.0 ?a ...?)", "(-* (** ?a ...?))");
-    op = etrans.transform(op);
-
-    // initial pass for like-terms 
-    auto it = op->children().begin();
-    while (it != op->children().end())
-    {
-        auto it2 = std::next(it);
-        if (it2 == op->children().end())
-            break;
-
-        // second pass (requires two operands)
-        if ((*it)->isOperator() &&     // (* a... (* b... ) c...) ==> (* a... b... c...)
-           (((OpNode*)*it)->name() == "*" || ((OpNode*)*it)->name() == "**"))
-        {        
-            op->children().insert(it, (*it)->children().begin(), (*it)->children().end());
-            delete *it;
-            op->children().erase(it);
-            it = it2;
-        }   
-        else if ((*it)->isOperator() && (*it2)->isOperator() && // (* (/ a b) (/ c d) ...) ==> (* (/ (* a c) (* b d)) ...)
-            ((OpNode*)*it)->name() == "/" && ((OpNode*)*it2)->name() == "/") 
-        {
-            ExprNode* num = (*it)->children().front();
-            ExprNode* den = (*it)->children().back();
-
-            ExprNode* mul1 = new OpNode("**");
-            mul1->children().push_back(num);
-            mul1->children().push_back((*it2)->children().front());
-            mul1 = evaluateArithmetic(mul1);
-
-            ExprNode* mul2 = new OpNode("**");
-            mul2->children().push_back(den);
-            mul2->children().push_back((*it2)->children().back());
-            mul2 = evaluateArithmetic(mul2);
-            
-            (*it)->children().clear();
-            (*it)->children().push_front(mul1);
-            (*it)->children().push_back(mul2);
-            num->setParent(mul1);
-            (*it2)->children().front()->setParent(mul1);
-            den->setParent(mul2);
-            (*it2)->children().back()->setParent(mul2);
-            
-            delete *it2;
-            op->children().erase(it2);
-            num = evaluateArithmetic(num);
-            den = evaluateArithmetic(den);
-            *it = evaluateArithmetic(*it);
-            ++it;  
-        }
-        else if ((*it)->isOperator() && ((OpNode*)*it)->name() == "/") // (* (/ a b) c ...) ==> (* (/ (* a c) b) ...)
-        {
-            ExprNode* num = (*it)->children().front();
-            ExprNode* mul = new OpNode("**");
-
-            (*it)->children().erase((*it)->children().begin());
-            mul->children().push_back(num);
-            mul->children().push_back(*it2);
-            (*it2)->setParent(mul);
-            num->setParent(mul);
-            mul = evaluateArithmetic(mul);
-
-            (*it)->children().push_front(mul);
-            mul->setParent(*it);
-            op->children().erase(it2);
-            num = evaluateArithmetic(num);
-            *it = evaluateArithmetic(*it);
-            ++it;  
-        }
-        else if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "/") // (* ... a (/ b c)) ==> (* ... (/ (* a b) c))
-        {              
-            ExprNode* num = (*it2)->children().front();
-            ExprNode* mul = new OpNode("**");
-
-            (*it2)->children().erase((*it2)->children().begin());
-            mul->children().push_back(*it);
-            mul->children().push_back(num);
-            (*it)->setParent(mul);
-            num->setParent(mul);
-            mul = evaluateArithmetic(mul);
-
-            (*it2)->children().push_front(mul);
-            mul->setParent(*it2);
-            it = op->children().erase(it);
-            *it2 = evaluateArithmetic(*it2);
-        }     
-        else
-        {
-            ++it;
-        }
-    }
-
-    etrans.clear();
-    etrans.add("(* ?a)", "?a");
-    etrans.add("(** ?a)", "?a");
-    return etrans.transform(op);
+    etrans.add("(** (** ?a ...) ?b ...?)", "(** ?a ... ?b ...?)");
+    etrans.add("(** (/ ?a ?b) (/ ?c ?d) ?e ...?)", "(** (/ (** ?a ?c) (** ?b ?d)) ?e ...?)");
+    etrans.add("(** (/ ?a ?b) ?c ...?)", "(/ (** ?a ?c ...?) ?b)");
+    // ===================
+    etrans.add("(** (* ?a ...) ?b ...?)", "(* ?a ... ?b ...?)");
+    etrans.add("(* (** ?a ...) ?b ...?)", "(* ?a ... ?b ...?)");
+    return etrans.transform(op, [](ExprNode* expr) { return evaluateArithmetic(expr); });
 }
 
 // Evalutes "(/ <arg0> <arg1>)"
@@ -814,7 +695,7 @@ ExprNode* symbolicDiv(OpNode* op)
     etrans.add("(/ (** ?a ?b ...?) (** ?a ?c ...?))", "(/ (** ?b ...?) (** ?c ...?))");
     etrans.add("(/ (** ?a ?b ...?) ?a)", "(** ?b ...?)");
     etrans.add("(/ ?a (** ?a ?b ...?))", "(/ 1 (** ?b ...?))");
-    return etrans.transform(op);
+    return etrans.transform(op, [](ExprNode* expr) { return evaluateArithmetic(expr); });
 }
 
 // Evalutes "(% <arg0> <arg1>)"
@@ -831,9 +712,9 @@ ExprNode* symbolicMod(ExprNode* op)
     etrans.add("(% (^ ?n ?x) ?n)", "0");
     etrans.add("(% (+ (% ?a ?n) (% ?b ?n)) ?n)", "(% (+ ?a ?b) ?n)");
     etrans.add("(% (* (% ?a ?n) (% ?b ?n)) ?n)", "(% (* ?a ?b) ?n)");
-    etrans.add("(% (** (% ?a ?n) (% ?b ?n)) ?n)", "(% (** ?a ?b) ?n)");
+    etrans.add("(% (** (% ?a ?n) (% ?b ?n)) ?n)", "(% (* ?a ?b) ?n)");
 
-    return etrans.transform(op);
+    return etrans.transform(op, [](ExprNode* expr) { return evaluateArithmetic(expr); });
 }
 
 // Evalutes "(^ <arg0> <arg1>)"
@@ -848,9 +729,9 @@ ExprNode* symbolicPow(ExprNode* op)
     UniqueExprTransformer etrans;
     etrans.add("(^ ?x 0)", "1");
     etrans.add("(^ ?x 1)", "?x");
-    etrans.add("(^ (^ ?x ?m) ?n)", "(^ ?x (** ?m ?n))");
+    etrans.add("(^ (^ ?x ?m) ?n)", "(^ ?x (* ?m ?n))");
 
-    return etrans.transform(op);
+    return etrans.transform(op, [](ExprNode* expr) { return evaluateArithmetic(expr); });
 }
 
 //

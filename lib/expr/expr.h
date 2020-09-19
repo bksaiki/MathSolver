@@ -11,6 +11,8 @@ namespace MathSolver
 //  Expression operations
 //
 
+typedef ExprNode* Transform (ExprNode*);
+
 // Returns true if every node in the expression satisfies the given predicate.
 template <typename Pred>
 bool containsAll(ExprNode* expr, Pred pred)

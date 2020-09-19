@@ -84,18 +84,19 @@ int main()
 
 	tests.reset("*");
 	{
-		const size_t COUNT = 9;
+		const size_t COUNT = 10;
 		const std::string exprs[COUNT * 2] = 
 		{ 
-			"100*1000",		"100000",
-			"3*(a*b)",		"3*a*b",
-			"1*a*1",		"a",
-			"0*x*y",		"0",
-			"-1*x^2",		"-x^2",
-			"(a/b)*(c/d)",	"ac/bd",
-			"a*(1/d)",		"a/d",
-			"2*a+2*b",		"2(a+b)",
-			"2a+a(b)",		"(b+2)a"
+			"100*1000",				"100000",
+			"3*(a*b)",				"3*a*b",
+			"1*a*1",				"a",
+			"0*x*y",				"0",
+			"-1*x^2",				"-x^2",
+			"(a/b)*(c/d)",			"a*c/b*d",
+			"a*(1/d)",				"a/d",
+			"2*a+2*b",				"2(a+b)",
+			"2a+a(b)",				"(b+2)a",
+			"(a/b)*(c/d)*(x/y)",	"a*c*x/y*b*d"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);
@@ -126,7 +127,7 @@ int main()
 		const size_t COUNT = 4;
 		const std::string exprs[COUNT * 2] = 
 		{ 
-			"a+b/c*d",			"a+bd/c",
+			"a+b/c*d",			"a+b*d/c",
 			"-a+b*c+d", 		"b*c-a+d",
 			"(3a+5a)/5a",		"8/5",
 			"2*a/(15*a*b)",		"2/15*b"
@@ -147,7 +148,7 @@ int main()
 			"(a%n)%n",			"a%n",
 			"(n^2)%n",			"0",
 			"((a%n)+(b%n))%n",	"(a+b)%n",
-			"((a%n)(b%n))%n",	"ab%n",
+			"((a%n)(b%n))%n",	"a*b%n",
 			"11 mod 3",			"2",
 			"a mod n",			"a mod n"
 		};
@@ -164,7 +165,7 @@ int main()
 			"3^4",		"81",
 			"2^-5",		"1/32",
 			"3^-4",		"1/81",
-			"(a^b)^c",	"a^(bc)"
+			"(a^b)^c",	"a^(b*c)"
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

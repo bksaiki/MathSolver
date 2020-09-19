@@ -57,9 +57,9 @@ ExprNode* MatchDict::get(const std::string& id) const
 // MatchExpr
 //
 
-ExprNode* MatchExpr::create(const MatchDict& dict) const
+ExprNode* MatchExpr::create(const MatchDict& dict, Transform post) const
 {
-    return createSubexpr(mTop, dict);
+    return createSubexpr(mTop, dict, post, true);
 }
 
 bool MatchExpr::match(ExprNode* expr, MatchDict& dict) const
@@ -79,13 +79,13 @@ bool MatchExpr::match(ExprNode* expr) const
 
 }
 
-void MatchExpr::set(const std::string& match)
+void MatchExpr::set(const std::string& match, bool permissive)
 {
     std::vector<std::string> tokens = tokenizeMatchString(match);
-    mTop = buildMatchTree(tokens);
+    mTop = buildMatchTree(tokens, permissive);
 }
 
-MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens) const
+MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens, bool permissive) const
 {
     if (tokens.size() == 1)
     {
@@ -123,14 +123,21 @@ MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens
                 }
 
                 std::vector<std::string> sexpr(tokens.begin() + i, tokens.begin() + j);
-                top.children.push_back(buildMatchTree(sexpr));
+                top.children.push_back(buildMatchTree(sexpr, permissive));
                 i = j - 1;
             }
             else if (tokens[i] == "..." || tokens[i] == "...?")
             {
-                if (i + 1 != end)
+                if (!permissive && i + 1 != end)
                 {
                     gErrorManager.log("Ellipses can only appear at the end of a subexpression", ErrorManager::FATAL);
+                    return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
+                }
+
+                if (!permissive && tokens[i] == "...?" && end < 5)
+                {
+                    gErrorManager.log("Relative ellipses require at least one token before the rest variable",
+                                      ErrorManager::FATAL);
                     return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
                 }
 
@@ -140,7 +147,7 @@ MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens
             else
             {
                 std::vector<std::string> sexpr = { tokens[i] };
-                top.children.push_back(buildMatchTree(sexpr));
+                top.children.push_back(buildMatchTree(sexpr, permissive));
             }
         }
 
@@ -160,28 +167,32 @@ MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens
     }
 }
 
-ExprNode* MatchExpr::createLeaf(const node& match, const MatchDict& dict) const
+ExprNode* MatchExpr::createLeaf(const node& match, const MatchDict& dict, bool shallow) const
 {
     ExprNode* inDict = dict.get(match.name);
     if (inDict != nullptr)
     {
         if (match.name.front() == '?')
-            return ((inDict->toString() == "...") ? inDict : copyOf(inDict));
-        else
-            return copyNode(inDict);
+        {
+            if (inDict->toString() == "...")    return inDict;
+            else if (shallow)                   return copyNode(inDict);
+            else                                return copyOf(inDict);
+        }
+
+        return copyNode(inDict);
     }
 
     std::list<ExprNode*> tokens = tokenizeStr(match.name);
     return tokens.front();
 }
 
-ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict) const
+ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict, Transform post, bool top) const
 {
     if (match.children.empty()) // create leaf
         return createLeaf(match, dict);
 
     // create subexpr layer
-    ExprNode* op = createLeaf(match, dict);
+    ExprNode* op = createLeaf(match, dict, true);
     const node& last = match.children.back();
     bool ellipse = (last.type == node::REL_ELLIPSE);
     op->setParent(nullptr);
@@ -200,7 +211,7 @@ ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict) con
     size_t lim = (ellipse ? (match.children.size() - 1) : match.children.size());
     for (size_t i = 0; i < lim; ++i)
     {
-        ExprNode* sexpr = createSubexpr(match.children[i], dict);
+        ExprNode* sexpr = createSubexpr(match.children[i], dict, post);
         if (sexpr->toString() == "...")
         {
             for (auto e : sexpr->children())
@@ -228,7 +239,8 @@ ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict) con
         }
     } 
 
-    return op;
+    if (top)    return op;
+    else        return post(op);
 }
 
 bool MatchExpr::matchLeaf(const node& match, ExprNode* expr, MatchDict& dict) const
@@ -246,8 +258,8 @@ bool MatchExpr::matchLeaf(const node& match, ExprNode* expr, MatchDict& dict) co
             return true;
         }
         
-        MatchDict::ell_dict_t& ellDict = dict.ellDict();
-        auto pred = [&](MatchDict::ell_dict_t::value_type pair) {
+        MatchDict::patt_t& ellDict = dict.ellDict();
+        auto pred = [&](MatchDict::patt_t::value_type pair) {
             return pair.first.first == token;
         };
 
@@ -292,8 +304,14 @@ bool MatchExpr::matchLeaf(const node& match, ExprNode* expr, MatchDict& dict) co
         }
     }
 
-    if (dict.get(token) == nullptr) dict.add(token, expr);  // add if not found
-    return (token == expr->toString()); // check if it's the same
+    if (token == expr->toString())
+    {
+        if (dict.get(token) == nullptr) // add if not found
+            dict.add(token, expr);
+        return true;
+    }
+    
+    return false; // failed
 }
 
 bool MatchExpr::matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict) const
@@ -313,11 +331,11 @@ bool MatchExpr::matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict)
         if (sexprs.size() == 2 && sexprs[0].name.front() == '?' &&
             dict.get(sexprs[0].name) == nullptr)
         {
-            MatchDict::ell_dict_t& ellDict = dict.ellDict();
+            MatchDict::patt_t& ellDict = dict.ellDict();
             const std::string& head = sexprs[0].name;
             const std::string& rest = sexprs[1].name;
 
-            auto pred = [&](MatchDict::ell_dict_t::value_type pair) {
+            auto pred = [&](MatchDict::patt_t::value_type pair) {
                 return pair.first.first == head;
             };
             auto it = std::find_if(ellDict.begin(), ellDict.end(), pred);
@@ -507,8 +525,7 @@ std::vector<std::string> MatchExpr::tokenizeMatchString(const std::string& match
         else
         {  
             size_t j = i;
-            while (j < len && !isspace(match[j]) && match[i] != '(' && match[j] != ')')
-                ++j;
+            while (j < len && !isspace(match[j]) && match[i] != '(' && match[j] != ')') ++j;
             tokens.push_back(match.substr(i, j - i));
             i = j - 1;
         }   
@@ -565,7 +582,7 @@ UniqueExprTransformer::UniqueExprTransformer()   // default constructor
 
 void UniqueExprTransformer::add(const std::string& input, const std::string& output)
 {
-    mTransforms.push_back({ MatchExpr(input), MatchExpr(output) });
+    mTransforms.push_back({ MatchExpr(input), MatchExpr(output, true) });
 }
 
 void UniqueExprTransformer::clear()
@@ -574,7 +591,7 @@ void UniqueExprTransformer::clear()
     mSuccess = false;
 }
 
-ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
+ExprNode* UniqueExprTransformer::transform(ExprNode* expr, Transform post)
 {
     MatchDict dict;
     bool loop = true;
@@ -587,7 +604,7 @@ ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
         {
             if (e.first.match(expr, dict))
             {
-                ExprNode* trans = e.second.create(dict);
+                ExprNode* trans = e.second.create(dict, post);
                 trans->setParent(expr->parent());
                 dict.clear();
                 freeExpression(expr);
@@ -601,6 +618,10 @@ ExprNode* UniqueExprTransformer::transform(ExprNode* expr)
 
     return expr;
 }
+
+//
+//  Unique expression matcher
+//
 
 ExprNode* UniqueExprMatcher::get(const std::string& key) const
 {

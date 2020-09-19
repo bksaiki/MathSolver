@@ -16,7 +16,7 @@ class MatchDict
 public:
 
     typedef std::map<std::string, std::pair<ExprNode*, bool>>           dict_t;
-    typedef std::map<std::pair<std::string, std::string>, ExprNode*>    ell_dict_t;
+    typedef std::map<std::pair<std::string, std::string>, ExprNode*>    patt_t;
     typedef std::map<std::string, std::vector<ExprNode*>>               subp_t;
 
     inline MatchDict() = default;
@@ -32,8 +32,8 @@ public:
     ExprNode* get(const std::string& id) const;
 
     // Returns a reference to the ellipse dictionary.
-    inline ell_dict_t& ellDict() { return mEll; }
-    inline const ell_dict_t& ellDict() const { return mEll; }
+    inline patt_t& ellDict() { return mEll; }
+    inline const patt_t& ellDict() const { return mEll; }
 
     // Returns a reference to the subpattern dictionary.
     inline subp_t& subp() { return mSubPattern; }
@@ -42,7 +42,7 @@ public:
 private:
 
     dict_t mDict;       // primary dictionary
-    ell_dict_t mEll;    // ellipse dictionary (temporary storage during matching)
+    patt_t mEll;    // ellipse dictionary (temporary storage during matching)
     subp_t mSubPattern;
 };
 
@@ -65,10 +65,10 @@ public:
 public:
 
     inline MatchExpr() = default;
-    inline MatchExpr(const std::string& match) { set(match); }
+    inline MatchExpr(const std::string& match, bool permissive = false) { set(match, permissive); }
 
     // Creates an expression based on this match expression and dictionary.
-    ExprNode* create(const MatchDict& dict) const;
+    ExprNode* create(const MatchDict& dict, Transform post) const;
 
     // Returns true if the expression matches. A match dictionary can be optionally
     // passed to store match data.
@@ -76,7 +76,7 @@ public:
     bool match(ExprNode* expr) const;
 
     // Sets this object based on a match string.
-    void set(const std::string& match);
+    void set(const std::string& match, bool permissive = false);
 
     // Returns this object as a string.
     inline std::string toString() const { return toString(mTop); }
@@ -85,13 +85,13 @@ private:
 
     // Given a list of match expression tokens, returns the corresponding
     // syntax tree. Called recursively.
-    node buildMatchTree(const std::vector<std::string>& tokens) const;
+    node buildMatchTree(const std::vector<std::string>& tokens, bool permissive) const;
 
     // Creates a single leaf based on a syntax node.
-    ExprNode* createLeaf(const node& match, const MatchDict& dict) const;
+    ExprNode* createLeaf(const node& match, const MatchDict& dict, bool shallow = false) const;
 
     // Creates a subexpression based on a syntax tree.
-    ExprNode* createSubexpr(const node& match, const MatchDict& dict) const;
+    ExprNode* createSubexpr(const node& match, const MatchDict& dict, Transform post, bool top = false) const;
 
     // Returns true if the expression matches a single token. Stores match
     // data in a dictionary.
@@ -136,7 +136,7 @@ public:
     void clear();
 
     // Attempts to apply one of the stored transformations. 
-    ExprNode* transform(ExprNode* expr);
+    ExprNode* transform(ExprNode* expr, Transform post = [](ExprNode* expr) { return expr; });
 
     // Returns whether or not the last transformation attempt was successful.
     // Calling this function after initialization returns false.
