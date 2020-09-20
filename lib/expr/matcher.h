@@ -19,17 +19,20 @@ public:
     typedef std::map<std::pair<std::string, std::string>, ExprNode*>    patt_t;
     typedef std::map<std::string, std::vector<ExprNode*>>               subp_t;
 
-    inline MatchDict() = default;
-    inline ~MatchDict() { clear(); }
+    inline MatchDict() {}               // default constructor
+    inline ~MatchDict() { clear(); }    // destructor
 
     // Adds a key-value pair to the primary dictionary.
     void add(const std::string& id, ExprNode* expr, bool pattern = false);
 
-    // Deletes extra nodes in this dictionary
+    // Clears all entries in this dictionary. Deletes extra nodes in this dictionary.
     void clear();
 
     // Returns a pointer the expression associated with id. Returns nullptr on failure.
     ExprNode* get(const std::string& id) const;
+
+    // Clears all entries in this dictionary. Does not delete extra nodes!!
+    void release();
 
     // Returns a reference to the ellipse dictionary.
     inline patt_t& ellDict() { return mEll; }
@@ -38,6 +41,11 @@ public:
     // Returns a reference to the subpattern dictionary.
     inline subp_t& subp() { return mSubPattern; }
     inline const subp_t& subp() const { return mSubPattern; }
+
+private:
+
+    // Helper. Copies extra nodes from the other dictionary to this one.
+    void copyPrimary(const MatchDict& other);
 
 private:
 
@@ -53,7 +61,7 @@ public:
 
     struct node
     {
-        enum Type { SINGLE, VARIABLE, ELLIPSE, REL_ELLIPSE };
+        enum Type { SINGLE, VARIABLE, ELLIPSE, REL_ELLIPSE, UNORD_ELLIPSE };
 
         std::string name;
         std::vector<node> children;
@@ -100,6 +108,12 @@ private:
     // Returns true if the expression matches the given syntax tree. Stores
     // match data in a dictionary
     bool matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict) const;
+
+    // Attempts to match a range of subexpression children. Returns true on success.
+    bool matchRelativeEllipse(const node& match, ExprNode* expr, MatchDict& dict, size_t start) const;
+
+    // Attempts to match a subexpression with an unordered ellipse.
+    bool matchUnorderedEllipse(const node& match, ExprNode* expr, MatchDict& dict, size_t start) const;
 
     // Tokenizes a given match expression and returns the tokens in a vector. Not safe, does not
     // check if the match expressions is valid.

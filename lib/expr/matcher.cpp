@@ -44,6 +44,7 @@ void MatchDict::clear()
 
     mDict.clear();
     mEll.clear();
+    mSubPattern.clear();
 }
 
 ExprNode* MatchDict::get(const std::string& id) const
@@ -51,6 +52,13 @@ ExprNode* MatchDict::get(const std::string& id) const
     auto it = mDict.find(id);
     if (it != mDict.end())  return it->second.first;
     else                    return nullptr;
+}
+
+void MatchDict::release()
+{
+    mDict.clear();
+    mEll.clear();
+    mSubPattern.clear();
 }
 
 //
@@ -100,7 +108,13 @@ MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens
     {
         if (tokens.front() != "(" || tokens.back() != ")")
         {
-            gErrorManager.log("Expected a subexpression inside parenthesis!", ErrorManager::FATAL);
+            gErrorManager.log("Unmatched parenthesis in the subexpression", ErrorManager::FATAL);
+            return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
+        }
+
+        if (tokens.size() == 2)
+        {
+            gErrorManager.log("Expected at least one token in the subexpression", ErrorManager::FATAL);
             return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
         }
 
@@ -126,23 +140,37 @@ MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens
                 top.children.push_back(buildMatchTree(sexpr, permissive));
                 i = j - 1;
             }
-            else if (tokens[i] == "..." || tokens[i] == "...?")
+            else if (tokens[i] == "..." || tokens[i] == "...?" || tokens[i] == "...!")
             {
                 if (!permissive && i + 1 != end)
                 {
                     gErrorManager.log("Ellipses can only appear at the end of a subexpression", ErrorManager::FATAL);
                     return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
                 }
-
-                if (!permissive && tokens[i] == "...?" && end < 5)
-                {
-                    gErrorManager.log("Relative ellipses require at least one token before the rest variable",
-                                      ErrorManager::FATAL);
-                    return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
-                }
-
+                
                 top.children.back().depth += 1;
-                top.children.back().type = ((tokens[i] == "...") ? node::ELLIPSE : node::REL_ELLIPSE);
+                if (tokens[i] == "...")
+                {
+                    top.children.back().type = node::ELLIPSE;
+                }
+                else if (tokens[i] == "...?")
+                {
+                    if (!permissive && end < 5)
+                    {
+                        gErrorManager.log("Relative ellipses require at least one token before the rest variable", ErrorManager::FATAL);
+                        return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
+                    }
+                    top.children.back().type = node::REL_ELLIPSE;
+                }
+                else // tokens[i] == "...!"
+                {
+                    if (!permissive && end < 6)
+                    {
+                        gErrorManager.log("Relative ellipses require at least one token before the rest variable", ErrorManager::FATAL);
+                        return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
+                    }
+                    top.children.back().type = node::UNORD_ELLIPSE;
+                }
             }
             else
             {
@@ -158,12 +186,11 @@ MatchExpr::node MatchExpr::buildMatchTree(const std::vector<std::string>& tokens
             top.depth = it->depth + 1; // min(children) + 1
             return top;
         }
-        else
+        else    // nullary
         {
-            gErrorManager.log("Malformed match expression", ErrorManager::FATAL);
-            return { "null", std::vector<node>(), nullptr, node::SINGLE, 0 };
-        }
-        
+            top.depth = 1;
+            return top;
+        }      
     }
 }
 
@@ -194,7 +221,7 @@ ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict, Tra
     // create subexpr layer
     ExprNode* op = createLeaf(match, dict, true);
     const node& last = match.children.back();
-    bool ellipse = (last.type == node::REL_ELLIPSE);
+    bool ellipse = (last.type == node::REL_ELLIPSE || last.type == node::UNORD_ELLIPSE);
     op->setParent(nullptr);
     
     if (ellipse)
@@ -314,10 +341,104 @@ bool MatchExpr::matchLeaf(const node& match, ExprNode* expr, MatchDict& dict) co
     return false; // failed
 }
 
+bool MatchExpr::matchRelativeEllipse(const node& match, ExprNode* expr, MatchDict& dict, size_t start) const
+{
+    const std::vector<node>& sexprs = match.children;
+    size_t len = sexprs.size() - 1;
+    if ((start + len) > expr->children().size())
+    {
+        gErrorManager.log("Index out of bounds", ErrorManager::FATAL);
+        return false;
+    }
+
+    MatchDict tempDict = dict;
+    auto it = std::next(expr->children().begin(), start);
+    for (size_t idx = 0; idx < len; ++idx, ++it)
+    {
+        if (!matchSubexpr(sexprs[idx], *it, tempDict))
+        {
+            tempDict.release();
+            return false;
+        }
+    }
+
+    ExprNode* ell = new SyntaxNode("...?");
+    ExprNode* before = new SyntaxNode("before", ell);
+    ExprNode* after = new SyntaxNode("after", ell);
+
+    ell->children().push_back(before);
+    ell->children().push_back(after);
+    
+    auto begin = std::next(expr->children().begin(), start);
+    auto end = std::next(expr->children().begin(), start + len);
+    before->children().insert(before->children().begin(), expr->children().begin(), begin);
+    after->children().insert(after->children().begin(), end, expr->children().end());
+
+    tempDict.add(sexprs.back().name, ell, true);
+    dict = tempDict;
+    tempDict.release();
+    return true;
+}
+
+bool MatchExpr::matchUnorderedEllipse(const node& match, ExprNode* expr, MatchDict& dict, size_t start) const
+{
+    const std::vector<node>& sexprs = match.children;
+    size_t len = sexprs.size() - 1;
+    if ((start + len) > expr->children().size())
+    {
+        gErrorManager.log("Index out of bounds", ErrorManager::FATAL);
+        return false;
+    }
+
+    MatchDict tempDict = dict;
+    std::vector<ExprNode*> failed;
+    size_t matched = 0;
+    size_t idx = 0;
+    for (auto it = std::next(expr->children().begin(), start); it != expr->children().end(); ++it)
+    {
+        if (matchSubexpr(sexprs[idx], *it, tempDict))
+        {
+            ++matched;
+            ++idx;
+
+            if (matched == len)
+            {
+                ExprNode* ell = new SyntaxNode("...?");
+                ExprNode* before = new SyntaxNode("before", ell);
+                ExprNode* after = new SyntaxNode("after", ell);
+
+                ell->children().push_back(before);
+                ell->children().push_back(after);
+                
+                auto begin = std::next(expr->children().begin(), start);
+                before->children().insert(before->children().end(), expr->children().begin(), begin);
+                after->children().insert(after->children().end(), failed.begin(), failed.end());
+                after->children().insert(after->children().end(), std::next(it), expr->children().end());
+
+                tempDict.add(sexprs.back().name, ell, true);
+                dict = tempDict;
+                tempDict.release();
+                return true;
+            }
+        }
+        else
+        {
+            failed.push_back(*it);
+        }
+    }
+
+    tempDict.release();
+    return false;
+}
+
 bool MatchExpr::matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict) const
 {
     if (match.children.empty()) // leaf
+    {
+        if (match.type == node::SINGLE && expr->children().size() != 0)
+            return false;  // nullary match with non-nullary expression
         return matchLeaf(match, expr, dict);
+    }
     
     // match subtree
     if (!matchLeaf(match, expr, dict))
@@ -404,47 +525,28 @@ bool MatchExpr::matchSubexpr(const node& match, ExprNode* expr, MatchDict& dict)
         }
         else
         {
-            ExprNode* ell = new SyntaxNode("...?");
-            ExprNode* before = new SyntaxNode("before", ell);
-            ExprNode* after = new SyntaxNode("after", ell);
-
-            ell->children().push_back(before);
-            ell->children().push_back(after);
-
-            std::vector<ExprNode*> possible;
-            size_t len = sexprs.size();
-            size_t idx = 0;
-            for (auto it = expr->children().begin(); it != expr->children().end(); ++it)
+            size_t len = sexprs.size() - 1;
+            size_t needed = 1 + expr->children().size() - len;
+            for (size_t i = 0; i < needed ; ++i)
             {
-                if (matchSubexpr(sexprs[idx], *it, dict))
-                {
-                    if (idx == len - 2)
-                    {
-                        after->children().insert(after->children().begin(),
-                                                 std::next(it), expr->children().end());
-                        dict.add(sexprs[len - 1].name, ell, true);
-                        return true;
-                    }
-
-                    possible.push_back(*it);
-                    ++idx;
-                }
-                else
-                {
-                    before->children().insert(before->children().end(),
-                                              possible.begin(), possible.end());
-                    before->children().push_back(*it);
-                    possible.clear();
-                    idx = 0;
-                }
+                if (matchRelativeEllipse(match, expr, dict, i))
+                    return true;
             }
 
-            // clean up on failure
-            delete ell;
-            delete before;
-            delete after;
             return false;
         }
+    }
+    else if (sexprs.back().type == node::UNORD_ELLIPSE) // (+ ?a (-* ?a) ?b ...!)
+    {
+        size_t len = sexprs.size() - 1;
+        size_t needed = 1 + expr->children().size() - len;
+        for (size_t i = 0; i < needed; ++i)
+        {
+            if (matchUnorderedEllipse(match, expr, dict, i))
+                return true;
+        }
+
+        return false;
     }
     else if (sexprs.back().type == node::ELLIPSE) // (+ ?a ?b ...)
     {

@@ -194,16 +194,9 @@ ExprNode* numericAdd(ExprNode* op)
 // Evaluates "(- <num>...)"
 ExprNode* numericSub(ExprNode* op)
 {
-    ((OpNode*)op)->setName("+");
-    for (auto it = std::next(op->children().begin()); it != op->children().end(); ++it) // (- a b c ...) ==> (+ a (-* b) (-* c) ...)
-    {
-        ExprNode* neg = new OpNode("-*", op);
-        neg->children().push_back(*it);
-        (*it)->setParent(neg);
-        neg = evaluateArithmetic(neg);
-        it = replaceChild(op, neg, it);
-    }
-
+    UniqueExprTransformer etrans;
+    etrans.add("(- ?a ?b ...)", "(+ ?a (-* ?b) ...)");
+    op = etrans.transform(op, [](ExprNode* expr) { return evaluateArithmetic(expr); });
     return evaluateArithmetic(op);
 }
 
@@ -636,7 +629,6 @@ ExprNode* symbolicMul(ExprNode* op)
         }
     }
 
-    // Naive transforms;
     UniqueExprTransformer etrans;
     etrans.add("(* ?a)", "?a");
     etrans.add("(* 0 ?a ...?)", "0");
@@ -650,6 +642,10 @@ ExprNode* symbolicMul(ExprNode* op)
     etrans.add("(* (* ?a ...) ?b ...?)", "(* ?a ... ?b ...?)");
     etrans.add("(* (/ ?a ?b) (/ ?c ?d) ?e ...?)", "(* (/ (* ?a ?c) (* ?b ?d)) ?e ...?)");
     etrans.add("(* (/ ?a ?b) ?c ...?)", "(/ (* ?a ?c ...?) ?b)");
+    etrans.add("(* ?a ?a ?b ...!)", "(* (^ ?a 2) ?b ...!)");
+    etrans.add("(* (^ ?a ?b) ?a ?c ...!)", "(* (^ ?a (+ ?b 1)) ?c ...!)");
+    etrans.add("(* ?a (^ ?a ?b) ?c ...!)", "(* (^ ?a (+ ?b 1)) ?c ...!)");
+    etrans.add("(* (^ ?a ?b) (^ ?a ?c) ?d ...!)", "(* (^ ?a (+ ?b ?c)) ?d ...!)");
     // ===================
     etrans.add("(** ?a)", "?a");
     etrans.add("(** 0 ?a ...?)", "0");
@@ -662,6 +658,9 @@ ExprNode* symbolicMul(ExprNode* op)
     etrans.add("(** -1.0 ?a ...?)", "(-* (** ?a ...?))");
     etrans.add("(** (** ?a ...) ?b ...?)", "(** ?a ... ?b ...?)");
     etrans.add("(** (/ ?a ?b) (/ ?c ?d) ?e ...?)", "(** (/ (** ?a ?c) (** ?b ?d)) ?e ...?)");
+    etrans.add("(** ?a ?a ?b ...!)", "(** (^ ?a 2) ?b ...!)");
+    etrans.add("(** (^ ?a ?b) ?a ?c ...!)", "(** (^ ?a (+ ?b 1)) ?c ...!)");
+    etrans.add("(** ?a (^ ?a ?b) ?c ...!)", "(** (^ ?a (+ ?b 1)) ?c ...!)");
     etrans.add("(** (/ ?a ?b) ?c ...?)", "(/ (** ?a ?c ...?) ?b)");
     // ===================
     etrans.add("(** (* ?a ...) ?b ...?)", "(* ?a ... ?b ...?)");

@@ -25,59 +25,15 @@ ExprNode* rewriteAddSub(ExprNode* op)
     flattenExpr(op);
 
     UniqueExprTransformer etrans;
+    etrans.add("(+)", "0");
+    etrans.add("(+ ?a)", "?a");
+    etrans.add("(+ (+ ?a ...) ?b ...?)", "(+ ?a ... ?b ...?)");
     etrans.add("(+ 0 ?a ...?)", "(+ ?a ...?)");
     etrans.add("(+ (-* ?a) ?b ?c ...)", "(+ (- ?b ?a) ?c ...)");
     etrans.add("(+ (-* ?a) (-* ?b) ?c ...)", "(+ (-* (+ ?a ?b)) ?c ...)");
     etrans.add("(+ ?a (-* ?b) ?c ...?)", "(+ (- ?a ?b) ?c ...?)");
-    op = etrans.transform(op);
-
-    auto it = op->children().begin();
-    auto it2 = std::next(it);
-    while (it != op->children().end() && it2 != op->children().end())
-    {
-        bool changed = false;
-
-        for (; it2 != op->children().end(); ++it2)
-        {
-            if ((*it2)->isOperator() && ((OpNode*)*it2)->name() == "-*" &&  // (+ a b (-* a) c ...) ==> (+ b c ...)
-                eqvExpr(*it, (*it2)->children().front()))
-            {
-                freeExpression(*it);
-                freeExpression(*it2);
-                op->children().erase(it2);
-                it = op->children().erase(it);
-                changed = true;
-                break;
-            }   
-        }
-
-        if (!changed)
-        {
-            ++it;
-            ++it2;
-        }
-    }
-
-    flattenExpr(op);
-    if (op->children().size() < 2) // Post: (+ x) ==> x or (+) ==> 0
-    {
-        ExprNode* ret;
-        if (op->children().size() == 1)     
-        {
-            ret = op->children().front();
-            op->children().clear();
-        }
-        else                                
-        {
-            ret = new IntNode();
-        }
-
-        ret->setParent(op->parent());
-        freeExpression(op);
-        return ret;
-    } 
-
-    return op;
+    etrans.add("(+ ?a (-* ?a) ?b ...!)", "(+ ?b ...!)");
+    return etrans.transform(op);
 }
 
 ExprNode* rewriteAdd(ExprNode* op)

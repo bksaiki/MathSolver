@@ -159,7 +159,7 @@ int main()
     }
 
     {
-        const size_t COUNT = 6;
+        const size_t COUNT = 7;
         std::string exprs[COUNT] =
         {
             "x + x",
@@ -167,17 +167,19 @@ int main()
             "x * x",
             "x / 0",
             "1 * 2 * 3 * 4 * 5",
-            "2 * 1 * 3 * 4 * 5"
+            "2 * 1 * 3 * 4 * 5",
+            "x + y + z + (- y)",
         };
 
         std::string match[COUNT * 2] =
         {
-            "(+ ?a ?a)",        "(* 2 ?a)",
-            "(* ?a 0)",         "0",
-            "(* ?a ?a)",        "(^ ?a 2)",
-            "(/ ?a 0)",         "undef",
-            "(* 1 ?a ...)",     "(* ?a ...)",
-            "(* 1 ?a ...?)",    "(* ?a ...?)"
+            "(+ ?a ?a)",                "(* 2 ?a)",
+            "(* ?a 0)",                 "0",
+            "(* ?a ?a)",                "(^ ?a 2)",
+            "(/ ?a 0)",                 "undef",
+            "(* 1 ?a ...)",             "(* ?a ...)",
+            "(* 1 ?a ...?)",            "(* ?a ...?)",
+            "(+ ?a (-* ?a) ?b ...!)",   "(+ ?b ...!)"
         };
 
         std::string expect[COUNT] =
@@ -187,7 +189,8 @@ int main()
             "(^ x 2)",
             "undef",
             "(* 2 3 4 5)",
-            "(* 2 3 4 5)"
+            "(* 2 3 4 5)",
+            "(+ x z)"
         };
         
         TestModule tests("Transformer 1", verbose);
