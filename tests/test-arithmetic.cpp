@@ -130,7 +130,21 @@ int main()
 			"a+b/c*d",			"a+b*d/c",
 			"-a+b*c+d", 		"b*c-a+d",
 			"(3a+5a)/5a",		"8/5",
-			"2*a/(15*a*b)",		"2/15*b"
+			"2*a/(15*a*b)",		"2/15*b",
+		};
+
+		status &= evalExpr(tests, exprs, COUNT);
+	}
+
+	tests.reset("Polynomials");
+	{
+		const size_t COUNT = 4;
+		const std::string exprs[COUNT * 2] = 
+		{ 
+			"3*x*y + 5*z*x + 7*x*w", 	"(3y+5z+7w)x",
+			"3*x*y - 5*z*x - 7*x*w",	"(3y-5z-7w)x",
+			"3*x*y + 5*z*x - 7*x*w",	"(3y+5z-7w)x",
+			"3*x*y - 5*z*x + 7*x*w",	"(3y-5z+7w)x",
 		};
 
 		status &= evalExpr(tests, exprs, COUNT);

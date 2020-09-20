@@ -253,6 +253,44 @@ int main()
     }
 
     {
+        TestModule tests("Transformer 3");
+
+        const size_t COUNT = 2;
+        std::string transforms[COUNT * 2] =
+        {
+            "(- ?a ?b ...)",        "(+ ?a (-* ?b) ...)",
+            "(+ ?a (-* ?b) ...)",   "(- ?a ?b ...)"
+        };
+        
+        std::string exprs[COUNT] =
+        {
+            "x-y-z-w",
+            "x+(-y)+(-z)+(-w)"
+        };
+
+        std::string expect[COUNT] =
+        {
+            "(+ x (-* y) (-* z) (-* w))",
+            "(- x y z w)"
+        };
+
+        for (size_t i = 0; i < COUNT; ++i)
+        {
+            UniqueExprTransformer utm;
+            utm.add(transforms[2 * i], transforms[2 * i + 1]);
+            
+            ExprNode* expr = parseString(exprs[i]);
+            flattenExpr(expr);
+            expr = utm.transform(expr);
+            tests.runTest(toPrefixString(expr), expect[i]);
+            freeExpression(expr);
+        }
+
+        std::cout << tests.result() << std::endl;
+        status &= tests.status();
+    }
+
+    {
         UniqueExprMatcher uem;
         ExprNode* expr = parseString("(a + b) * (c + d) + (e / f)");
 

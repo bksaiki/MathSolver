@@ -61,6 +61,17 @@ void MatchDict::release()
     mSubPattern.clear();
 }
 
+void MatchDict::update(const std::string& id, ExprNode* expr, bool pattern)
+{
+    if (mDict.find(id) == mDict.end())
+    {
+        gErrorManager.log("Key not found: " + id, ErrorManager::FATAL);
+        return;
+    }
+
+    mDict[id] = { expr, pattern };
+}
+
 //
 // MatchExpr
 //
@@ -221,10 +232,9 @@ ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict, Tra
     // create subexpr layer
     ExprNode* op = createLeaf(match, dict, true);
     const node& last = match.children.back();
-    bool ellipse = (last.type == node::REL_ELLIPSE || last.type == node::UNORD_ELLIPSE);
     op->setParent(nullptr);
-    
-    if (ellipse)
+
+    if (last.type == node::REL_ELLIPSE || last.type == node::UNORD_ELLIPSE)
     {
         ExprNode* ell = dict.get(last.name);
         for (auto e : ell->children().front()->children())
@@ -233,38 +243,112 @@ ExprNode* MatchExpr::createSubexpr(const node& match, const MatchDict& dict, Tra
             t->setParent(op);
             op->children().push_back(t);
         }
-    } 
 
-    size_t lim = (ellipse ? (match.children.size() - 1) : match.children.size());
-    for (size_t i = 0; i < lim; ++i)
-    {
-        ExprNode* sexpr = createSubexpr(match.children[i], dict, post);
-        if (sexpr->toString() == "...")
+        size_t lim = match.children.size() - 1;
+        for (size_t i = 0; i < lim; ++i)
         {
-            for (auto e : sexpr->children())
+            ExprNode* sexpr = createSubexpr(match.children[i], dict, post);
+            if (sexpr->toString() == "...")
             {
-                ExprNode* t = copyOf(e);
-                t->setParent(op);
-                op->children().push_back(t);
+                for (auto e : sexpr->children())
+                {
+                    ExprNode* t = copyOf(e);
+                    t->setParent(op);
+                    op->children().push_back(t);
+                }
+            }
+            else
+            {
+                sexpr->setParent(op);
+                op->children().push_back(sexpr);
             }
         }
-        else
-        {
-            sexpr->setParent(op);
-            op->children().push_back(sexpr);
-        }
-    }
 
-    if (ellipse)
-    {
-        ExprNode* ell = dict.get(last.name);
         for (auto e : ell->children().back()->children())
         {
             ExprNode* t = copyOf(e);
             t->setParent(op);
             op->children().push_back(t);
         }
-    } 
+    }
+    else if (last.type == node::ELLIPSE && last.children.size() != 0) // complex rest pattern
+    {
+        // other subexpressions
+        size_t lim = match.children.size() - 1;
+        for (size_t i = 0; i < lim; ++i)
+        {
+            ExprNode* sexpr = createSubexpr(match.children[i], dict, post);
+            if (sexpr->toString() == "...")
+            {
+                for (auto e : sexpr->children())
+                {
+                    ExprNode* t = copyOf(e);
+                    t->setParent(op);
+                    op->children().push_back(t);
+                }
+            }
+            else
+            {
+                sexpr->setParent(op);
+                op->children().push_back(sexpr);
+            }
+        }
+
+        std::vector<std::string> vars = varsInSubexpr(last);
+        size_t len = 0;
+
+        for (auto v : vars) // collect and check pattern variable lengths
+        {
+            ExprNode* inDict = dict.get(v);
+            if (len == 0)
+            {
+                len = inDict->children().size();
+            }
+            else if (len != inDict->children().size())
+            {
+                gErrorManager.log("Expected pattern variables of the same length", ErrorManager::ERROR);
+                return op;
+            }            
+        }
+
+        // Update dict with single element of the pattern variable
+        for (size_t i = 0; i < len; ++i)
+        {
+            MatchDict tmp = dict;
+            for (auto v : vars)
+            {
+                ExprNode* inDict = dict.get(v);
+                auto it = std::next(inDict->children().begin(), i);
+                tmp.update(v, *it, (*it)->toString() == "...");
+            }
+
+            ExprNode* sexpr = createSubexpr(last, tmp, post);
+            sexpr->setParent(op);
+            op->children().push_back(sexpr);
+            tmp.release();
+        }
+    }
+    else
+    {
+        for (auto e : match.children)
+        {
+            ExprNode* sexpr = createSubexpr(e, dict, post);
+            if (sexpr->toString() == "...")
+            {
+                for (auto e : sexpr->children())
+                {
+                    ExprNode* t = copyOf(e);
+                    t->setParent(op);
+                    op->children().push_back(t);
+                }
+            }
+            else
+            {
+                sexpr->setParent(op);
+                op->children().push_back(sexpr);
+            }
+        }
+    }
 
     if (top)    return op;
     else        return post(op);

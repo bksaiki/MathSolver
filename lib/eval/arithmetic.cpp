@@ -599,36 +599,6 @@ ExprNode* symbolicMul(ExprNode* op)
     // reorder monomial
     if (isMonomial(op))    op = reorderMonomial(op);
 
-    for (auto it = op->children().begin(); it != op->children().end() && std::next(it) != op->children().end(); ++it)
-    {
-        auto it2 = std::next(it);
-        while (it2 != op->children().end())
-        {
-            if (eqvExpr(peekPowBase(*it), peekPowBase(*it2))) // (* (^ a n) ... (^ a m)) ==> (* (^ a (+ n m)) ... )
-            {
-                ExprNode* pow = new OpNode("^", op);
-                ExprNode* add = new OpNode("+", pow);  
-
-                add->children().push_back(extractPowExp(*it));
-                add->children().push_back(extractPowExp(*it2));
-                add = evaluateArithmetic(add);
-
-                pow->children().push_back(extractPowBase(*it));
-                pow->children().push_back(add);
-                pow = evaluateArithmetic(pow);
-
-                freeExpression(*it);
-                freeExpression(*it2);
-                it2 = op->children().erase(it2);
-                it = replaceChild(op, pow, it);              
-            }  
-            else
-            {
-                ++it2;
-            } 
-        }
-    }
-
     UniqueExprTransformer etrans;
     etrans.add("(* ?a)", "?a");
     etrans.add("(* 0 ?a ...?)", "0");

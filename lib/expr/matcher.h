@@ -28,19 +28,22 @@ public:
     // Clears all entries in this dictionary. Deletes extra nodes in this dictionary.
     void clear();
 
+    // Returns a reference to the ellipse dictionary.
+    inline patt_t& ellDict() { return mEll; }
+    inline const patt_t& ellDict() const { return mEll; }
+
     // Returns a pointer the expression associated with id. Returns nullptr on failure.
     ExprNode* get(const std::string& id) const;
 
     // Clears all entries in this dictionary. Does not delete extra nodes!!
     void release();
 
-    // Returns a reference to the ellipse dictionary.
-    inline patt_t& ellDict() { return mEll; }
-    inline const patt_t& ellDict() const { return mEll; }
-
     // Returns a reference to the subpattern dictionary.
     inline subp_t& subp() { return mSubPattern; }
     inline const subp_t& subp() const { return mSubPattern; }
+
+    // Updates a key.
+    void update(const std::string& id, ExprNode* expr, bool pattern = false);
 
 private:
 
